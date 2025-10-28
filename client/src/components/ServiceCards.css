@@ -1,0 +1,43 @@
+@keyframes slide {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-slide {
+  animation: slide 20s linear infinite;
+}
+
+.slider-section {
+  margin-top: 2rem !important;
+}
+
+/* Bloom animations */
+@keyframes moveBefore {
+  0%, 100% {
+    transform: translate(-200px, -150px) scale(1);
+  }
+  50% {
+    transform: translate(-150px, -100px) scale(1.1);
+  }
+}
+
+@keyframes moveAfter {
+  0%, 100% {
+    transform: translate(-200px, -250px) scale(1);
+  }
+  50% {
+    transform: translate(-150px, -200px) scale(1.1);
+  }
+}
+
+.animate-moveBefore {
+  animation: moveBefore 8s ease-in-out infinite;
+}
+
+.animate-moveAfter {
+  animation: moveAfter 8s ease-in-out infinite;
+}
