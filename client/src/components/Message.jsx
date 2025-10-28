@@ -1,7 +1,7 @@
 import axios from "axios";
+import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import PropTypes from "prop-types";
 
 const Message = ({ conversationId }) => {
   const location = useLocation();
@@ -173,29 +173,67 @@ const Message = ({ conversationId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation.messages, offers]);
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    setIsSending(true);
+  // const handleSendMessage = async () => {
+  //   if (!newMessage.trim()) return;
+  //   setIsSending(true);
 
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
-        { conversationId: conversationId || routeId, message: newMessage },
-        { withCredentials: true }
-      );
+  //   try {
+  //     const response = await axios.post(
+  //       `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
+  //       { conversationId: conversationId || routeId, message: newMessage },
+  //       { withCredentials: true }
+  //     );
 
-      setConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, response.data],
-      }));
+  //     setConversation((prev) => ({
+  //       ...prev,
+  //       messages: [...prev.messages, response.data],
+  //     }));
 
-      setNewMessage("");
-    } catch (error) {
-      console.error("Error sending message:", error);
-    } finally {
-      setIsSending(false);
-    }
+  //     setNewMessage("");
+  //   } catch (error) {
+  //     console.error("Error sending message:", error);
+  //   } finally {
+  //     setIsSending(false);
+  //   }
+  // };
+const handleSendMessage = async () => {
+  if (!newMessage.trim()) return;
+  setIsSending(true);
+
+  // create a temporary local message for instant UI
+  const tempMessage = {
+    _id: `temp-${Date.now()}`,
+    message: newMessage,
+    userId: meId,
+    createdAt: new Date().toISOString(),
   };
+
+  // instantly update UI
+  setConversation((prev) => ({
+    ...prev,
+    messages: [...prev.messages, tempMessage],
+  }));
+
+  setNewMessage("");
+
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
+      { conversationId: conversationId || routeId, message: newMessage },
+      { withCredentials: true }
+    );
+
+    // replace temporary message with real one (after backend response)
+    setConversation((prev) => {
+      const msgs = prev.messages.filter((m) => !m._id.startsWith("temp-"));
+      return { ...prev, messages: [...msgs, response.data] };
+    });
+  } catch (error) {
+    console.error("Error sending message:", error);
+  } finally {
+    setIsSending(false);
+  }
+};
 
   const handleCreateOffer = async () => {
     if (!newOffer.description || !newOffer.price || !newOffer.deliveryTime) {
