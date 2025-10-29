@@ -37,6 +37,7 @@ const allowedOrigins = [
   "https://digitalnexgen.com",
   "https://www.digitalnexgen.com",
   "http://localhost:5173",
+  "https://digitalnexgen-ui.vercel.app"
 ];
 app.use(
   cors({
