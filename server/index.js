@@ -34,8 +34,8 @@ app.post(
   stripeWebhook
 );
 const allowedOrigins = [
-  "https://digitalnexgen.org",
-  "https://www.digitalnexgen.org",
+  "https://digitalnexgen.co",
+  "https://www.digitalnexgen.co",
   "http://localhost:5173",
   "https://digitalnexgen-ui.vercel.app",
 ];
