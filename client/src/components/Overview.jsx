@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import axios from "axios";
-import { Layers } from "lucide-react";
-//  import noise from "../assets/noise.svg";
+import { Layers, MessageSquare, ShoppingBag, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Overview = () => {
   const [totalServices, setTotalServices] = useState(0);
@@ -93,66 +92,215 @@ const Overview = () => {
     }
   }, []);
 
-  return (
-    <section className="w-full h-full text-white flex justify-center">
-      <div className="w-full max-w-6xl p-4 grid grid-cols-1 gap-8">
-        <div className="text-center flex flex-col justify-center items-center">
-          <h1 className="text-3xl md:text-5xl font-bold mb-2 font-roboto">{`Welcome Admin!`}</h1>
-          <p className="text-xl md:text-2xl font-openSans dark:text-[#ededed] text-primaryText mb-2">
-            {username ? `${username}` : "Loading username..."}
-          </p>
-          <p className="text-xl md:text-2xl font-openSans dark:text-[#ededed] text-primaryText">
-            {greeting}
-          </p>
-        </div>
+  // Get icon based on label
+  const getIcon = (label) => {
+    switch (label) {
+      case "Total Services":
+        return <Layers className="w-8 h-8 text-blue-600" />;
+      case "Total Conversations":
+        return <MessageSquare className="w-8 h-8 text-green-600" />;
+      case "Total Orders":
+        return <ShoppingBag className="w-8 h-8 text-purple-600" />;
+      default:
+        return <TrendingUp className="w-8 h-8 text-gray-600" />;
+    }
+  };
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card count={displayCount} label="Total Services" />
-          <Card count={displayConversationCount} label="Total Conversations" />
-          <Card count={displayOrderCount} label="Total Orders" />
+  // Get color based on label
+  const getCardColor = (label) => {
+    switch (label) {
+      case "Total Services":
+        return "from-blue-50 to-blue-100 border-blue-200";
+      case "Total Conversations":
+        return "from-green-50 to-green-100 border-green-200";
+      case "Total Orders":
+        return "from-purple-50 to-purple-100 border-purple-200";
+      default:
+        return "from-gray-50 to-gray-100 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 md:p-8">
+      {/* Welcome Header */}
+      <div className="mb-8 md:mb-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 shadow-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+                  {greeting},{" "}
+                  <span className="text-blue-200">{username || "Admin"}</span>!
+                </h1>
+                <p className="text-blue-100 text-lg">
+                  Welcome back to your dashboard
+                </p>
+              </div>
+              <div className="mt-4 md:mt-0">
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
+                  <p className="text-white font-semibold">
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+
+      {/* Stats Cards Grid */}
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800">
+            Overview
+          </h2>
+          <p className="text-gray-600">Quick glance at your business metrics</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Service Card */}
+          <div
+            className={`bg-gradient-to-br ${getCardColor(
+              "Total Services"
+            )} rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow duration-300`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  {getIcon("Total Services")}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    Total Services
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Active services in catalog
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                  +12%
+                </span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-3xl md:text-4xl font-bold text-gray-800">
+                {displayCount}
+              </p>
+              <div className="mt-2">
+                <div className="h-2 bg-blue-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${
+                        (displayCount / Math.max(totalServices, 1)) * 100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Conversations Card */}
+          <div
+            className={`bg-gradient-to-br ${getCardColor(
+              "Total Conversations"
+            )} rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow duration-300`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  {getIcon("Total Conversations")}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    Conversations
+                  </h3>
+                  <p className="text-xs text-gray-500">Customer interactions</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  +8%
+                </span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-3xl md:text-4xl font-bold text-gray-800">
+                {displayConversationCount}
+              </p>
+              <div className="mt-2">
+                <div className="h-2 bg-green-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${
+                        (displayConversationCount /
+                          Math.max(totalConversations, 1)) *
+                        100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Orders Card */}
+          <div
+            className={`bg-gradient-to-br ${getCardColor(
+              "Total Orders"
+            )} rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow duration-300`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  {getIcon("Total Orders")}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    Total Orders
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Completed transactions
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                  +24%
+                </span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-3xl md:text-4xl font-bold text-gray-800">
+                {displayOrderCount}
+              </p>
+              <div className="mt-2">
+                <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${
+                        (displayOrderCount / Math.max(totalOrders, 1)) * 100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
-
-const Card = ({ count, label }) => (
-  <div
-    className="col-span-1 p-8 rounded-lg shadow-sm max-h-[300px] text-center relative overflow-hidden bg-white border border-gray-100 dark:bg-white/10 dark:border-white/20 dark:shadow-lg"
-    style={{
-      backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.1) 70%)`,
-      // backgroundImage: `url(${noise}), radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.1) 70%)`,
-      backgroundBlendMode: "overlay",
-      backgroundSize: "cover",
-    }}
-  >
-    <div
-      className="absolute top-[-100px] left-[-100px] w-[300px] h-[300px] opacity-50 blur-lg"
-      style={{
-        background:
-          "radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)",
-        borderRadius: "50%",
-      }}
-    ></div>
-    <div
-      className="absolute bottom-[-100px] right-[-100px] w-[300px] h-[300px] opacity-50 blur-lg"
-      style={{
-        background:
-          "radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)",
-        borderRadius: "50%",
-      }}
-    ></div>
-
-    <div className="relative z-10 flex justify-center items-center mb-4">
-      <Layers className="text-white w-12 h-12 md:w-16 md:h-16" />
-    </div>
-    <h2 className="relative z-10 text-3xl md:text-5xl font-bold mb-2 font-roboto dark:text-[#ededed] text-primaryText">
-      {count}
-    </h2>
-    <p className="relative z-10 text-lg md:text-xl font-semibold font-openSans dark:text-[#ededed]  text-primaryText">
-      {label}
-    </p>
-  </div>
-);
 
 export default Overview;

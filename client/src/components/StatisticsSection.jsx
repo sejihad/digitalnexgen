@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Code, Paintbrush, Rocket, Globe2 } from "lucide-react";
+import { Code, Globe2, Paintbrush, Rocket } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const statsData = [
   { icon: Code, value: 900, label: "Clients Served" },
   { icon: Paintbrush, value: 205, label: "Projects Completed" },
-  { icon: Rocket, value: 40, label: "Ongoing Deployments" },
+  { icon: Rocket, value: 40, label: "Ongoing Projects" },
   { icon: Globe2, value: 12, label: "Countries Reached" },
 ];
 
@@ -41,7 +41,7 @@ const StatisticsSection = () => {
         return (
           <div
             key={index}
-            className="group relative border border-gray-100  bg-light-bg dark:bg-white/10 rounded-xl text-primaryText dark:text-[#ededed] shadow-lg backdrop-blur-lg dark:border dark:border-white/20 flex flex-col justify-center items-center gap-4 px-4 py-4 transition-transform duration-300 transform hover:-translate-y-1"
+            className="group relative border border-gray-100  bg-light-bg dark:bg-white/10 rounded-xl text-primaryText dark:text-[#ededed] shadow-lg backdrop-blur-lg dark:border dark:border-white/20 flex flex-col justify-center items-center gap-4 px-4 py-4 transition-transform duration-300 transform hover:-translate-y-1 skew-x-[-6deg]"
           >
             <div className="text-primaryRgb transition-transform mb-[-10px] pt-3 group-hover:scale-110">
               <Icon size={40} strokeWidth={1.5} />

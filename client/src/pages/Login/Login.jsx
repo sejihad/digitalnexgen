@@ -1,18 +1,33 @@
-import "boxicons/css/boxicons.min.css";
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
-import { toast } from "react-toastify";
 import axios from "axios";
+import "boxicons/css/boxicons.min.css";
+import {
+  fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { auth, providers } from "../../firebase";
 import { loginUser, registerUser, setUser } from "../../redux/authSlice";
 import uploadImage from "../../utils/uploadImage";
-import { auth, providers } from "../../firebase";
-import { signInWithPopup, fetchSignInMethodsForEmail, linkWithCredential, GoogleAuthProvider, FacebookAuthProvider, GithubAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import "./login.css";
 
 const Login = () => {
-  const [loginCredentials, setLoginCredentials] = useState({ email: "", password: "" });
-  const [registerCredentials, setRegisterCredentials] = useState({ name: "", password: "", email: "", phone: "", country: "", countryCode: "+880", profilePicture: null });
+  const [loginCredentials, setLoginCredentials] = useState({
+    email: "",
+    password: "",
+  });
+  const [registerCredentials, setRegisterCredentials] = useState({
+    name: "",
+    password: "",
+    email: "",
+    phone: "",
+    country: "",
+    countryCode: "+880",
+    profilePicture: null,
+  });
   // Guided linking flow state
   const [pendingLinkProviderId, setPendingLinkProviderId] = useState(null); // e.g., "facebook.com" (the provider the user originally tried)
   const [resolveWithProviderId, setResolveWithProviderId] = useState(null); // e.g., "google.com" (the provider we must sign in with first)
@@ -59,12 +74,7 @@ const Login = () => {
     switch (pid) {
       case "google.com":
         return GoogleAuthProvider.credentialFromError(err);
-      case "facebook.com":
-        return FacebookAuthProvider.credentialFromError(err);
-      case "github.com":
-        return GithubAuthProvider.credentialFromError(err);
-      case "twitter.com":
-        return TwitterAuthProvider.credentialFromError(err);
+
       default:
         return null;
     }
@@ -73,7 +83,8 @@ const Login = () => {
   // Fallback: Build credential manually from error tokens if provider helpers return null
   const buildPendingCredential = (err) => {
     const pid = err?.customData?.providerId;
-    const accessToken = err?.customData?.oauthAccessToken || err?.customData?.accessToken;
+    const accessToken =
+      err?.customData?.oauthAccessToken || err?.customData?.accessToken;
     const idToken = err?.customData?.oauthIdToken || err?.customData?.idToken;
     try {
       switch (pid) {
@@ -81,18 +92,7 @@ const Login = () => {
           // Google uses ID token
           if (idToken) return GoogleAuthProvider.credential(idToken);
           return null;
-        case "facebook.com":
-          // Facebook uses access token
-          if (accessToken) return FacebookAuthProvider.credential(accessToken);
-          return null;
-        case "github.com":
-          // GitHub uses access token
-          if (accessToken) return GithubAuthProvider.credential(accessToken);
-          return null;
-        case "twitter.com":
-          // Twitter uses access token and secret
-          if (accessToken && err?.customData?.oauthAccessTokenSecret) return TwitterAuthProvider.credential(accessToken, err?.customData?.oauthAccessTokenSecret);
-          return null;
+
         default:
           return null;
       }
@@ -105,12 +105,7 @@ const Login = () => {
     switch (key) {
       case "google":
         return "google.com";
-      case "facebook":
-        return "facebook.com";
-      case "github":
-        return "github.com";
-      case "twitter":
-        return "twitter.com";
+
       default:
         return null;
     }
@@ -125,24 +120,43 @@ const Login = () => {
       }
       // Ensure we request email scope for providers that need it
       try {
-        if (providerKey === "facebook" && provider.addScope) provider.addScope("email");
-        if (providerKey === "github" && provider.addScope) provider.addScope("user:email");
-      } catch (e) { /* no-op: scope add optional */ }
+        if (providerKey === "facebook" && provider.addScope)
+          provider.addScope("email");
+        if (providerKey === "github" && provider.addScope)
+          provider.addScope("user:email");
+      } catch (e) {
+        /* no-op: scope add optional */
+      }
 
       // If we are in guided resolve step and user clicked the resolving provider, first sign in
       const thisProviderId = providerIdFromKey(providerKey);
       if (resolveWithProviderId && thisProviderId !== resolveWithProviderId) {
-        const readable = resolveWithProviderId === "google.com" ? "Google" : resolveWithProviderId === "facebook.com" ? "Facebook" : resolveWithProviderId === "github.com" ? "GitHub" : resolveWithProviderId === "twitter.com" ? "Twitter" : resolveWithProviderId;
+        const readable =
+          resolveWithProviderId === "google.com"
+            ? "Google"
+            : resolveWithProviderId === "facebook.com"
+            ? "Facebook"
+            : resolveWithProviderId === "github.com"
+            ? "GitHub"
+            : resolveWithProviderId === "twitter.com"
+            ? "Twitter"
+            : resolveWithProviderId;
         toast.error(`Please click the ${readable} button first to continue.`);
         return;
       }
       if (resolveWithProviderId && thisProviderId === resolveWithProviderId) {
         // Clean session to avoid conflicts
-        try { await auth.signOut(); } catch (e) { /* ignore */ }
+        try {
+          await auth.signOut();
+        } catch (e) {
+          /* ignore */
+        }
         const existingResult = await signInWithPopup(auth, provider);
 
         // Finish backend session
-        const idToken = await (existingResult.user || auth.currentUser).getIdToken();
+        const idToken = await (
+          existingResult.user || auth.currentUser
+        ).getIdToken();
         const { data } = await axios.post(
           `${apiBaseUrl}/api/auth/firebase`,
           { idToken },
@@ -151,7 +165,6 @@ const Login = () => {
         // Clear guided state
         setPendingLinkProviderId(null);
         setResolveWithProviderId(null);
-        
 
         dispatch(setUser(data));
         toast.success("Logged in successfully");
@@ -160,7 +173,11 @@ const Login = () => {
       }
 
       // Normal social sign-in (ensure clean session)
-      try { await auth.signOut(); } catch (e) { /* ignore */ }
+      try {
+        await auth.signOut();
+      } catch (e) {
+        /* ignore */
+      }
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       const { data } = await axios.post(
@@ -185,7 +202,9 @@ const Login = () => {
 
           // If password-based, we cannot auto-resolve via popup
           if (methods.includes("password")) {
-            toast.error("This email is registered with password. Please sign in using email/password first, then retry the social button to link.");
+            toast.error(
+              "This email is registered with password. Please sign in using email/password first, then retry the social button to link."
+            );
             return;
           }
           // Guided two-step: ask user to click the existing provider button, then we will link the intended one
@@ -193,21 +212,48 @@ const Login = () => {
           setPendingLinkProviderId(err?.customData?.providerId || null);
           setResolveWithProviderId(existingPid || null);
           // No auto-linking; users can link later if needed
-          const readable = existingPid === "google.com" ? "Google" : existingPid === "facebook.com" ? "Facebook" : existingPid === "github.com" ? "GitHub" : existingPid === "twitter.com" ? "Twitter" : existingPid;
-          const humanList = methods.map(m => m === "google.com" ? "Google" : m === "facebook.com" ? "Facebook" : m === "github.com" ? "GitHub" : m === "twitter.com" ? "Twitter" : m).join(", ");
+          const readable =
+            existingPid === "google.com"
+              ? "Google"
+              : existingPid === "facebook.com"
+              ? "Facebook"
+              : existingPid === "github.com"
+              ? "GitHub"
+              : existingPid === "twitter.com"
+              ? "Twitter"
+              : existingPid;
+          const humanList = methods
+            .map((m) =>
+              m === "google.com"
+                ? "Google"
+                : m === "facebook.com"
+                ? "Facebook"
+                : m === "github.com"
+                ? "GitHub"
+                : m === "twitter.com"
+                ? "Twitter"
+                : m
+            )
+            .join(", ");
           toast.info(`Email: ${email}. Existing methods: ${humanList}`);
-          toast.error(`This email exists with ${readable}. Click the ${readable} button now. After that, we will link your ${providerKey} account automatically.`);
+          toast.error(
+            `This email exists with ${readable}. Click the ${readable} button now. After that, we will link your ${providerKey} account automatically.`
+          );
           return;
         } catch (linkErr) {
           console.error("Linking flow failed:", linkErr);
-          const msg = linkErr?.response?.data?.message || linkErr?.message || "Login failed";
+          const msg =
+            linkErr?.response?.data?.message ||
+            linkErr?.message ||
+            "Login failed";
           toast.error(msg);
           return;
         }
       }
 
       console.error("Social login failed:", err);
-      const msg = err?.response?.data?.message || err?.message || "Login failed";
+      const msg =
+        err?.response?.data?.message || err?.message || "Login failed";
       toast.error(msg);
     }
   };
@@ -234,7 +280,12 @@ const Login = () => {
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    dispatch(loginUser({ email: loginCredentials.email, password: loginCredentials.password }))
+    dispatch(
+      loginUser({
+        email: loginCredentials.email,
+        password: loginCredentials.password,
+      })
+    )
       .unwrap()
       .then(() => {
         toast.success("Successfully Signed In!");
@@ -248,7 +299,9 @@ const Login = () => {
     let profilePictureUrl = null;
     if (registerCredentials.profilePicture) {
       try {
-        profilePictureUrl = await uploadImage(registerCredentials.profilePicture);
+        profilePictureUrl = await uploadImage(
+          registerCredentials.profilePicture
+        );
       } catch (err) {
         toast.error("Error uploading image");
         return;
@@ -263,30 +316,38 @@ const Login = () => {
     // Country-specific normalization (no validation)
     if ((registerCredentials.countryCode || "") === "+880") {
       // Remove a single leading trunk '0' for BD then build E.164
-      localForE164 = cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone;
+      localForE164 = cleanPhone.startsWith("0")
+        ? cleanPhone.slice(1)
+        : cleanPhone;
       combinedPhone = "+880" + localForE164;
     } else {
       // Generic: remove one trunk '0' then build E.164
-      localForE164 = cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone;
-      combinedPhone = ((registerCredentials.countryCode || "") + localForE164) || undefined;
+      localForE164 = cleanPhone.startsWith("0")
+        ? cleanPhone.slice(1)
+        : cleanPhone;
+      combinedPhone =
+        (registerCredentials.countryCode || "") + localForE164 || undefined;
     }
-
-  
 
     const userData = {
       username: registerCredentials.name,
       password: registerCredentials.password,
       email: registerCredentials.email,
       country: registerCredentials.country,
-      phone: combinedPhone,        // E.164 format: +8801950789774
-      number: cleanPhone,          // Local digits only: 1950789774
+      phone: combinedPhone, // E.164 format: +8801950789774
+      number: cleanPhone, // Local digits only: 1950789774
       img: profilePictureUrl,
     };
 
     try {
       await dispatch(registerUser(userData)).unwrap();
       toast.success("Successfully Registered!");
-      await dispatch(loginUser({ email: registerCredentials.email, password: registerCredentials.password })).unwrap();
+      await dispatch(
+        loginUser({
+          email: registerCredentials.email,
+          password: registerCredentials.password,
+        })
+      ).unwrap();
       toast.success("Successfully Signed In!");
       navigateAfterLogin();
     } catch (err) {
@@ -308,7 +369,10 @@ const Login = () => {
     }
   };
   const handleFileChange = (e) => {
-    setRegisterCredentials((prev) => ({ ...prev, profilePicture: e.target.files[0] }));
+    setRegisterCredentials((prev) => ({
+      ...prev,
+      profilePicture: e.target.files[0],
+    }));
   };
 
   return (
@@ -347,19 +411,16 @@ const Login = () => {
             <button type="submit" className="login-btn btn" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </button>
-              <p>or login with social accounts</p>
+            <p>or login with social accounts</p>
             <div className="social-icons">
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('facebook'); }}>
-                <i className="bx bxl-facebook"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('google'); }}>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSocialLogin("google");
+                }}
+              >
                 <i className="bx bxl-google"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('github'); }}>
-                <i className="bx bxl-github"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('twitter'); }}>
-                <i className="bx bxl-twitter"></i>
               </a>
             </div>
           </form>
@@ -427,22 +488,23 @@ const Login = () => {
               />
               <i className="bx bx-lock-alt"></i>
             </div>
-            <button type="submit" className="register-btn btn" disabled={loading}>
+            <button
+              type="submit"
+              className="register-btn btn"
+              disabled={loading}
+            >
               {loading ? "Registering..." : "Register"}
             </button>
             <p>or login with social accounts</p>
             <div className="social-icons">
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('facebook'); }}>
-                <i className="bx bxl-facebook"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('google'); }}>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSocialLogin("google");
+                }}
+              >
                 <i className="bx bxl-google"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('github'); }}>
-                <i className="bx bxl-github"></i>
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); handleSocialLogin('twitter'); }}>
-                <i className="bx bxl-twitter"></i>
               </a>
             </div>
           </form>

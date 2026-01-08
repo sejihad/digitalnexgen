@@ -39,5 +39,3 @@ const Home = () => {
 };
 
 export default Home;
-
-// bg-[rgb(244,253,247)]

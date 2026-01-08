@@ -1,9 +1,9 @@
-import { Facebook, Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import Logo from "../assets/logo.png";
 import DarkLogo from "../assets/DarkLogo.png";
-import Newsletter from "./Newsletter";
+import Logo from "../assets/logo.png";
 import FooterDescription from "./FooterDescription";
+import Newsletter from "./Newsletter";
 
 const Footer = () => {
   const location = useLocation();
@@ -13,7 +13,6 @@ const Footer = () => {
     <footer className="mt-8 text-white py-10 border-t border-primaryRgb pb-20">
       <div className="container mx-auto px-5 lg:px-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 text-center lg:text-left">
-          
           {/* === About Section === */}
           <div>
             <Link to="/">
@@ -29,7 +28,7 @@ const Footer = () => {
               />
             </Link>
 
-      <FooterDescription />
+            <FooterDescription />
           </div>
 
           {/* === Quick Links === */}
@@ -163,16 +162,16 @@ const Footer = () => {
               Digital NexGen
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-1">
-              7537 Desoto Av, Canoga Park,
+              Suite A, 82 James Carter Road, Mildenhall, Bury St. Edmunds,
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-1">
-              California 91303, USA.
+              United Kingdom, IP28 7DE
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-1">
-              Email: info@digitalnexgen.com
+              Email: info@digitalnexgen.co
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-3">
-              Phone: +1 (818) 334-7704
+              Phone: +44 7482 799 921
             </p>
 
             <div className="flex relative z-50  justify-center lg:justify-start space-x-5 mb-4">
@@ -185,8 +184,6 @@ const Footer = () => {
                 <Facebook />
               </a>
 
-
-              
               <a
                 href="https://www.instagram.com/digital_nexgen/?igsh=dGgxZGdzczAzNHgy&amp;fbclid=IwZXh0bgNhZW0CMTAAAR3NoSmfjtTBsTZxW7EumcsP65jCvCQI6OcyrkJ2AcQg3rF5I1Sq5kiv6Ug_aem_AQ3ZT-0Lq5Pw4EBg8UOhr4h4g7kzx-16blNfK2URA8JoE-z93TMxUuLUjhZh-HlDmyk-POr9GEgg4o0BEag9S2K6"
                 target="_blank"
@@ -195,7 +192,7 @@ const Footer = () => {
               >
                 <Instagram />
               </a>
-         
+
               <a
                 href="https://www.linkedin.com/company/digital-nexgen/"
                 target="_blank"
@@ -212,7 +209,6 @@ const Footer = () => {
               >
                 <Youtube />
               </a>
-              
             </div>
 
             <div className="flex justify-center lg:justify-start">

@@ -25,13 +25,10 @@ body {
 }
 
 body {
-  /* background-color: #fefff9; */
+  background-color: #f8fafc;
   /* background-color: rgb(255, 250, 241); */
-  /* background-color: rgb(250, 249, 253); */
-  background-color: #ffffff;
-
-  
- 
+  /* background: #fafafa; */
+  /* background-color: #ffffff; */
 }
 
 @keyframes scale-in {
@@ -51,7 +48,7 @@ body {
     rgb(12, 187, 20) 0%,
     rgb(12, 187, 20) 50%,
     rgb(12, 187, 20) 100%
-    /* rgb(232, 0, 151) 0%,
+      /* rgb(232, 0, 151) 0%,
     rgb(255, 0, 172) 50%,
     rgb(232, 0, 151) 100% */
   );
@@ -93,7 +90,10 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
-

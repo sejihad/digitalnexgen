@@ -4,14 +4,7 @@ const FooterDescription = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const text = `
-    Digital NexGen is an IT service provider offering a range of digital
-    solutions, including digital marketing, app development, web design,
-    web development, cybersecurity, graphics design, SEO, and social
-    media services. They focus on delivering tailored solutions to
-    enhance online presence and protect digital assets. Additionally,
-    Digital NexGen offers various courses aimed at equipping individuals
-    with essential digital skills for career advancement. Based in Dhaka,
-    Bangladesh, their services are available globally.
+    Digital NexGen is a UK-based IT service provider offering a wide range of digital solutions, including Digital Marketing, App Development, Web Design, Web Development, Cybersecurity, Graphic Design, Video Editing, SEO, Social Media Services, Book Formatting, Book Cover Design, and Book Trailer Videos. The company focuses on delivering tailored solutions that enhance online presence, strengthen brand identity, and protect digital assets. In addition to services, Digital NexGen also offers various professional courses designed to equip individuals with essential digital skills for career growth. Based in the United Kingdom, Digital NexGen provides its services to clients worldwide.
   `;
 
   return (

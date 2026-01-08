@@ -61,17 +61,14 @@
 
 // export default ServiceCards;
 
-import React from "react";
+import Clapperboard from "../assets/icons/clapperboard.svg";
+import Handshake from "../assets/icons/cooperation.svg";
+import TrendingUp from "../assets/icons/digital-marketing.svg";
+import Brush from "../assets/icons/graphic-design.svg";
+import SquarePen from "../assets/icons/pen.svg";
+import CodeXml from "../assets/icons/source-code.svg";
 import ServiceCard from "./ServiceCard";
 import "./ServiceCards.css";
-import {
-  CodeXml,
-  Brush,
-  TrendingUp,
-  Clapperboard,
-  Handshake,
-  SquarePen,
-} from "lucide-react";
 
 const ServiceCards = ({
   bloomColor1 = "rgba(255, 0, 150, 0.4)", // pink glow
@@ -79,9 +76,7 @@ const ServiceCards = ({
   bloomSize = "550px",
 }) => {
   return (
-    <section
-      className="relative w-11/12 max-w-[1440px] mx-auto mt-10 lg:mt-[-10px] overflow-hidden rounded-2xl"
-    >
+    <section className="relative w-11/12 max-w-[1440px] mx-auto mt-10 lg:mt-[-10px] overflow-hidden rounded-2xl">
       {/* Background bloom animation */}
       <div
         className="absolute top-[-150px] left-[-200px] opacity-80 blur-lg animate-moveBefore pointer-events-none"
