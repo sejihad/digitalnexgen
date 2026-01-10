@@ -93,9 +93,7 @@ const SubCategoryServiceCard = ({ service }) => {
 
           <p className="text-base font-semibold text-red-600">
             Starting from{" "}
-            {!isAuthenticated ? (
-              <span className="text-red-500 font-medium">N/A</span>
-            ) : service.packages[0]?.salePrice > 0 ? (
+            {service.packages[0]?.salePrice > 0 ? (
               <>
                 <span className="text-sm text-red-500 line-through">
                   ${service.packages[0]?.regularPrice || "N/A"}

@@ -251,24 +251,136 @@ const EditPromotionalOffer = () => {
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Most Popular"
                 />
+              </div>
+            </div>
+            {/* Pricing */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Original Price *
+                </label>
                 <input
-                  type="text"
-                  value={feature}
-                  onChange={(e) => handleFeatureChange(index, e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
-                  placeholder={`Feature ${index + 1}`}
+                  {...register("originalPrice", {
+                    required: "Original price is required",
+                  })}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="199"
                 />
-                {features.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeFeature(index)}
-                    className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                {errors.originalPrice && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.originalPrice.message}
+                  </p>
                 )}
               </div>
-              ))
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Offer Price *
+                </label>
+                <input
+                  {...register("offerPrice", {
+                    required: "Offer price is required",
+                  })}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="99"
+                />
+                {errors.offerPrice && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.offerPrice.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            {/* Per-package offer prices (optional) */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                Per-package Offer Prices (optional)
+              </h3>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Basic
+                  </label>
+                  <input
+                    {...register("offerPrices.basic")}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="49"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Standard
+                  </label>
+                  <input
+                    {...register("offerPrices.standard")}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="99"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Premium
+                  </label>
+                  <input
+                    {...register("offerPrices.premium")}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="149"
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                If set, these override gig package prices when user comes from
+                Offers.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Features *
+              </label>
+
+              {features.map((feature, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={feature}
+                    onChange={(e) => handleFeatureChange(index, e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+                    placeholder={`Feature ${index + 1}`}
+                  />
+
+                  {features.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeFeature(index)}
+                      className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
               <button
                 type="button"
                 onClick={addFeature}

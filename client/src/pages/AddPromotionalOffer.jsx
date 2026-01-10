@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import axios from "axios";
-import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
 import { ArrowLeft, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AddPromotionalOffer = () => {
   const navigate = useNavigate();
@@ -69,9 +69,18 @@ const AddPromotionalOffer = () => {
         originalPrice: Number(data.originalPrice),
         offerPrice: Number(data.offerPrice),
         offerPrices: {
-          basic: data.offerPrices?.basic !== "" ? Number(data.offerPrices.basic) : undefined,
-          standard: data.offerPrices?.standard !== "" ? Number(data.offerPrices.standard) : undefined,
-          premium: data.offerPrices?.premium !== "" ? Number(data.offerPrices.premium) : undefined,
+          basic:
+            data.offerPrices?.basic !== ""
+              ? Number(data.offerPrices.basic)
+              : undefined,
+          standard:
+            data.offerPrices?.standard !== ""
+              ? Number(data.offerPrices.standard)
+              : undefined,
+          premium:
+            data.offerPrices?.premium !== ""
+              ? Number(data.offerPrices.premium)
+              : undefined,
         },
         order: Number(data.order),
       };
@@ -99,12 +108,20 @@ const AddPromotionalOffer = () => {
   // Fetch services for selector
   useEffect(() => {
     let mounted = true;
-    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/services`).then((res) => {
-      if (mounted) setServicesList(res.data || []);
-    }).catch((err) => {
-      console.error('Failed to fetch services for promotional offer selector', err);
-    });
-    return () => { mounted = false; };
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/api/services`)
+      .then((res) => {
+        if (mounted) setServicesList(res.data || []);
+      })
+      .catch((err) => {
+        console.error(
+          "Failed to fetch services for promotional offer selector",
+          err
+        );
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -135,7 +152,11 @@ const AddPromotionalOffer = () => {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                 placeholder="e.g., Premium Service Package"
               />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+              {errors.title && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.title.message}
+                </p>
+              )}
             </div>
 
             {/* Description */}
@@ -144,12 +165,18 @@ const AddPromotionalOffer = () => {
                 Description *
               </label>
               <textarea
-                {...register("description", { required: "Description is required" })}
+                {...register("description", {
+                  required: "Description is required",
+                })}
                 rows="3"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Brief description of the offer"
               />
-              {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.description.message}
+                </p>
+              )}
             </div>
 
             {/* Discount & Badge */}
@@ -159,12 +186,18 @@ const AddPromotionalOffer = () => {
                   Discount Label *
                 </label>
                 <input
-                  {...register("discount", { required: "Discount is required" })}
+                  {...register("discount", {
+                    required: "Discount is required",
+                  })}
                   type="text"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., 50% OFF"
                 />
-                {errors.discount && <p className="text-red-500 text-sm mt-1">{errors.discount.message}</p>}
+                {errors.discount && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.discount.message}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -186,37 +219,53 @@ const AddPromotionalOffer = () => {
                   Original Price *
                 </label>
                 <input
-                  {...register("originalPrice", { required: "Original price is required" })}
+                  {...register("originalPrice", {
+                    required: "Original price is required",
+                  })}
                   type="number"
                   min="0"
                   step="0.01"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                   placeholder="199"
                 />
-                {errors.originalPrice && <p className="text-red-500 text-sm mt-1">{errors.originalPrice.message}</p>}
+                {errors.originalPrice && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.originalPrice.message}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Offer Price *
                 </label>
                 <input
-                  {...register("offerPrice", { required: "Offer price is required" })}
+                  {...register("offerPrice", {
+                    required: "Offer price is required",
+                  })}
                   type="number"
                   min="0"
                   step="0.01"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                   placeholder="99"
                 />
-                {errors.offerPrice && <p className="text-red-500 text-sm mt-1">{errors.offerPrice.message}</p>}
+                {errors.offerPrice && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.offerPrice.message}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Per-package offer prices (optional) */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Per-package Offer Prices (optional)</h3>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                Per-package Offer Prices (optional)
+              </h3>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Basic</label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Basic
+                  </label>
                   <input
                     {...register("offerPrices.basic")}
                     type="number"
@@ -227,7 +276,9 @@ const AddPromotionalOffer = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Standard</label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Standard
+                  </label>
                   <input
                     {...register("offerPrices.standard")}
                     type="number"
@@ -238,7 +289,9 @@ const AddPromotionalOffer = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Premium</label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Premium
+                  </label>
                   <input
                     {...register("offerPrices.premium")}
                     type="number"
@@ -249,7 +302,10 @@ const AddPromotionalOffer = () => {
                   />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">If set, these override gig package prices when user comes from Offers.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                If set, these override gig package prices when user comes from
+                Offers.
+              </p>
             </div>
 
             {/* Features */}
@@ -294,11 +350,17 @@ const AddPromotionalOffer = () => {
                   Start Date *
                 </label>
                 <input
-                  {...register("startDate", { required: "Start date is required" })}
+                  {...register("startDate", {
+                    required: "Start date is required",
+                  })}
                   type="date"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                 />
-                {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate.message}</p>}
+                {errors.startDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.startDate.message}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -309,7 +371,11 @@ const AddPromotionalOffer = () => {
                   type="date"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                 />
-                {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>}
+                {errors.endDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.endDate.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -336,7 +402,9 @@ const AddPromotionalOffer = () => {
                 >
                   <option value="">-- None --</option>
                   {servicesList.map((svc) => (
-                    <option key={svc._id} value={svc._id}>{svc.title} ({svc.subCategory || svc.category})</option>
+                    <option key={svc._id} value={svc._id}>
+                      {svc.title} ({svc.subCategory || svc.category})
+                    </option>
                   ))}
                 </select>
               </div>

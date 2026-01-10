@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
-import { X, Gift, Clock, Sparkles } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import { Clock, Gift, Sparkles, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const OfferModal = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [latestOffer, setLatestOffer] = useState(null);
+
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -17,13 +20,44 @@ const OfferModal = () => {
   // Try to read an end time persisted by the OfferPage so both components show the same countdown.
   const persistedEnd = sessionStorage.getItem("offerEndTime");
   const now = new Date().getTime();
-  const [offerEndTime, setOfferEndTime] = useState(persistedEnd ? Number(persistedEnd) : now + 24 * 60 * 60 * 1000); // fallback to 24 hours
+  const [offerEndTime, setOfferEndTime] = useState(
+    persistedEnd ? Number(persistedEnd) : now + 24 * 60 * 60 * 1000
+  ); // fallback to 24 hours
 
   // Listen for global updates (OfferPage can dispatch this when it computes the real end time)
   useEffect(() => {
+    const fetchLatestOffer = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/latest`,
+          { withCredentials: true }
+        );
+
+        if (res.data) {
+          setLatestOffer(res.data);
+
+          const end = new Date(res.data.endDate).getTime();
+          setOfferEndTime(end);
+
+          try {
+            sessionStorage.setItem("offerEndTime", String(end));
+          } catch {}
+        }
+      } catch (err) {
+        console.error("Failed to fetch latest offer", err);
+      }
+    };
+
+    fetchLatestOffer();
+  }, []);
+
+  useEffect(() => {
     const handler = (e) => {
       // If detail.offerEndTime is null/undefined -> clear and close modal
-      if (e?.detail && (e.detail.offerEndTime === null || e.detail.offerEndTime === undefined)) {
+      if (
+        e?.detail &&
+        (e.detail.offerEndTime === null || e.detail.offerEndTime === undefined)
+      ) {
         try {
           sessionStorage.removeItem("offerEndTime");
         } catch {
@@ -44,16 +78,21 @@ const OfferModal = () => {
       }
     };
 
-    window.addEventListener('offerEndTimeUpdated', handler);
-    return () => window.removeEventListener('offerEndTimeUpdated', handler);
+    window.addEventListener("offerEndTimeUpdated", handler);
+    return () => window.removeEventListener("offerEndTimeUpdated", handler);
   }, []);
 
   // Formatted end date string for display
-  const formattedEndDate = offerEndTime ? new Date(offerEndTime).toLocaleString() : null;
+  const formattedEndDate = offerEndTime
+    ? new Date(offerEndTime).toLocaleString()
+    : null;
 
   useEffect(() => {
     // Don't show modal on admin routes or when already on the offers page
-    if (location.pathname.startsWith("/admin") || location.pathname.startsWith("/special-offers")) {
+    if (
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/special-offers")
+    ) {
       return;
     }
 
@@ -65,7 +104,7 @@ const OfferModal = () => {
 
     // Check if modal was already shown in this session
     const modalShown = sessionStorage.getItem("offerModalShown");
-    
+
     if (!modalShown && offerEndTime) {
       // Show modal after 500ms delay (for testing - change back to 2000 for production)
       const timer = setTimeout(() => {
@@ -87,7 +126,9 @@ const OfferModal = () => {
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          hours: Math.floor(
+            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          ),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),
         });
@@ -152,7 +193,7 @@ const OfferModal = () => {
 
           {/* Decorative Elements */}
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primaryRgb via-green-400 to-primaryRgb rounded-t-2xl" />
-          
+
           <div className="p-6">
             {/* Icon & Badge */}
             <div className="flex justify-center mb-3">
@@ -171,13 +212,19 @@ const OfferModal = () => {
                 <span>Limited Time Only</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                Special Offer Just for You!
+                {latestOffer?.title || "Special Offer Just for You!"}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Get up to <span className="text-primaryRgb font-bold text-lg">50% OFF</span> on premium services
+                Get up to{" "}
+                <span className="text-primaryRgb font-bold text-lg">
+                  {latestOffer?.discount || "Limited Discount"}
+                </span>{" "}
+                on premium services
               </p>
               {formattedEndDate && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Ends on: {formattedEndDate}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Ends on: {formattedEndDate}
+                </p>
               )}
             </div>
 
@@ -213,12 +260,11 @@ const OfferModal = () => {
 
             {/* Features */}
             <div className="space-y-1.5 mb-4">
-              {[
-                "Premium service packages at discounted prices",
-                "24/7 priority support included",
-                "Unlimited revisions on select packages",
-              ].map((feature, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+              {(latestOffer?.features || []).slice(0, 3).map((feature, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"
+                >
                   <div className="w-1.5 h-1.5 bg-primaryRgb rounded-full" />
                   <span>{feature}</span>
                 </div>

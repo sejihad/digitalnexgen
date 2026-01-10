@@ -163,10 +163,9 @@ const Footer = () => {
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-1">
               Suite A, 82 James Carter Road, Mildenhall, Bury St. Edmunds,
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mb-1">
               United Kingdom, IP28 7DE
             </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-1"></p>
             <p className="text-gray-600 dark:text-gray-400 mb-1">
               Email: info@digitalnexgen.co
             </p>

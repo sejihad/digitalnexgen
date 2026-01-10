@@ -1,33 +1,50 @@
 import { Route, Routes } from "react-router-dom";
+import Chat from "../components/Chat";
 import FacebookCallbackHandler from "../components/FacebookCallbackHandler";
 import GoogleCallbackHandler from "../components/GoogleCallbackHandler ";
 import Message from "../components/Message";
 import Messages from "../components/Messages";
+import ScrollToTop from "../components/ScrollToTop";
 import AdminLayout from "../layouts/AdminLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 import AboutUs from "../pages/AboutUs";
 import AddBlog from "../pages/AddBlog";
 import AddGallery from "../pages/AddGallery";
+import AddPartner from "../pages/AddPartner";
+import AddProject from "../pages/AddProject";
+import AddPromotionalOffer from "../pages/AddPromotionalOffer";
 import AddService from "../pages/AddService";
 import AdminBlogs from "../pages/AdminBlogs";
+import AdminConvesation from "../pages/AdminConvesation";
 import AdminGalleries from "../pages/AdminGalleries";
+import AdminNewsLatters from "../pages/AdminNewsLatters";
 import AdminOrder from "../pages/AdminOrder";
 import AdminOrders from "../pages/AdminOrders";
+import AdminPartners from "../pages/AdminPartners";
 import AdminProfile from "../pages/AdminProfile";
+import AdminProjects from "../pages/AdminProjects";
+import AdminPromotionalOffers from "../pages/AdminPromotionalOffers";
+import AdminReviews from "../pages/AdminReviews";
 import AdminServices from "../pages/AdminServices";
 import AdminSettings from "../pages/AdminSettings";
 import Blog from "../pages/Blog";
 import Business from "../pages/Business";
+import Contact from "../pages/Contact";
 import Coupons from "../pages/Coupons";
 import Dashboard from "../pages/Dashboard";
 import DigitalMarketing from "../pages/DigitalMarketing";
 import EditBlog from "../pages/EditBlog";
+import EditPartner from "../pages/EditPartner";
+import EditProject from "../pages/EditProject";
+import EditPromotionalOffer from "../pages/EditPromotionalOffer";
 import EditService from "../pages/EditService";
 import ForgotPassword from "../pages/Forgot/ForgotPassword";
 import GraphicsDesign from "../pages/GraphicsDesign";
 import Home from "../pages/Home";
+import Login from "../pages/Login/Login";
 import NotFound from "../pages/NotFound";
+import OfferPage from "../pages/OfferPage";
 import Order from "../pages/Order";
 import Orders from "../pages/Orders";
 import PaymentCancelled from "../pages/PaymentCancelled";
@@ -37,12 +54,14 @@ import PaypalSuccess from "../pages/PaypalSuccess";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import Profile from "../pages/Profile";
 import ProgrammingTech from "../pages/ProgrammingTech";
+import Project from "../pages/Project";
 import ResetPassword from "../pages/ResetPassword";
 import SearchResult from "../pages/SearchResult";
 import ServiceList from "../pages/ServiceList";
 import Services from "../pages/Services";
 import Settings from "../pages/Settings";
 import SingleBlog from "../pages/SingleBlog";
+import SingleProject from "../pages/SingleProject";
 import SingleService from "../pages/SingleService";
 import SubCategory from "../pages/SubCategory";
 import TermsAndConditions from "../pages/TermsAndConditions";
@@ -50,27 +69,6 @@ import UpdatePassword from "../pages/UpdatePassword";
 import VideoAnimation from "../pages/VideoAnimation";
 import WritingTranslation from "../pages/WritingTranslation";
 import ProtectedRoute from "./ProtectedRoute";
-import SingleProject from "../pages/SingleProject";
-import Project from "../pages/Project";
-import AddProject from "../pages/AddProject";
-import AdminProjects from "../pages/AdminProjects";
-import EditProject from "../pages/EditProject";
-import AdminNewsLatters from "../pages/AdminNewsLatters";
-import AddPartner from "../pages/AddPartner";
-import AdminPartners from "../pages/AdminPartners";
-import EditPartner from "../pages/EditPartner";
-import OfferPage from "../pages/OfferPage";
-import AdminPromotionalOffers from "../pages/AdminPromotionalOffers";
-import AddPromotionalOffer from "../pages/AddPromotionalOffer";
-import EditPromotionalOffer from "../pages/EditPromotionalOffer";
-import Login from "../pages/Login/Login";
-import AdminConvesation from "../pages/AdminConvesation";
-import ScrollToTop from "../components/ScrollToTop";
-import Chat from "../components/Chat";
-import Contact from "../pages/Contact";
-import AdminContacts from "../pages/AdminContacts";
-import AdminReviews from "../pages/AdminReviews";
-
 
 const AppRoutes = ({ theme, toggleTheme }) => {
   return (
@@ -93,16 +91,25 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="services" element={<Services />} />
           <Route path="service-list" element={<ServiceList />} />
           <Route path="programming-tech" element={<ProgrammingTech />} />
-          <Route path="programming-tech/:subCategory" element={<SubCategory />} />
+          <Route
+            path="programming-tech/:subCategory"
+            element={<SubCategory />}
+          />
           <Route path="graphics-design" element={<GraphicsDesign />} />
-          <Route path="graphics-design/:subCategory" element={<SubCategory />} />
+          <Route
+            path="graphics-design/:subCategory"
+            element={<SubCategory />}
+          />
           <Route path="digital-marketing" element={<DigitalMarketing />} />
           <Route
             path="digital-marketing/:subCategory"
             element={<SubCategory />}
           />
           <Route path="video-animation" element={<VideoAnimation />} />
-          <Route path="Video-animation/:subCategory" element={<SubCategory />} />
+          <Route
+            path="Video-animation/:subCategory"
+            element={<SubCategory />}
+          />
           <Route path="business" element={<Business />} />
           <Route path="business/:subCategory" element={<SubCategory />} />
           <Route path="writing-translation" element={<WritingTranslation />} />
@@ -221,14 +228,26 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="coupons" element={<Coupons />} />
           <Route path="review" element={<AdminReviews />} />
-          <Route path="contact" element={<AdminContacts />} />
-          <Route path="promotional-offers" element={<AdminPromotionalOffers />} />
-          <Route path="add-promotional-offer" element={<AddPromotionalOffer />} />
-          <Route path="promotional-offers/edit/:id" element={<EditPromotionalOffer />} />
+
+          <Route
+            path="promotional-offers"
+            element={<AdminPromotionalOffers />}
+          />
+          <Route
+            path="add-promotional-offer"
+            element={<AddPromotionalOffer />}
+          />
+          <Route
+            path="promotional-offers/edit/:id"
+            element={<EditPromotionalOffer />}
+          />
           <Route path="reviews" element={<AdminReviews />} />
         </Route>
         <Route path="/google/callback" element={<GoogleCallbackHandler />} />
-        <Route path="/facebook/callback" element={<FacebookCallbackHandler />} />
+        <Route
+          path="/facebook/callback"
+          element={<FacebookCallbackHandler />}
+        />
       </Routes>
     </>
   );

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import placeholderImg from "../assets/user.png";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
@@ -39,7 +39,9 @@ const SingleService = () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/coupon/verify`,
         {
           code: couponCode,
-          price: ((offerPriceMap?.[selectedPackage]) ?? selectedPackageDetails.salePrice),
+          price:
+            offerPriceMap?.[selectedPackage] ??
+            selectedPackageDetails.salePrice,
         },
         {
           withCredentials: true,
@@ -77,7 +79,8 @@ const SingleService = () => {
       return;
     }
 
-    const basePrice = ((offerPriceMap?.[selectedPackage]) ?? selectedPackageDetails.salePrice);
+    const basePrice =
+      offerPriceMap?.[selectedPackage] ?? selectedPackageDetails.salePrice;
     const finalPrice = basePrice - discountAmount;
 
     try {
@@ -105,7 +108,7 @@ const SingleService = () => {
       return;
     }
 
-    const basePrice = (offerPriceOverride ?? selectedPackageDetails.salePrice);
+    const basePrice = offerPriceOverride ?? selectedPackageDetails.salePrice;
     const finalPrice = basePrice - discountAmount;
 
     try {
@@ -147,34 +150,66 @@ const SingleService = () => {
           if (offerId) {
             let off = null;
             try {
-              const o = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${offerId}`);
+              const o = await axios.get(
+                `${
+                  import.meta.env.VITE_API_BASE_URL
+                }/api/promotional-offers/${offerId}`
+              );
               off = o.data;
             } catch {
               // fallback to list
               try {
-                const list = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`);
-                off = (list.data || []).find(x => String(x._id) === String(offerId));
+                const list = await axios.get(
+                  `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`
+                );
+                off = (list.data || []).find(
+                  (x) => String(x._id) === String(offerId)
+                );
               } catch {}
             }
             if (off) {
-              const svcId = (off.serviceId && (off.serviceId._id || off.serviceId)) || off.service?._id;
+              const svcId =
+                (off.serviceId && (off.serviceId._id || off.serviceId)) ||
+                off.service?._id;
               const now = Date.now();
-              const notExpired = off.endDate ? (new Date(off.endDate).getTime() > now) : true;
+              const notExpired = off.endDate
+                ? new Date(off.endDate).getTime() > now
+                : true;
               if (String(svcId) === String(id) && notExpired) {
-                if (off.offerPrices && (off.offerPrices.basic || off.offerPrices.standard || off.offerPrices.premium)) {
+                if (
+                  off.offerPrices &&
+                  (off.offerPrices.basic ||
+                    off.offerPrices.standard ||
+                    off.offerPrices.premium)
+                ) {
                   setOfferPriceMap({
-                    basic: typeof off.offerPrices.basic === 'number' ? off.offerPrices.basic : undefined,
-                    standard: typeof off.offerPrices.standard === 'number' ? off.offerPrices.standard : undefined,
-                    premium: typeof off.offerPrices.premium === 'number' ? off.offerPrices.premium : undefined,
+                    basic:
+                      typeof off.offerPrices.basic === "number"
+                        ? off.offerPrices.basic
+                        : undefined,
+                    standard:
+                      typeof off.offerPrices.standard === "number"
+                        ? off.offerPrices.standard
+                        : undefined,
+                    premium:
+                      typeof off.offerPrices.premium === "number"
+                        ? off.offerPrices.premium
+                        : undefined,
                   });
-                } else if (typeof off.offerPrice === 'number') {
+                } else if (typeof off.offerPrice === "number") {
                   // apply same price to all packages
-                  setOfferPriceMap({ basic: off.offerPrice, standard: off.offerPrice, premium: off.offerPrice });
+                  setOfferPriceMap({
+                    basic: off.offerPrice,
+                    standard: off.offerPrice,
+                    premium: off.offerPrice,
+                  });
                 }
               }
             }
           }
-        } catch { /* ignore offer override errors */ }
+        } catch {
+          /* ignore offer override errors */
+        }
 
         const reviewsResponse = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/reviews/${id}`
@@ -266,7 +301,12 @@ const SingleService = () => {
       // POST will either return existing conversation (200) or create new (201)
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/conversations`,
-        { buyerId, adminId, serviceId: service._id, serviceTitle: service.title },
+        {
+          buyerId,
+          adminId,
+          serviceId: service._id,
+          serviceTitle: service.title,
+        },
         { withCredentials: true }
       );
 
@@ -284,13 +324,22 @@ const SingleService = () => {
             coverImage: service.coverImage,
             savedAt: Date.now(),
           };
-          const merged = [item, ...prev.filter((g) => String(g.serviceId) !== String(item.serviceId))];
+          const merged = [
+            item,
+            ...prev.filter(
+              (g) => String(g.serviceId) !== String(item.serviceId)
+            ),
+          ];
           localStorage.setItem(key, JSON.stringify(merged));
-        } catch (err) { void err }
+        } catch (err) {
+          void err;
+        }
         // Persist on server as well
         try {
           await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/api/conversations/${response.data._id}/attach-service`,
+            `${import.meta.env.VITE_API_BASE_URL}/api/conversations/${
+              response.data._id
+            }/attach-service`,
             {
               serviceId: service._id,
               title: service.title,
@@ -299,8 +348,12 @@ const SingleService = () => {
             },
             { withCredentials: true }
           );
-        } catch (err) { void err }
-        navigate(`/messages/${response.data._id}`, { state: { serviceId: service._id, serviceTitle: service.title } });
+        } catch (err) {
+          void err;
+        }
+        navigate(`/messages/${response.data._id}`, {
+          state: { serviceId: service._id, serviceTitle: service.title },
+        });
       } else {
         // fallback: sometimes controller returns the conversation without _id structure
         toast.success("Conversation ready");
@@ -315,13 +368,22 @@ const SingleService = () => {
             coverImage: service.coverImage,
             savedAt: Date.now(),
           };
-          const merged = [item, ...prev.filter((g) => String(g.serviceId) !== String(item.serviceId))];
+          const merged = [
+            item,
+            ...prev.filter(
+              (g) => String(g.serviceId) !== String(item.serviceId)
+            ),
+          ];
           localStorage.setItem(key, JSON.stringify(merged));
-        } catch (err) { void err }
+        } catch (err) {
+          void err;
+        }
         // Persist on server as well
         try {
           await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/api/conversations/${id}/attach-service`,
+            `${
+              import.meta.env.VITE_API_BASE_URL
+            }/api/conversations/${id}/attach-service`,
             {
               serviceId: service._id,
               title: service.title,
@@ -330,8 +392,12 @@ const SingleService = () => {
             },
             { withCredentials: true }
           );
-        } catch (err) { void err }
-        navigate(`/messages/${id}`, { state: { serviceId: service._id, serviceTitle: service.title } });
+        } catch (err) {
+          void err;
+        }
+        navigate(`/messages/${id}`, {
+          state: { serviceId: service._id, serviceTitle: service.title },
+        });
       }
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -523,7 +589,10 @@ const SingleService = () => {
               {isAuthenticated && isEligibility ? (
                 <form onSubmit={handleReviewSubmit}>
                   <div className="flex items-center gap-4 mb-4">
-                    <label htmlFor="star" className="text-gray-700 dark:text-gray-300">
+                    <label
+                      htmlFor="star"
+                      className="text-gray-700 dark:text-gray-300"
+                    >
                       Your Rating:
                     </label>
                     <div className="flex gap-1 text-yellow-400">
@@ -673,15 +742,16 @@ const SingleService = () => {
                     </p>
 
                     <p className="text-xl md:text-2xl font-bold text-primaryRgb mb-2">
-                      {!isAuthenticated ? (
-                        <span className="text-primaryRgb font-medium">N/A</span>
-                      ) : ((offerPriceMap?.[selectedPackage]) ?? selectedPackageDetails.salePrice) > 0 ? (
+                      {(offerPriceMap?.[selectedPackage] ??
+                        selectedPackageDetails.salePrice) > 0 ? (
                         <>
                           <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                             ${selectedPackageDetails.regularPrice || "N/A"}
                           </span>{" "}
                           <span className="text-primaryRgb font-semibold">
-                            {((offerPriceMap?.[selectedPackage]) ?? selectedPackageDetails.salePrice) ?? "N/A"}
+                            {offerPriceMap?.[selectedPackage] ??
+                              selectedPackageDetails.salePrice ??
+                              "N/A"}
                           </span>
                         </>
                       ) : (
@@ -723,9 +793,10 @@ const SingleService = () => {
                       Final Price:{" "}
                       <span className="font-bold text-primaryRgb">
                         $
-                        {isAuthenticated
-                          ? ((((offerPriceMap?.[selectedPackage]) ?? selectedPackageDetails.salePrice) - discountAmount).toFixed(2))
-                          : "N/A"}
+                        {(
+                          (offerPriceMap?.[selectedPackage] ??
+                            selectedPackageDetails.salePrice) - discountAmount
+                        ).toFixed(2)}
                       </span>
                     </p>
                     {couponError && (
@@ -772,12 +843,18 @@ const SingleService = () => {
                     </div>
 
                     <button
-                      className={`bg-gray-700 text-sm md:text-base text-gray-300 py-2 px-4 rounded-md w-full transition-all ${contacting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-600'}`}
+                      className={`bg-gray-700 text-sm md:text-base text-gray-300 py-2 px-4 rounded-md w-full transition-all ${
+                        contacting
+                          ? "opacity-60 cursor-not-allowed"
+                          : "hover:bg-gray-600"
+                      }`}
                       onClick={handleContactClick}
                       disabled={contacting}
                       aria-busy={contacting}
                     >
-                      {contacting ? 'Opening conversation...' : 'Contact Seller'}
+                      {contacting
+                        ? "Opening conversation..."
+                        : "Contact Seller"}
                     </button>
                   </>
                 ) : (

@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Bell,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -9,7 +8,6 @@ import {
   Image,
   Layers,
   LogOut,
-  Mail,
   MessageCircle,
   MessageSquare,
   Package,
@@ -28,10 +26,8 @@ import placeholder from "../assets/user.png";
 import { handleLogout } from "../utils/authUtils";
 
 const AdminNavbar = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSidebarHidden, setIsSidebarHidden] = useState(false);
   const [profileImage, setProfileImage] = useState(placeholder);
-  const [hasNotifications, setHasNotifications] = useState(true);
   const [activePath, setActivePath] = useState("");
 
   const adminId = useSelector(
@@ -48,6 +44,10 @@ const AdminNavbar = () => {
   }, [location.pathname, adminId]);
 
   const logout = () => handleLogout(dispatch, navigate);
+
+  const toggleSidebar = () => {
+    setIsSidebarHidden(!isSidebarHidden);
+  };
 
   // Navigation items with icons
   const navItems = [
@@ -75,7 +75,7 @@ const AdminNavbar = () => {
           path: "/admin/services",
           label: "Services",
           icon: <Package className="w-5 h-5" />,
-          count: 15,
+          count: null,
         },
         {
           path: "/admin/add-blog",
@@ -87,7 +87,7 @@ const AdminNavbar = () => {
           path: "/admin/blogs",
           label: "Blogs",
           icon: <FileText className="w-5 h-5" />,
-          count: 8,
+          count: null,
         },
       ],
     },
@@ -104,7 +104,7 @@ const AdminNavbar = () => {
           path: "/admin/galleries",
           label: "Galleries",
           icon: <Image className="w-5 h-5" />,
-          count: 24,
+          count: null,
         },
         {
           path: "/admin/add-partners",
@@ -116,7 +116,7 @@ const AdminNavbar = () => {
           path: "/admin/partners",
           label: "Partners",
           icon: <Users className="w-5 h-5" />,
-          count: 12,
+          count: null,
         },
       ],
     },
@@ -127,19 +127,19 @@ const AdminNavbar = () => {
           path: "/admin/orders",
           label: "Orders",
           icon: <ShoppingBag className="w-5 h-5" />,
-          count: 8,
+          count: null,
         },
         {
           path: "/admin/coupons",
           label: "Coupons",
           icon: <Tag className="w-5 h-5" />,
-          count: 5,
+          count: null,
         },
         {
           path: "/admin/promotional-offers",
           label: "Offers",
           icon: <Gift className="w-5 h-5" />,
-          count: 3,
+          count: null,
         },
       ],
     },
@@ -147,22 +147,16 @@ const AdminNavbar = () => {
       category: "Communication",
       items: [
         {
-          path: "/admin/contact",
-          label: "Contact",
-          icon: <Mail className="w-5 h-5" />,
-          count: 12,
-        },
-        {
           path: "/admin/conversations",
           label: "Chats",
           icon: <MessageCircle className="w-5 h-5" />,
-          count: 5,
+          count: null,
         },
         {
           path: "/admin/review",
           label: "Reviews",
           icon: <Star className="w-5 h-5" />,
-          count: 24,
+          count: null,
         },
       ],
     },
@@ -173,7 +167,7 @@ const AdminNavbar = () => {
           path: "/admin/projects",
           label: "Projects",
           icon: <BarChart3 className="w-5 h-5" />,
-          count: 6,
+          count: null,
         },
       ],
     },
@@ -199,62 +193,36 @@ const AdminNavbar = () => {
 
   return (
     <>
-      {/* Fixed Sidebar */}
+      {/* Single Toggle Button - Always Visible */}
+      <button
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 p-2.5 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
+      >
+        {isSidebarHidden ? (
+          <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+        ) : (
+          <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+        )}
+      </button>
+
+      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 z-50 flex flex-col ${
-          isSidebarCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 z-40 flex flex-col transform ${
+          isSidebarHidden ? "-translate-x-full" : "translate-x-0"
+        } w-64 shadow-xl`}
       >
         {/* Logo Section */}
-        <div
-          className={`p-4 border-b border-gray-200 dark:border-gray-800 ${
-            isSidebarCollapsed ? "flex justify-center" : ""
-          }`}
-        >
-          <div
-            className={`flex items-center ${
-              isSidebarCollapsed ? "justify-center" : "justify-between"
-            }`}
-          >
-            {!isSidebarCollapsed && (
-              <Link to="/admin" className="flex items-center space-x-3">
-                <img src={Logo} alt="Logo" className="h-8 w-auto" />
-                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Admin
-                </span>
-              </Link>
-            )}
-
-            {isSidebarCollapsed && (
-              <Link to="/admin">
-                <img src={Logo} alt="Logo" className="h-8 w-auto" />
-              </Link>
-            )}
-
-            <button
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              {isSidebarCollapsed ? (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              ) : (
-                <ChevronLeft className="w-4 h-4 text-gray-500" />
-              )}
-            </button>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between">
+            <Link to="/admin" className="flex items-center space-x-3">
+              <img src={Logo} alt="Logo" className="h-8 w-auto" />
+            </Link>
           </div>
         </div>
 
         {/* User Profile Section */}
-        <div
-          className={`p-4 border-b border-gray-200 dark:border-gray-800 ${
-            isSidebarCollapsed ? "flex justify-center" : ""
-          }`}
-        >
-          <div
-            className={`flex items-center ${
-              isSidebarCollapsed ? "justify-center" : "space-x-3"
-            }`}
-          >
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center space-x-3">
             <div className="relative">
               <img
                 src={profileImage}
@@ -263,26 +231,14 @@ const AdminNavbar = () => {
               />
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
             </div>
-
-            {!isSidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
-                  Admin User
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  admin@example.com
-                </p>
-              </div>
-            )}
-
-            {!isSidebarCollapsed && (
-              <button className="relative">
-                <Bell className="w-5 h-5 text-gray-500" />
-                {hasNotifications && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
-            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                Admin
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Administrator
+              </p>
+            </div>
           </div>
         </div>
 
@@ -290,25 +246,19 @@ const AdminNavbar = () => {
         <div className="flex-1 overflow-y-auto py-4">
           {navItems.map((category, idx) => (
             <div key={idx} className="mb-6">
-              {!isSidebarCollapsed && (
-                <h3 className="px-4 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {category.category}
-                </h3>
-              )}
+              <h3 className="px-4 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {category.category}
+              </h3>
 
               <div className="space-y-1">
                 {category.items.map((item) => (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center mx-2 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center justify-between mx-2 rounded-lg px-4 py-3 transition-all duration-200 ${
                       activePath === item.path
                         ? "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700/50"
                         : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                    } ${
-                      isSidebarCollapsed
-                        ? "justify-center p-3"
-                        : "justify-between px-4 py-3"
                     }`}
                     onClick={() => setActivePath(item.path)}
                   >
@@ -322,21 +272,18 @@ const AdminNavbar = () => {
                       >
                         {item.icon}
                       </div>
-
-                      {!isSidebarCollapsed && (
-                        <span
-                          className={`text-sm font-medium ${
-                            activePath === item.path
-                              ? "text-blue-600 dark:text-blue-400"
-                              : "text-gray-700 dark:text-gray-300"
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                      )}
+                      <span
+                        className={`text-sm font-medium ${
+                          activePath === item.path
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
                     </div>
 
-                    {!isSidebarCollapsed && item.count !== null && (
+                    {item.count !== null && (
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                           activePath === item.path
@@ -360,62 +307,34 @@ const AdminNavbar = () => {
             <Link
               key={action.path}
               to={action.path}
-              className={`flex items-center rounded-lg p-3 transition-colors ${
-                isSidebarCollapsed ? "justify-center" : "space-x-3"
-              } hover:bg-gray-100 dark:hover:bg-gray-800`}
+              className="flex items-center space-x-3 rounded-lg p-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <div className="text-gray-500 dark:text-gray-400">
                 {action.icon}
               </div>
-              {!isSidebarCollapsed && (
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {action.label}
-                </span>
-              )}
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {action.label}
+              </span>
             </Link>
           ))}
 
           <button
             onClick={logout}
-            className={`flex items-center rounded-lg p-3 transition-colors w-full ${
-              isSidebarCollapsed ? "justify-center" : "space-x-3"
-            } hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400`}
+            className="flex items-center space-x-3 rounded-lg p-3 transition-colors w-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
           >
             <LogOut className="w-5 h-5" />
-            {!isSidebarCollapsed && (
-              <span className="text-sm font-medium">Logout</span>
-            )}
+            <span className="text-sm font-medium">Logout</span>
           </button>
         </div>
       </aside>
 
-      {/* Collapsed sidebar overlay for mobile */}
-      {isSidebarCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
-          onClick={() => setIsSidebarCollapsed(false)}
-        ></div>
-      )}
-
-      {/* Main Content Area with padding for sidebar */}
+      {/* Main Content Area with padding */}
       <div
         className={`transition-all duration-300 ${
-          isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
+          isSidebarHidden ? "pl-4" : "pl-64"
         }`}
       >
-        {/* Optional: You can add a top bar here if needed */}
-        {/* <div className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
-                Dashboard Overview
-              </h1>
-              <div className="flex items-center space-x-4">
-                {/* Add any top bar content here * /}
-              </div>
-            </div>
-          </div>
-        </div> */}
+        {/* Content will be rendered here */}
       </div>
     </>
   );

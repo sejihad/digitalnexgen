@@ -1,14 +1,14 @@
 import { useSelector } from "react-redux";
 // import FloatingMessageButton from "./components/FloatingMessageButton";
-import Spinner from "./components/Spinner";
-import AppRoutes from "./routes/AppRoutes";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
 import OfferModal from "./components/OfferModal";
+import Spinner from "./components/Spinner";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
- const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const navigate = useNavigate();
 
   const handleContactClick = () => {
@@ -19,7 +19,7 @@ function App() {
     // Navigate to a default chat with Admin
     navigate(`/messages/admin`);
   };
-  
+
   return (
     <div className="dark:bg-black ">
       <Spinner />

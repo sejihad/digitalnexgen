@@ -183,11 +183,6 @@ const Overview = () => {
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                  +12%
-                </span>
-              </div>
             </div>
             <div className="mt-4">
               <p className="text-3xl md:text-4xl font-bold text-gray-800">
@@ -225,11 +220,6 @@ const Overview = () => {
                   </h3>
                   <p className="text-xs text-gray-500">Customer interactions</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                  +8%
-                </span>
               </div>
             </div>
             <div className="mt-4">
@@ -272,11 +262,6 @@ const Overview = () => {
                     Completed transactions
                   </p>
                 </div>
-              </div>
-              <div className="text-right">
-                <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                  +24%
-                </span>
               </div>
             </div>
             <div className="mt-4">

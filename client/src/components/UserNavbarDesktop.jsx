@@ -77,7 +77,7 @@ const UserNavbar = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <div className="w-full bg-transparent lg:px-6  py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center  relative z-50">
+    <div className="w-full bg-transparent   py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center  relative z-50">
       <Link to="/">
         <img src={Logo} alt="Logo" className="h-15 w-60 cursor-pointer z-50" />
       </Link>
@@ -249,7 +249,7 @@ const UserNavbar = () => {
           to="/chat"
           className="text-primaryText hover:text-primaryRgb flex flex-col items-center"
         >
-          <MessageSquare size={20} />
+          <MessageSquare size={30} />
           <span className="text-xs">Messages</span>
         </Link>
 
