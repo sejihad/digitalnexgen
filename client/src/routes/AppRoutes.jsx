@@ -66,6 +66,7 @@ import SingleService from "../pages/SingleService";
 import SubCategory from "../pages/SubCategory";
 import TermsAndConditions from "../pages/TermsAndConditions";
 import UpdatePassword from "../pages/UpdatePassword";
+import UserEmails from "../pages/UserEmails";
 import VideoAnimation from "../pages/VideoAnimation";
 import WritingTranslation from "../pages/WritingTranslation";
 import ProtectedRoute from "./ProtectedRoute";
@@ -216,6 +217,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="add-blog" element={<AddBlog />} />
           <Route path="blogs" element={<AdminBlogs />} />
           <Route path="blogs/edit/:id" element={<EditBlog />} />
+          <Route path="emails" element={<UserEmails />} />
           <Route path="add-partners" element={<AddPartner />} />
           <Route path="partners" element={<AdminPartners />} />
           <Route path="partners/edit/:id" element={<EditPartner />} />

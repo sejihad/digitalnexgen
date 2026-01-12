@@ -46,7 +46,11 @@ export const updateUser = async (req, res, next) => {
     if (typeof req.body.phone === "string") {
       const ph = req.body.phone.trim();
       if (ph && !/^\+\d{7,15}$/.test(ph)) {
-        return res.status(400).send("Invalid phone format. Use +countrycode followed by 7-15 digits.");
+        return res
+          .status(400)
+          .send(
+            "Invalid phone format. Use +countrycode followed by 7-15 digits."
+          );
       }
       if (ph) user.phone = ph;
     }
@@ -79,7 +83,13 @@ export const getUserByUsername = async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) return res.status(404).send("User not found");
 
-    const { password, resetPasswordToken, resetPasswordExpiry, __v, ...publicData } = user._doc;
+    const {
+      password,
+      resetPasswordToken,
+      resetPasswordExpiry,
+      __v,
+      ...publicData
+    } = user._doc;
     return res.status(200).json(publicData);
   } catch {
     return res.status(500).send("Something went wrong!");
@@ -91,11 +101,16 @@ export const checkUsernameAvailability = async (req, res) => {
   try {
     const raw = String(req.query.username || "");
     const username = raw.trim().toLowerCase();
-    if (!username) return res.status(400).json({ available: false, reason: "Username is required" });
+    if (!username)
+      return res
+        .status(400)
+        .json({ available: false, reason: "Username is required" });
 
     // Basic allowlist: letters, numbers, underscore, dot, dash; 3-24 chars
     if (!/^[a-z0-9._-]{3,24}$/.test(username)) {
-      return res.status(400).json({ available: false, reason: "Invalid username format" });
+      return res
+        .status(400)
+        .json({ available: false, reason: "Invalid username format" });
     }
 
     const exists = await User.exists({ username });
@@ -120,7 +135,13 @@ export const updateUsername = async (req, res, next) => {
 
     // If unchanged
     if (nextUsername === user.username) {
-      const { password, resetPasswordToken, resetPasswordExpiry, __v, ...publicData } = user._doc;
+      const {
+        password,
+        resetPasswordToken,
+        resetPasswordExpiry,
+        __v,
+        ...publicData
+      } = user._doc;
       return res.status(200).json(publicData);
     }
 
@@ -131,9 +152,40 @@ export const updateUsername = async (req, res, next) => {
     user.username = nextUsername;
     const saved = await user.save();
 
-    const { password, resetPasswordToken, resetPasswordExpiry, __v, ...publicData } = saved._doc;
+    const {
+      password,
+      resetPasswordToken,
+      resetPasswordExpiry,
+      __v,
+      ...publicData
+    } = saved._doc;
     return res.status(200).json(publicData);
   } catch (error) {
     return res.status(500).send("Something went wrong!");
+  }
+};
+
+export const getUsers = async (req, res) => {
+  try {
+    // 🔐 Admin check
+    if (!req.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only.",
+      });
+    }
+
+    const users = await User.find();
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong!",
+    });
   }
 };

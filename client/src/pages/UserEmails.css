@@ -1,0 +1,101 @@
+.email-list-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.email-list-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  background-color: #f9fafb;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.email-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.email-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.email-item:hover {
+  background-color: #f9fafb;
+}
+
+.email-item:last-child {
+  border-bottom: none;
+}
+
+.email-text {
+  color: #374151;
+  font-family: monospace;
+}
+
+.copy-btn,
+.send-btn {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.copy-btn:hover {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.send-btn:hover {
+  background-color: #10b981;
+  color: white;
+}
+
+/* Scrollbar Styling */
+.email-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.email-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.email-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.email-list::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Modal Animation */
+.modal-enter {
+  animation: modalEnter 0.3s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* File Upload Drag & Drop */
+.file-upload-area.drag-over {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}

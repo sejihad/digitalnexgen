@@ -212,12 +212,12 @@ const OfferModal = () => {
                 <span>Limited Time Only</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                {latestOffer?.title || "Special Offer Just for You!"}
+                {latestOffer?.title}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Get up to{" "}
                 <span className="text-primaryRgb font-bold text-lg">
-                  {latestOffer?.discount || "Limited Discount"}
+                  {latestOffer?.discount}
                 </span>{" "}
                 on premium services
               </p>
@@ -260,7 +260,7 @@ const OfferModal = () => {
 
             {/* Features */}
             <div className="space-y-1.5 mb-4">
-              {(latestOffer?.features || []).slice(0, 3).map((feature, idx) => (
+              {(latestOffer?.features).slice(0, 3).map((feature, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"

@@ -8,6 +8,7 @@ import {
   Image,
   Layers,
   LogOut,
+  Mail,
   MessageCircle,
   MessageSquare,
   Package,
@@ -150,6 +151,12 @@ const AdminNavbar = () => {
           path: "/admin/conversations",
           label: "Chats",
           icon: <MessageCircle className="w-5 h-5" />,
+          count: null,
+        },
+        {
+          path: "/admin/emails",
+          label: "Emails",
+          icon: <Mail className="w-5 h-5" />,
           count: null,
         },
         {
