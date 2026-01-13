@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const OfferModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [latestOffer, setLatestOffer] = useState(null);
+  const [hasOffer, setHasOffer] = useState(false); // নতুন state
 
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -35,6 +36,7 @@ const OfferModal = () => {
 
         if (res.data) {
           setLatestOffer(res.data);
+          setHasOffer(true); // Offer আছে
 
           const end = new Date(res.data.endDate).getTime();
           setOfferEndTime(end);
@@ -42,9 +44,18 @@ const OfferModal = () => {
           try {
             sessionStorage.setItem("offerEndTime", String(end));
           } catch {}
+        } else {
+          setHasOffer(false); // Offer নেই
+          try {
+            sessionStorage.removeItem("offerEndTime");
+          } catch {}
         }
       } catch (err) {
         console.error("Failed to fetch latest offer", err);
+        setHasOffer(false); // Error হলেও offer নেই
+        try {
+          sessionStorage.removeItem("offerEndTime");
+        } catch {}
       }
     };
 
@@ -64,12 +75,14 @@ const OfferModal = () => {
           // ignore
         }
         setOfferEndTime(null);
+        setHasOffer(false); // offer নেই
         setIsOpen(false);
         return;
       }
 
       if (e?.detail?.offerEndTime) {
         setOfferEndTime(Number(e.detail.offerEndTime));
+        setHasOffer(true); // offer আছে
         try {
           sessionStorage.setItem("offerEndTime", String(e.detail.offerEndTime));
         } catch {
@@ -88,6 +101,11 @@ const OfferModal = () => {
     : null;
 
   useEffect(() => {
+    // Don't show modal if no active offer
+    if (!hasOffer) {
+      return;
+    }
+
     // Don't show modal on admin routes or when already on the offers page
     if (
       location.pathname.startsWith("/admin") ||
@@ -114,10 +132,10 @@ const OfferModal = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [location.pathname, offerEndTime]);
+  }, [location.pathname, offerEndTime, hasOffer]); // hasOffer dependency যোগ করুন
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !hasOffer) return;
 
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
@@ -135,6 +153,7 @@ const OfferModal = () => {
       } else {
         // Ensure the timer shows zeros when the offer is expired
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        setHasOffer(false); // offer expire হয়ে গেছে
         // Optionally close modal when expired
         // setIsOpen(false);
       }
@@ -144,7 +163,7 @@ const OfferModal = () => {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen, offerEndTime]);
+  }, [isOpen, offerEndTime, hasOffer]);
 
   const handleClose = () => {
     // Mark modal as shown for this session so it doesn't reappear
@@ -167,7 +186,8 @@ const OfferModal = () => {
     navigate("/special-offers");
   };
 
-  if (!isOpen) return null;
+  // যদি offer না থাকে বা modal open না থাকে, কিছু দেখাবো না
+  if (!isOpen || !hasOffer || !latestOffer) return null;
 
   return (
     <>
@@ -212,12 +232,12 @@ const OfferModal = () => {
                 <span>Limited Time Only</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                {latestOffer?.title}
+                {latestOffer?.title || "Special Offer"}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Get up to{" "}
                 <span className="text-primaryRgb font-bold text-lg">
-                  {latestOffer?.discount}
+                  {latestOffer?.discount || "50%"}
                 </span>{" "}
                 on premium services
               </p>
@@ -260,7 +280,7 @@ const OfferModal = () => {
 
             {/* Features */}
             <div className="space-y-1.5 mb-4">
-              {(latestOffer?.features).slice(0, 3).map((feature, idx) => (
+              {latestOffer?.features?.slice(0, 3).map((feature, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"
