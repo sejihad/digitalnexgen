@@ -2,8 +2,11 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import http from "http"; // <-- add this
 import mongoose from "mongoose";
 import passport from "passport";
+import { Server } from "socket.io"; // <-- add this
+
 import { stripeWebhook } from "./controllers/stripe.controller.js";
 import authRoute from "./routes/auth.route.js";
 import blogRoute from "./routes/blog.route.js";
@@ -28,11 +31,14 @@ import { connectPassport } from "./utils/passport.js";
 dotenv.config();
 
 const app = express();
+
+// Stripe webhook
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhook
 );
+
 const allowedOrigins = [
   "https://digitalnexgen.co",
   "https://www.digitalnexgen.co",
@@ -42,21 +48,18 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    optionsSuccessStatus: 200,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
 connectPassport();
 app.use(passport.initialize());
-
 app.use(express.json());
 app.use(cookieParser());
-// app.use(express.json({ verify: (req, res, buf) => (req.rawBody = buf) }));
 
+// Routes
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/services", serviceRoute);
@@ -66,7 +69,6 @@ app.use("/api/messages", messageRoute);
 app.use("/api/reviews", reviewRoute);
 app.use("/api/blogs", blogRoute);
 app.use("/api/partners", partnerRoute);
-
 app.use("/api/newsletters", newsletterRought);
 app.use("/api/projects", projectRoute);
 app.use("/api/offers", offerRoute);
@@ -77,12 +79,14 @@ app.use("/api/paypal", paypalRoute);
 app.use("/api/coupon", couponRoute);
 app.use("/api/contact", contactRoute);
 
+// Error handler
 app.use((err, req, res, next) => {
   const errorStatus = err.status || 500;
   const errorMessage = err.message || "Something went wrong!";
   return res.status(errorStatus).send(errorMessage);
 });
 
+// DB connect
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_DB_URI);
@@ -92,11 +96,43 @@ const connectDB = async () => {
   }
 };
 
-const PORT = process.env.PORT || 8800;
-app.get("/", (req, res) => {
-  res.send("API IS WORKING");
+// --- Socket.IO setup ---
+const httpServer = http.createServer(app); // <-- use HTTP server
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
-app.listen(PORT, () => {
+
+// Simple Socket.IO example
+io.on("connection", (socket) => {
+  console.log("✅ Socket connected:", socket.id);
+
+  // Join conversation room
+  socket.on("conversation:join", (conversationId) => {
+    socket.join(conversationId);
+    console.log(`User joined room: ${conversationId}`);
+  });
+
+  // Send message
+  socket.on("message:send", ({ conversationId, message }) => {
+    console.log("Message sent to room", conversationId, message);
+    // Broadcast to all in room except sender
+    socket
+      .to(conversationId)
+      .emit("message:receive", { conversationId, message });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ Socket disconnected:", socket.id);
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 8800;
+httpServer.listen(PORT, () => {
   connectDB();
   console.log(`Backend server is running on port ${PORT}...`);
 });

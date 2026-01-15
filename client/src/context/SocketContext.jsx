@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { io } from "socket.io-client";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { io } from "socket.io-client";
 
-const SocketContext = createContext();
+const SocketContext = createContext(null);
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
@@ -17,40 +17,36 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
-  
+
   const currentUser = useSelector((state) => state.auth.user);
+  // ধরছি: currentUser.token এ JWT আছে
 
   useEffect(() => {
-    if (!currentUser?._id) {
-      // Disconnect if user logs out
+    // user logout হলে socket বন্ধ
+    if (!currentUser?.token) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
-        setIsConnected(false);
-        setOnlineUsers([]);
       }
+      setOnlineUsers([]);
+      setIsConnected(false);
       return;
     }
 
-    // Connect to Socket.IO server
-    const newSocket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:8800", {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-      timeout: 20000,
-      forceNew: true,
-    });
+    // socket connect
+    const newSocket = io(
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:8800",
+      {
+        withCredentials: true,
+      }
+    );
 
     newSocket.on("connect", () => {
       console.log("✅ Socket connected:", newSocket.id);
       setIsConnected(true);
 
-      // Join with user ID
-      newSocket.emit("user:join", currentUser._id);
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error);
-      setIsConnected(false);
+      // 🔑 backend token expect করে
+      newSocket.emit("user:join", currentUser.token);
     });
 
     newSocket.on("disconnect", (reason) => {
@@ -58,35 +54,53 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
     });
 
-    // Listen for online users
+    newSocket.on("connect_error", (err) => {
+      console.error("❌ Socket error:", err.message);
+      setIsConnected(false);
+    });
+
+    // online users list
     newSocket.on("users:online", (users) => {
       setOnlineUsers(users);
-      console.log("👥 Online users:", users);
     });
 
     setSocket(newSocket);
 
-    // Cleanup on unmount or user change
+    // cleanup
     return () => {
-      newSocket.close();
+      newSocket.disconnect();
     };
-  }, [currentUser?._id]); // Only depend on currentUser._id
+  }, [currentUser?.token]);
 
-  const sendMessage = (data) => {
+  /* =========================
+     SOCKET HELPERS
+  ==========================*/
+
+  const joinConversation = (conversationId) => {
     if (socket && isConnected) {
-      socket.emit("message:send", data);
+      socket.emit("conversation:join", conversationId);
+    }
+  };
+
+  const sendMessage = ({ conversationId, receiverId, message }) => {
+    if (socket && isConnected) {
+      socket.emit("message:send", {
+        conversationId,
+        receiverId,
+        message,
+      });
     }
   };
 
   const startTyping = (conversationId) => {
-    if (socket && isConnected && currentUser) {
-      socket.emit("typing:start", { conversationId, userId: currentUser._id });
+    if (socket && isConnected) {
+      socket.emit("typing:start", { conversationId });
     }
   };
 
   const stopTyping = (conversationId) => {
-    if (socket && isConnected && currentUser) {
-      socket.emit("typing:stop", { conversationId, userId: currentUser._id });
+    if (socket && isConnected) {
+      socket.emit("typing:stop", { conversationId });
     }
   };
 
@@ -96,6 +110,7 @@ export const SocketProvider = ({ children }) => {
         socket,
         isConnected,
         onlineUsers,
+        joinConversation,
         sendMessage,
         startTyping,
         stopTyping,

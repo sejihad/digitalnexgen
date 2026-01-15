@@ -7,7 +7,9 @@ dotenv.config();
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 let stripe = null;
 if (!stripeSecret) {
-  console.warn("[stripe] Missing STRIPE_SECRET_KEY. Stripe routes will be disabled.");
+  console.warn(
+    "[stripe] Missing STRIPE_SECRET_KEY. Stripe routes will be disabled."
+  );
 } else {
   stripe = new Stripe(stripeSecret);
 }
@@ -15,12 +17,13 @@ if (!stripeSecret) {
 export const createCheckoutSession = async (req, res, next) => {
   try {
     if (!stripe) {
-      return res.status(503).json({ message: "Stripe not configured on server" });
+      return res
+        .status(503)
+        .json({ message: "Stripe not configured on server" });
     }
     const { title, price, name, serviceId } = req.body;
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
       success_url: `${process.env.CLIENT_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_BASE_URL}/payment-cancel`,
@@ -47,7 +50,6 @@ export const createCheckoutSession = async (req, res, next) => {
   } catch (err) {
     console.log("❌ Error creating checkout session:", err);
     next(err);
-   
   }
 };
 
@@ -57,7 +59,6 @@ export const stripeWebhook = async (req, res) => {
   }
   const sig = req.headers["stripe-signature"];
   if (!sig) {
-   
     return res.status(400).send("Missing signature");
   }
 
@@ -84,7 +85,6 @@ export const stripeWebhook = async (req, res) => {
       });
 
       if (existingOrder) {
-
         return res.status(200).send("Order already created.");
       }
 
@@ -119,7 +119,6 @@ export const stripeWebhook = async (req, res) => {
       });
 
       await newOrder.save();
-     
     } catch (err) {
       console.error("❌ Order creation failed:", err);
       return res.status(500).send("Internal server error");

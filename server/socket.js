@@ -1,6 +1,8 @@
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-const activeUsers = new Map(); // Store active users: userId -> socketId
+// userId -> Set of socketIds (multi device / tab support)
+const activeUsers = new Map();
 
 export const initializeSocket = (httpServer, allowedOrigins) => {
   const io = new Server(httpServer, {
@@ -12,56 +14,98 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("✅ User connected:", socket.id);
+    console.log("✅ Socket connected:", socket.id);
 
-    // User joins with their ID
-    socket.on("user:join", (userId) => {
-      activeUsers.set(userId, socket.id);
-      console.log(`User ${userId} joined with socket ${socket.id}`);
-      
-      // Broadcast online users
-      io.emit("users:online", Array.from(activeUsers.keys()));
-    });
+    /* =========================
+       USER AUTH & JOIN
+    ==========================*/
+    socket.on("user:join", (token) => {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Send message
-    socket.on("message:send", (data) => {
-      const { conversationId, receiverId, message } = data;
-      
-      // Send to specific user if online
-      const receiverSocketId = activeUsers.get(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("message:receive", {
-          conversationId,
-          message,
-        });
-      }
-      
-      // Also send back to sender for confirmation
-      socket.emit("message:sent", { success: true, message });
-    });
+        socket.userId = decoded.id;
 
-    // Typing indicator
-    socket.on("typing:start", ({ conversationId, userId }) => {
-      socket.broadcast.emit("typing:update", { conversationId, userId, isTyping: true });
-    });
+        // join personal room (important)
+        socket.join(`user:${decoded.id}`);
 
-    socket.on("typing:stop", ({ conversationId, userId }) => {
-      socket.broadcast.emit("typing:update", { conversationId, userId, isTyping: false });
-    });
-
-    // User disconnects
-    socket.on("disconnect", () => {
-      // Remove user from active users
-      for (const [userId, socketId] of activeUsers.entries()) {
-        if (socketId === socket.id) {
-          activeUsers.delete(userId);
-          console.log(`User ${userId} disconnected`);
-          break;
+        // store active users (multi socket)
+        if (!activeUsers.has(decoded.id)) {
+          activeUsers.set(decoded.id, new Set());
         }
+        activeUsers.get(decoded.id).add(socket.id);
+
+        // broadcast online users
+        io.emit("users:online", [...activeUsers.keys()]);
+
+        console.log(`👤 User ${decoded.id} joined`);
+      } catch (err) {
+        console.log("❌ Invalid token, disconnecting socket");
+        socket.disconnect(true);
       }
-      
-      // Broadcast updated online users
-      io.emit("users:online", Array.from(activeUsers.keys()));
+    });
+
+    /* =========================
+       JOIN CONVERSATION ROOM
+    ==========================*/
+    socket.on("conversation:join", (conversationId) => {
+      socket.join(conversationId);
+    });
+
+    /* =========================
+       SEND MESSAGE (REALTIME)
+       (Message should be saved
+        via REST API first)
+    ==========================*/
+    socket.on("message:send", ({ conversationId, receiverId, message }) => {
+      if (!socket.userId) return;
+
+      io.to(`user:${receiverId}`).emit("message:receive", {
+        conversationId,
+        message,
+        senderId: socket.userId,
+      });
+
+      // optional confirmation
+      socket.emit("message:sent", {
+        success: true,
+        message,
+      });
+    });
+
+    /* =========================
+       TYPING INDICATOR
+    ==========================*/
+    socket.on("typing:start", ({ conversationId }) => {
+      socket.to(conversationId).emit("typing:update", {
+        conversationId,
+        userId: socket.userId,
+        isTyping: true,
+      });
+    });
+
+    socket.on("typing:stop", ({ conversationId }) => {
+      socket.to(conversationId).emit("typing:update", {
+        conversationId,
+        userId: socket.userId,
+        isTyping: false,
+      });
+    });
+
+    /* =========================
+       DISCONNECT
+    ==========================*/
+    socket.on("disconnect", () => {
+      if (socket.userId && activeUsers.has(socket.userId)) {
+        const sockets = activeUsers.get(socket.userId);
+        sockets.delete(socket.id);
+
+        if (sockets.size === 0) {
+          activeUsers.delete(socket.userId);
+        }
+
+        io.emit("users:online", [...activeUsers.keys()]);
+        console.log(`❌ User ${socket.userId} disconnected`);
+      }
     });
   });
 

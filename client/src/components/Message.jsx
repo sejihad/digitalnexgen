@@ -2,6 +2,7 @@ import axios from "axios";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import { io } from "socket.io-client";
 
 const Message = ({ conversationId }) => {
   const location = useLocation();
@@ -10,6 +11,7 @@ const Message = ({ conversationId }) => {
   const { id: routeId } = useParams();
   const [conversation, setConversation] = useState({ messages: [] });
   const [offers, setOffers] = useState([]);
+  const [socket, setSocket] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [newOffer, setNewOffer] = useState({
     description: "",
@@ -23,41 +25,120 @@ const Message = ({ conversationId }) => {
   const [savedGigs, setSavedGigs] = useState([]);
   const [headerName, setHeaderName] = useState("");
   const [headerUser, setHeaderUser] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
+  const [isTypingVisible, setIsTypingVisible] = useState(false);
 
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user")) || {};
   const meId = String(currentUser.id || currentUser._id || "");
   const buyerId = conversation?.buyerId ? String(conversation.buyerId) : "";
   const sellerId = conversation?.sellerId ? String(conversation.sellerId) : "";
   const adminId = conversation?.adminId ? String(conversation.adminId) : "";
+
   // Admin should always see the buyer's name in header
   const counterpartId = isAdmin
-    ? (buyerId && buyerId !== meId ? buyerId : buyerId)
-    : ((sellerId && sellerId !== meId) ? sellerId : (adminId && adminId !== meId ? adminId : sellerId || adminId || buyerId || ""));
+    ? buyerId && buyerId !== meId
+      ? buyerId
+      : buyerId
+    : sellerId && sellerId !== meId
+    ? sellerId
+    : adminId && adminId !== meId
+    ? adminId
+    : sellerId || adminId || buyerId || "";
+
   // derive isAdmin once from stored user to avoid effect dependency churn
   useEffect(() => {
     setIsAdmin(currentUser?.isAdmin);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Socket connection
+  useEffect(() => {
+    const s = io(import.meta.env.VITE_API_BASE_URL, {
+      withCredentials: true,
+    });
+
+    const token = localStorage.getItem("token");
+    if (token) s.emit("user:join", token);
+
+    // join conversation room
+    if (conversationId || routeId) {
+      s.emit("conversation:join", conversationId || routeId);
+    }
+
+    setSocket(s);
+
+    return () => {
+      s.disconnect();
+    };
+  }, [conversationId, routeId]);
+
+  // Socket listeners for messages and typing
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = (data) => {
+      if (data.conversationId === (conversationId || routeId)) {
+        setConversation((prev) => ({
+          ...prev,
+          messages: [...prev.messages, data.message],
+        }));
+      }
+    };
+
+    const handleTyping = (data) => {
+      if (data.conversationId === (conversationId || routeId)) {
+        setIsTypingVisible(data.isTyping);
+        if (data.isTyping) {
+          const timer = setTimeout(() => {
+            setIsTypingVisible(false);
+          }, 3000);
+          setTypingTimeout(timer);
+        }
+      }
+    };
+
+    socket.on("message:receive", handleMessage);
+    socket.on("typing:update", handleTyping);
+
+    return () => {
+      socket.off("message:receive", handleMessage);
+      socket.off("typing:update", handleTyping);
+      if (typingTimeout) clearTimeout(typingTimeout);
+    };
+  }, [socket, conversationId, routeId]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversation.messages, offers, isTypingVisible]);
+
+  // Fetch conversation data
   useEffect(() => {
     const fetchConversation = async () => {
       try {
         const conversationRes = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/conversations/single/${conversationId || routeId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/conversations/single/${
+            conversationId || routeId
+          }`,
           { withCredentials: true }
         );
 
         if (conversationRes.data) {
           const messageRes = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/messages/${conversationId || routeId}`,
+            `${import.meta.env.VITE_API_BASE_URL}/api/messages/${
+              conversationId || routeId
+            }`,
             { withCredentials: true }
           );
 
           const offersRes = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/offers?conversationId=${conversationId || routeId}`,
+            `${import.meta.env.VITE_API_BASE_URL}/api/offers?conversationId=${
+              conversationId || routeId
+            }`,
             { withCredentials: true }
           );
 
@@ -66,13 +147,17 @@ const Message = ({ conversationId }) => {
             ...conversationRes.data,
             messages: messageRes.data || [],
           });
-          // Merge server-linkedServices into savedGigs (and localStorage) for cross-device persistence
-          const serverLinked = Array.isArray(conversationRes.data.linkedServices) ? conversationRes.data.linkedServices : [];
+
+          // Merge server-linkedServices
+          const serverLinked = Array.isArray(
+            conversationRes.data.linkedServices
+          )
+            ? conversationRes.data.linkedServices
+            : [];
           if (serverLinked.length > 0) {
             const key = `conv_gigs_${conversationId || routeId}`;
             try {
               const prev = JSON.parse(localStorage.getItem(key) || "[]");
-              // normalize server items to local shape
               const normalized = serverLinked.map((s) => ({
                 serviceId: String(s.serviceId),
                 title: s.title,
@@ -80,17 +165,29 @@ const Message = ({ conversationId }) => {
                 coverImage: s.coverImage,
                 savedAt: s.savedAt ? new Date(s.savedAt).getTime() : Date.now(),
               }));
-              const merged = [...normalized, ...prev.filter((g) => !normalized.some((n) => String(n.serviceId) === String(g.serviceId)))];
+              const merged = [
+                ...normalized,
+                ...prev.filter(
+                  (g) =>
+                    !normalized.some(
+                      (n) => String(n.serviceId) === String(g.serviceId)
+                    )
+                ),
+              ];
               localStorage.setItem(key, JSON.stringify(merged));
               setSavedGigs(merged);
             } catch {
-              setSavedGigs(serverLinked.map((s) => ({
-                serviceId: String(s.serviceId),
-                title: s.title,
-                subCategory: s.subCategory,
-                coverImage: s.coverImage,
-                savedAt: s.savedAt ? new Date(s.savedAt).getTime() : Date.now(),
-              })));
+              setSavedGigs(
+                serverLinked.map((s) => ({
+                  serviceId: String(s.serviceId),
+                  title: s.title,
+                  subCategory: s.subCategory,
+                  coverImage: s.coverImage,
+                  savedAt: s.savedAt
+                    ? new Date(s.savedAt).getTime()
+                    : Date.now(),
+                }))
+              );
             }
           }
         }
@@ -102,12 +199,15 @@ const Message = ({ conversationId }) => {
     fetchConversation();
   }, [conversationId, routeId]);
 
-  // Fetch counterpart username for header display
+  // Fetch counterpart username
   useEffect(() => {
     const loadName = async () => {
       try {
         if (!counterpartId) return;
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/users/${counterpartId}`, { withCredentials: true });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/users/${counterpartId}`,
+          { withCredentials: true }
+        );
         const u = res?.data || {};
         const display = u.fullName || u.name || u.username || "";
         if (display) setHeaderName(display);
@@ -119,7 +219,7 @@ const Message = ({ conversationId }) => {
     loadName();
   }, [counterpartId]);
 
-  // Load previously saved gig cards for this conversation (localStorage)
+  // Load saved gigs from localStorage
   useEffect(() => {
     const key = `conv_gigs_${conversationId || routeId}`;
     try {
@@ -130,17 +230,21 @@ const Message = ({ conversationId }) => {
     }
   }, [conversationId, routeId]);
 
-  // Load gig details if we have a serviceId from state or conversation
+  // Load gig details
   useEffect(() => {
-    const serviceId = stateServiceId || conversation?.serviceId || conversation?.service?._id;
+    const serviceId =
+      stateServiceId || conversation?.serviceId || conversation?.service?._id;
     if (!serviceId) return;
     let isMounted = true;
     const load = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/services/single-service/${serviceId}`);
+        const res = await axios.get(
+          `${
+            import.meta.env.VITE_API_BASE_URL
+          }/api/services/single-service/${serviceId}`
+        );
         if (isMounted) {
           setGig(res.data);
-          // Also merge this gig into saved list (dedupe by serviceId)
           const key = `conv_gigs_${conversationId || routeId}`;
           const item = {
             serviceId: res.data?._id,
@@ -151,7 +255,12 @@ const Message = ({ conversationId }) => {
           };
           try {
             const prev = JSON.parse(localStorage.getItem(key) || "[]");
-            const merged = [item, ...prev.filter((g) => String(g.serviceId) !== String(item.serviceId))];
+            const merged = [
+              item,
+              ...prev.filter(
+                (g) => String(g.serviceId) !== String(item.serviceId)
+              ),
+            ];
             localStorage.setItem(key, JSON.stringify(merged));
             setSavedGigs(merged);
           } catch {
@@ -166,74 +275,77 @@ const Message = ({ conversationId }) => {
     return () => {
       isMounted = false;
     };
-  }, [stateServiceId, conversation?.serviceId, conversation?.service, conversationId, routeId]);
+  }, [
+    stateServiceId,
+    conversation?.serviceId,
+    conversation?.service,
+    conversationId,
+    routeId,
+  ]);
 
-  useEffect(() => {
-    // Auto-scroll to bottom when messages or offers change
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation.messages, offers]);
-
-  // const handleSendMessage = async () => {
-  //   if (!newMessage.trim()) return;
-  //   setIsSending(true);
-
-  //   try {
-  //     const response = await axios.post(
-  //       `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
-  //       { conversationId: conversationId || routeId, message: newMessage },
-  //       { withCredentials: true }
-  //     );
-
-  //     setConversation((prev) => ({
-  //       ...prev,
-  //       messages: [...prev.messages, response.data],
-  //     }));
-
-  //     setNewMessage("");
-  //   } catch (error) {
-  //     console.error("Error sending message:", error);
-  //   } finally {
-  //     setIsSending(false);
-  //   }
-  // };
-const handleSendMessage = async () => {
-  if (!newMessage.trim()) return;
-  setIsSending(true);
-
-  // create a temporary local message for instant UI
-  const tempMessage = {
-    _id: `temp-${Date.now()}`,
-    message: newMessage,
-    userId: meId,
-    createdAt: new Date().toISOString(),
   };
 
-  // instantly update UI
-  setConversation((prev) => ({
-    ...prev,
-    messages: [...prev.messages, tempMessage],
-  }));
+  const handleTypingIndicator = (typing) => {
+    if (socket && (conversationId || routeId)) {
+      setIsTyping(typing);
+      socket.emit("typing:update", {
+        conversationId: conversationId || routeId,
+        userId: meId,
+        isTyping: typing,
+      });
+    }
+  };
 
-  setNewMessage("");
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    setIsSending(true);
 
-  try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
-      { conversationId: conversationId || routeId, message: newMessage },
-      { withCredentials: true }
-    );
+    const tempMessage = {
+      _id: `temp-${Date.now()}`,
+      message: newMessage,
+      userId: meId,
+      createdAt: new Date().toISOString(),
+    };
 
-    // replace temporary message with real one (after backend response)
-    setConversation((prev) => {
-      const msgs = prev.messages.filter((m) => !m._id.startsWith("temp-"));
-      return { ...prev, messages: [...msgs, response.data] };
-    });
-  } catch (error) {
-    console.error("Error sending message:", error);
-  } finally {
-    setIsSending(false);
-  }
-};
+    setConversation((prev) => ({
+      ...prev,
+      messages: [...prev.messages, tempMessage],
+    }));
+
+    setNewMessage("");
+    handleTypingIndicator(false);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
+        { conversationId: conversationId || routeId, message: newMessage },
+        { withCredentials: true }
+      );
+
+      setConversation((prev) => {
+        const msgs = prev.messages.filter((m) => !m._id.startsWith("temp-"));
+        return { ...prev, messages: [...msgs, response.data] };
+      });
+
+      if (socket) {
+        const receiverId = isAdmin
+          ? buyerId || sellerId
+          : adminId || sellerId || buyerId;
+
+        socket.emit("message:send", {
+          conversationId: conversationId || routeId,
+          receiverId,
+          message: response.data,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleCreateOffer = async () => {
     if (!newOffer.description || !newOffer.price || !newOffer.deliveryTime) {
@@ -278,202 +390,350 @@ const handleSendMessage = async () => {
     }
   };
 
+  // Responsive design for messages
+  const getMessageWidthClass = () => {
+    if (window.innerWidth < 640) return "max-w-[85%]";
+    if (window.innerWidth < 768) return "max-w-[80%]";
+    return "max-w-[70%]";
+  };
+
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 flex items-start justify-center py-8">
-      <div className="w-full max-w-4xl bg-white dark:bg-white/5 backdrop-blur-sm rounded-xl shadow-xl overflow-hidden flex flex-col" ref={containerRef}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <button onClick={() => window.history.back()} className="bg-slate-500 text-gray-300 hover:text-white px-3 py-2 rounded-full shadow-md hover:bg-slate-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400">
-              ←
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-[#00DCEE]">
-                {headerUser?.name || headerUser?.username || headerName || "Conversation"}
-              </h1>
-              {/* <div className="text-sm text-gray-400">Conversation ID: {id}</div> */}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-              {!conversationId && (
-                <Link to="/messages" className="text-sm text-slate-700 dark:text-yellow-50 hover:underline">Back to Messages</Link>
-              )}
-             
-           
-            </div>
-        </div>
-
-        {/* Gig details (if available) */}
-        {(stateServiceTitle || stateServiceId || conversation?.serviceTitle || conversation?.service?.title || conversation?.serviceId || conversation?.service?._id) && (
-          <div className="px-6 py-3 bg-gray-100 border-b border-gray-200 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
-            <div className="text-sm text-gray-600 dark:text-gray-300">Gig</div>
-            <div className="text-base text-gray-900 dark:text-gray-100 font-medium">
-              {stateServiceTitle || conversation?.serviceTitle || conversation?.service?.title || "Untitled"}
-              {" "}
-              {(stateServiceId || conversation?.serviceId || conversation?.service?._id) ? (
-                <span className="text-gray-500 dark:text-gray-400">({stateServiceId || conversation?.serviceId || conversation?.service?._id})</span>
-              ) : null}
-            </div>
-          </div>
-        )}
-
-        {/* Saved gig cards list (from localStorage) */}
-        {savedGigs.length > 0 && (
-          <div className="px-6 pt-4 space-y-2">
-            <div className="text-sm text-gray-700 dark:text-gray-300">Saved Gigs</div>
-            <div className="space-y-2">
-              {savedGigs.map((g) => (
-                <div key={String(g.serviceId)} className="flex gap-4 items-center bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700">
-                  <div className="w-20 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
-                    {g.coverImage ? (
-                      <img src={g.coverImage} alt={g.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-gray-600 dark:text-gray-300 truncate">{g.subCategory}</div>
-                    <div className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{g.title}</div>
-                    <div className="text-xs text-gray-500">Saved {new Date(g.savedAt).toLocaleString()}</div>
-                  </div>
-                  <Link
-                    to={`/${g.subCategory}/${g.serviceId}`}
-                    className="text-sm bg-pink-500 hover:bg-colorNeonPink text-white px-3 py-2 rounded"
-                  >
-                    View Gig
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Gig card (if loaded and not already in saved list) */}
-        {gig && !savedGigs.some((g) => String(g.serviceId) === String(gig?._id)) && (
-          <div className="px-6 pt-4">
-            <div className="flex gap-4 items-center bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700">
-              <div className="w-20 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
-                {gig.coverImage ? (
-                  <img src={gig.coverImage} alt={gig.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-gray-600 dark:text-gray-300 truncate">{gig.category} · {gig.subCategory}</div>
-                <div className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{gig.title}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{Array.isArray(gig.packages) && gig.packages[0]?.salePrice ? `From $${gig.packages[0].salePrice}` : null}</div>
-              </div>
-              <Link
-                to={`/${gig.subCategory}/${gig._id}`}
-                className="text-sm bg-pink-500 hover:bg-colorNeonPink text-white px-3 py-2 rounded"
+    <div className="h-[calc(100vh-80px)] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden">
+      <div
+        className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm"
+        ref={containerRef}
+      >
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 px-4 md:px-6 py-3 md:py-4 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.history.back()}
+                className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-slate-500 text-gray-300 hover:text-white rounded-full shadow-md hover:bg-slate-600 transition-all duration-200"
               >
-                View Gig
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Messages area */}
-        <div className="flex-1 overflow-auto p-6 space-y-4 bg-gradient-to-t from-transparent via-black/10 to-transparent">
-          {conversation.messages.length === 0 && offers.length === 0 && (
-            <div className="text-center text-gray-400 py-16">No messages yet. Start the conversation.</div>
-          )}
-
-          {conversation.messages.map((msg, index) => {
-            const isSender = String(msg.userId) === String(currentUser.id || currentUser._id);
-
-            return (
-              <div key={index} className={`flex items-end gap-3 ${isSender ? 'justify-end' : 'justify-start'}`}>
-                {!isSender && (
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black font-semibold">
-                    {String(msg.userId || '').slice(-2).toUpperCase()}
-                  </div>
-                )}
-
-                <div className={`max-w-[70%] px-4 py-2 rounded-2xl shadow ${isSender ? 'bg-pink-500 text-white rounded-br-none' : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-bl-none'}`}>
-                  <div className="text-sm leading-relaxed">{msg.message}</div>
-                  <div className="text-xs text-gray-300 mt-1 text-right">{new Date(msg.createdAt).toLocaleString()}</div>
-                </div>
-
-                {isSender && (
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
-                    ME
+                ←
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-2xl font-bold text-[#00DCEE] truncate">
+                  {headerUser?.name ||
+                    headerUser?.username ||
+                    headerName ||
+                    "Conversation"}
+                </h1>
+                {isTypingVisible && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Typing...
                   </div>
                 )}
               </div>
-            );
-          })}
+            </div>
 
-          {/* Offers as cards */}
-          {offers.length > 0 && (
-            <div className="space-y-4">
-              {offers.map((offer) => (
-                <div key={offer._id} className="p-4 rounded-lg shadow-md bg-white border border-gray-200 text-gray-900 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:border-0 dark:text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-lg font-semibold">{offer.offerDetails?.description}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Price: ${offer.offerDetails?.price} · Delivery: {offer.offerDetails?.deliveryTime} days</div>
+            <div className="flex items-center gap-3">
+              {!conversationId && (
+                <Link
+                  to="/messages"
+                  className="text-sm text-slate-700 dark:text-yellow-50 hover:underline"
+                >
+                  Back
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Gig info in header for mobile */}
+          {(stateServiceTitle || conversation?.service?.title) && (
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
+              {stateServiceTitle || conversation?.service?.title}
+            </div>
+          )}
+        </div>
+
+        {/* Main Content Area with Scroll */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Saved gigs carousel */}
+          {savedGigs.length > 0 && (
+            <div className="flex-shrink-0 px-4 md:px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Saved Gigs
+              </div>
+              <div className="flex overflow-x-auto gap-3 pb-2 -mx-2 px-2 scrollbar-hide">
+                {savedGigs.map((g) => (
+                  <div
+                    key={String(g.serviceId)}
+                    className="flex-shrink-0 w-48 md:w-56 bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <div className="flex gap-3">
+                      <div className="w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
+                        {g.coverImage ? (
+                          <img
+                            src={g.coverImage}
+                            alt={g.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                          {g.subCategory}
+                        </div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {g.title}
+                        </div>
+                        <Link
+                          to={`/${g.subCategory}/${g.serviceId}`}
+                          className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
+                        >
+                          View
+                        </Link>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-200">Status: <span className="font-medium">{offer.status}</span></div>
                   </div>
-
-                  <div className="mt-3 flex gap-2">
-                    {!isAdmin && offer.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleRespondToOffer(offer._id, 'accepted')} className="bg-green-500 text-white px-3 py-1 rounded">Accept</button>
-                        <button onClick={() => handleRespondToOffer(offer._id, 'declined')} className="bg-red-500 text-white px-3 py-1 rounded">Decline</button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
-          <div ref={messagesEndRef} />
-        </div>
+          {/* Messages Container */}
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gradient-to-t from-transparent via-black/5 to-transparent"
+          >
+            {conversation.messages.length === 0 && offers.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                <div className="text-center">
+                  <div className="text-lg mb-2">No messages yet</div>
+                  <p className="text-sm">Start the conversation</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {conversation.messages.map((msg, index) => {
+                  const isSender =
+                    String(msg.userId) ===
+                    String(currentUser.id || currentUser._id);
 
-        {/* Input area */}
-        <div className="bg-white p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto flex items-start gap-3">
-            <input
-              type="text"
-              placeholder="Type a message or press Enter..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 px-4 py-3 rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-              disabled={isSending}
-            />
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-end gap-2 md:gap-3 ${
+                        isSender ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      {!isSender && (
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-black dark:text-white font-semibold text-xs md:text-sm flex-shrink-0">
+                          {String(msg.userId || "")
+                            .slice(-2)
+                            .toUpperCase()}
+                        </div>
+                      )}
 
-            <button onClick={handleSendMessage} disabled={isSending} className="bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 rounded-lg">
-              Send
-            </button>
+                      <div
+                        className={`${getMessageWidthClass()} px-3 md:px-4 py-2 rounded-2xl shadow ${
+                          isSender
+                            ? "bg-pink-500 text-white rounded-br-none"
+                            : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-bl-none"
+                        }`}
+                      >
+                        <div className="text-sm md:text-base leading-relaxed break-words">
+                          {msg.message}
+                        </div>
+                        <div
+                          className={`text-xs mt-1 ${
+                            isSender
+                              ? "text-pink-100 text-right"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
 
-            {isAdmin && (
-              <button onClick={() => setShowOfferForm((p) => !p)} className="ml-2 flex items-center gap-2 bg-pink-500 hover:bg-colorNeonPink text-white px-3 py-2 rounded-lg">
-             
-                {showOfferForm ? 'Cancel' : 'Offer'}
-              </button>
+                      {isSender && (
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold text-xs md:text-sm flex-shrink-0">
+                          ME
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Offers */}
+                {offers.length > 0 && (
+                  <div className="space-y-3 md:space-y-4">
+                    {offers.map((offer) => (
+                      <div
+                        key={offer._id}
+                        className="p-3 md:p-4 rounded-lg shadow-md bg-white border border-gray-200 text-gray-900 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:border-0 dark:text-white"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="text-base md:text-lg font-semibold">
+                              {offer.offerDetails?.description}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                              Price: ${offer.offerDetails?.price} · Delivery:{" "}
+                              {offer.offerDetails?.deliveryTime} days
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-200">
+                            Status:{" "}
+                            <span
+                              className={`font-medium ${
+                                offer.status === "accepted"
+                                  ? "text-green-500"
+                                  : offer.status === "declined"
+                                  ? "text-red-500"
+                                  : "text-yellow-500"
+                              }`}
+                            >
+                              {offer.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {!isAdmin && offer.status === "pending" && (
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              onClick={() =>
+                                handleRespondToOffer(offer._id, "accepted")
+                              }
+                              className="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleRespondToOffer(offer._id, "declined")
+                              }
+                              className="flex-1 md:flex-none bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </>
             )}
           </div>
 
-          {/* Offer creator (admin) */}
-          {isAdmin && showOfferForm && (
-            <div className="mt-3 max-w-4xl mx-auto bg-gray-800 p-4 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input type="text" placeholder="Description" value={newOffer.description} onChange={(e)=>setNewOffer({...newOffer, description: e.target.value})} className="p-2 bg-gray-700 rounded" />
-                <input type="number" placeholder="Price" value={newOffer.price} onChange={(e)=>setNewOffer({...newOffer, price: e.target.value})} className="p-2 bg-gray-700 rounded" />
-                <input type="number" placeholder="Delivery (days)" value={newOffer.deliveryTime} onChange={(e)=>setNewOffer({...newOffer, deliveryTime: e.target.value})} className="p-2 bg-gray-700 rounded" />
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button onClick={handleCreateOffer} className="bg-pink-500 px-4 py-2 rounded text-white">Send Offer</button>
-                <button onClick={() => setShowOfferForm(false)} className="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-gray-900 dark:text-white">Cancel</button>
+          {/* Input Area - Fixed */}
+          <div className="flex-shrink-0 bg-white p-3 md:p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+            <div className="max-w-6xl mx-auto">
+              {isAdmin && showOfferForm && (
+                <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={newOffer.description}
+                      onChange={(e) =>
+                        setNewOffer({
+                          ...newOffer,
+                          description: e.target.value,
+                        })
+                      }
+                      className="p-2 bg-gray-700 rounded text-sm md:text-base"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={newOffer.price}
+                      onChange={(e) =>
+                        setNewOffer({ ...newOffer, price: e.target.value })
+                      }
+                      className="p-2 bg-gray-700 rounded text-sm md:text-base"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Delivery (days)"
+                      value={newOffer.deliveryTime}
+                      onChange={(e) =>
+                        setNewOffer({
+                          ...newOffer,
+                          deliveryTime: e.target.value,
+                        })
+                      }
+                      className="p-2 bg-gray-700 rounded text-sm md:text-base"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCreateOffer}
+                      className="flex-1 bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 rounded text-sm md:text-base"
+                    >
+                      Send Offer
+                    </button>
+                    <button
+                      onClick={() => setShowOfferForm(false)}
+                      className="flex-1 bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-gray-900 dark:text-white text-sm md:text-base"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 md:gap-3">
+                <div className="flex-1 flex flex-col">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTypingIndicator(e.target.value.length > 0);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    className="w-full px-4 py-2 md:py-3 rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 text-sm md:text-base"
+                    disabled={isSending}
+                  />
+                  {isTyping && (
+                    <div className="text-xs text-gray-500 mt-1">Typing...</div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={isSending || !newMessage.trim()}
+                    className="bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 md:py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+                  >
+                    {isSending ? "Sending..." : "Send"}
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowOfferForm((p) => !p)}
+                      className={`px-3 py-2 md:py-3 rounded-lg text-sm md:text-base ${
+                        showOfferForm
+                          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
+                          : "bg-pink-500 hover:bg-colorNeonPink text-white"
+                      }`}
+                    >
+                      {showOfferForm ? "✕" : "Offer"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
