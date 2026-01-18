@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { useNavigate } from "react-router-dom";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminBlogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -18,7 +18,7 @@ const AdminBlogs = () => {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/blogs`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         setBlogs(response.data);
         setFilteredBlogs(response.data);
@@ -36,13 +36,13 @@ const AdminBlogs = () => {
     const query = e.target.value.toLowerCase();
     setSearch(query);
     setFilteredBlogs(
-      blogs.filter((blog) => blog.title.toLowerCase().includes(query))
+      blogs.filter((blog) => blog.title.toLowerCase().includes(query)),
     );
   };
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this blog?"
+      "Are you sure you want to delete this blog?",
     );
     if (!confirmDelete) return;
 
@@ -52,13 +52,15 @@ const AdminBlogs = () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`,
         {
           withCredentials: true,
-        }
+        },
       );
 
       const updatedBlogs = blogs.filter((blog) => blog._id !== id);
       setBlogs(updatedBlogs);
       setFilteredBlogs(
-        updatedBlogs.filter((blog) => blog.title.toLowerCase().includes(search))
+        updatedBlogs.filter((blog) =>
+          blog.title.toLowerCase().includes(search),
+        ),
       );
 
       alert("Blog deleted successfully.");
@@ -75,11 +77,16 @@ const AdminBlogs = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-white text-xl font-bold mb-4">Admin Blogs</h1>
+      <h1 className="text-gray-900 dark:text-white text-xl font-bold mb-4">
+        Admin Blogs
+      </h1>
       {error && <p className="text-red-500">{error}</p>}
 
       <div className="mb-4">
-        <label htmlFor="searchBlogs" className="text-white mr-2">
+        <label
+          htmlFor="searchBlogs"
+          className="text-gray-900  dark:text-white mr-2"
+        >
           Search Blogs:
         </label>
         <input

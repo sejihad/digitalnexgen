@@ -38,7 +38,7 @@ const Profile = () => {
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-[#00DCEE]">
             <img
-              src={user?.img || "https://via.placeholder.com/150"}
+              src={user?.img?.url || "https://via.placeholder.com/150"}
               alt={`${user.name || user.username}'s profile`}
               className="w-full h-full object-cover"
             />
@@ -47,8 +47,10 @@ const Profile = () => {
             <h1 className="text-3xl font-bold text-[#00DCEE]">
               {user.name || user.username}
             </h1>
-            
-            <p className="text-lg text-gray-600 dark:text-gray-300">{user.country}</p>
+
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              {user.country}
+            </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Joined On:{" "}
               {user.createdAt
@@ -64,15 +66,21 @@ const Profile = () => {
               Contact Information
             </h2>
             <p className="text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-300">UserId: </span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                UserId:{" "}
+              </span>
               {user.username}
             </p>
             <p className="text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Email: </span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                Email:{" "}
+              </span>
               {user.email}
             </p>
             <p className="text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Phone: </span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                Phone:{" "}
+              </span>
               {user.phone || "N/A"}
             </p>
           </div>
@@ -81,7 +89,9 @@ const Profile = () => {
               Additional Details
             </h2>
             <p className="text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Country: </span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                Country:{" "}
+              </span>
               {user.country ? user.country : "N/A"}
             </p>
           </div>

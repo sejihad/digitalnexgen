@@ -248,8 +248,6 @@ const SingleService = () => {
     );
   }
 
-  const isVideo = (url) => url.endsWith(".mp4") || url.endsWith(".webm");
-
   const handleThumbnailClick = (index) => {
     setSelectedImageIndex(index);
   };
@@ -296,7 +294,6 @@ const SingleService = () => {
     try {
       // Debug: log payload in dev to help diagnose
       if (import.meta.env.DEV) {
-        console.log("[contact] creating conversation:", { buyerId, adminId });
       }
       // POST will either return existing conversation (200) or create new (201)
       const response = await axios.post(
@@ -321,7 +318,7 @@ const SingleService = () => {
             serviceId: service._id,
             title: service.title,
             subCategory: service.subCategory,
-            coverImage: service.coverImage,
+            coverImage: service.coverImage?.url,
             savedAt: Date.now(),
           };
           const merged = [
@@ -344,7 +341,7 @@ const SingleService = () => {
               serviceId: service._id,
               title: service.title,
               subCategory: service.subCategory,
-              coverImage: service.coverImage,
+              coverImage: service.coverImage?.url,
             },
             { withCredentials: true }
           );
@@ -365,7 +362,7 @@ const SingleService = () => {
             serviceId: service._id,
             title: service.title,
             subCategory: service.subCategory,
-            coverImage: service.coverImage,
+            coverImage: service.coverImage?.url,
             savedAt: Date.now(),
           };
           const merged = [
@@ -388,7 +385,7 @@ const SingleService = () => {
               serviceId: service._id,
               title: service.title,
               subCategory: service.subCategory,
-              coverImage: service.coverImage,
+              coverImage: service.coverImage?.url,
             },
             { withCredentials: true }
           );
@@ -407,25 +404,17 @@ const SingleService = () => {
       setContacting(false);
     }
   };
+  const mediaList = [
+    ...(service.coverImage ? [service.coverImage] : []),
+    ...(service.otherImages || []),
+  ];
 
-  const renderMedia = (url) => {
-    if (isVideo(url)) {
-      return (
-        <video
-          autoPlay
-          controls
-          muted
-          className="w-full h-[350px] object-cover rounded-md border border-gray-600"
-        >
-          <source src={url} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      );
-    }
+  const renderMedia = (media) => {
+    if (!media?.url) return null;
     return (
       <img
-        src={url}
-        alt={`Service Media ${selectedImageIndex + 1}`}
+        src={media?.url}
+        alt={`Service Image`}
         className="w-full h-[350px] object-cover rounded-md border border-gray-600"
       />
     );
@@ -505,45 +494,37 @@ const SingleService = () => {
           </h1>
 
           <div className="mb-6">
-            {renderMedia(
-              [service.coverImage, ...(service.otherImages || [])][
-                selectedImageIndex
-              ]
-            )}
+            {renderMedia(mediaList[selectedImageIndex])}
           </div>
-          {service.otherImages && service.otherImages.length > 0 && (
+
+          {mediaList.length > 1 && (
             <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-600">
-              {[service.coverImage, ...service.otherImages].map(
-                (item, index) => (
-                  <div
-                    key={index}
-                    className={`cursor-pointer ${
-                      selectedImageIndex === index
-                        ? "border-red-500"
-                        : "border-gray-600"
-                    }`}
-                    onClick={() => handleThumbnailClick(index)}
-                  >
-                    {isVideo(item) ? (
-                      <video src={item} className="w-20 h-20 object-cover" />
-                    ) : (
-                      <img
-                        src={item}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-20 h-20 object-cover"
-                      />
-                    )}
-                  </div>
-                )
-              )}
+              {mediaList.map((item, index) => (
+                <div
+                  key={index}
+                  className={`cursor-pointer border ${
+                    selectedImageIndex === index
+                      ? "border-red-500"
+                      : "border-gray-600"
+                  }`}
+                  onClick={() => handleThumbnailClick(index)}
+                >
+                  <img
+                    src={item.url}
+                    alt="Service thumbnail"
+                    className="w-20 h-20 object-cover"
+                  />
+                </div>
+              ))}
             </div>
           )}
-          <h2 className="text-xl font-semibold text-gray-300 mt-6 mb-4">
+
+          <h2 className="text-xl font-semibold dark:text-gray-300 mt-6 mb-4">
             About This Service
           </h2>
           <p
             style={{ whiteSpace: "pre-wrap" }}
-            className="text-gray-300 leading-relaxed"
+            className="dark:text-gray-300 leading-relaxed"
           >
             {service.desc}
           </p>
@@ -559,7 +540,7 @@ const SingleService = () => {
           {service.shortDesc && (
             <p
               style={{ whiteSpace: "pre-wrap" }}
-              className="text-gray-400 mb-4 italic"
+              className="dark:text-gray-400 mb-4 italic"
             >
               {service.shortDesc}
             </p>
@@ -577,7 +558,22 @@ const SingleService = () => {
               </ul>
             </div>
           )}
-
+          {/* Product Video */}
+          {service.videoUrl && (
+            <div className="mt-8 bg-white dark:bg-black rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700  ">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-200 mb-4">
+                Service Video
+              </h2>
+              <div className="aspect-w-16 aspect-h-9">
+                <iframe
+                  src={service.videoUrl}
+                  title="Service Video"
+                  allowFullScreen
+                  className="w-full h-96 rounded-md"
+                ></iframe>
+              </div>
+            </div>
+          )}
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
               Reviews:

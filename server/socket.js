@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
-
+import Message from "./models/message.model.js";
 // userId -> Set of socketIds (multi device / tab support)
 const activeUsers = new Map();
 
@@ -14,8 +14,6 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("✅ Socket connected:", socket.id);
-
     /* =========================
        USER AUTH & JOIN
     ==========================*/
@@ -36,10 +34,7 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
 
         // broadcast online users
         io.emit("users:online", [...activeUsers.keys()]);
-
-        console.log(`👤 User ${decoded.id} joined`);
       } catch (err) {
-        console.log("❌ Invalid token, disconnecting socket");
         socket.disconnect(true);
       }
     });
@@ -56,21 +51,29 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
        (Message should be saved
         via REST API first)
     ==========================*/
-    socket.on("message:send", ({ conversationId, receiverId, message }) => {
-      if (!socket.userId) return;
+    socket.on(
+      "message:send",
+      async ({ conversationId, receiverId, message }) => {
+        if (!socket.userId) return;
+        try {
+          // message._id ধরি REST API থেকে response.data আসছে
+          const populatedMessage = await Message.findById(message._id)
+            .populate("userId", "username isAdmin")
+            .lean();
+          io.to(`user:${receiverId}`).emit("message:receive", {
+            conversationId,
+            message: populatedMessage,
+            senderId: socket.userId,
+          });
 
-      io.to(`user:${receiverId}`).emit("message:receive", {
-        conversationId,
-        message,
-        senderId: socket.userId,
-      });
-
-      // optional confirmation
-      socket.emit("message:sent", {
-        success: true,
-        message,
-      });
-    });
+          // optional confirmation
+          socket.emit("message:sent", {
+            success: true,
+            message: populatedMessage,
+          });
+        } catch (err) {}
+      }
+    );
 
     /* =========================
        TYPING INDICATOR
@@ -104,11 +107,9 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
         }
 
         io.emit("users:online", [...activeUsers.keys()]);
-        console.log(`❌ User ${socket.userId} disconnected`);
       }
     });
   });
 
-  console.log("🔌 Socket.IO server initialized");
   return io;
 };

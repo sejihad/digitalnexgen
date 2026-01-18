@@ -1,20 +1,31 @@
-import Conversation from "../models/conversation.model.js";
-import mongoose from "mongoose";
-import User from "../models/user.model.js";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import Conversation from "../models/conversation.model.js";
+import User from "../models/user.model.js";
 dotenv.config();
 
 export const createConversation = async (req, res, next) => {
   try {
     // allow frontend to pass buyerId/adminId in body or infer from token
-    const buyerId = req.body.buyerId || req.query.buyerId || (req.isAdmin ? req.body.buyerId : req.userId);
-    const adminId = req.body.adminId || req.query.adminId || (req.isAdmin ? req.userId : req.body.adminId || req.body.to);
+    const buyerId =
+      req.body.buyerId ||
+      req.query.buyerId ||
+      (req.isAdmin ? req.body.buyerId : req.userId);
+    const adminId =
+      req.body.adminId ||
+      req.query.adminId ||
+      (req.isAdmin ? req.userId : req.body.adminId || req.body.to);
 
     if (!buyerId || !adminId) {
-      return res.status(400).json({ message: "buyerId and adminId are required" });
+      return res
+        .status(400)
+        .json({ message: "buyerId and adminId are required" });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(buyerId) || !mongoose.Types.ObjectId.isValid(adminId)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(buyerId) ||
+      !mongoose.Types.ObjectId.isValid(adminId)
+    ) {
       return res.status(400).json({ message: "Invalid buyerId or adminId" });
     }
 
@@ -23,10 +34,7 @@ export const createConversation = async (req, res, next) => {
 
     // check if conversation already exists between these two (by pair or composite id)
     const existingConversation = await Conversation.findOne({
-      $or: [
-        { buyerId, adminId },
-        { id: compositeId },
-      ],
+      $or: [{ buyerId, adminId }, { id: compositeId }],
     });
     if (existingConversation) return res.status(200).json(existingConversation);
 
@@ -53,10 +61,12 @@ export const attachServiceToConversation = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid conversation id" });
     }
     const { serviceId, title, subCategory, coverImage } = req.body || {};
-    if (!serviceId) return res.status(400).json({ message: "serviceId is required" });
+    if (!serviceId)
+      return res.status(400).json({ message: "serviceId is required" });
 
     const conv = await Conversation.findById(convId);
-    if (!conv) return res.status(404).json({ message: "Conversation not found" });
+    if (!conv)
+      return res.status(404).json({ message: "Conversation not found" });
 
     // Only participants or admins can modify
     const isParticipant =
@@ -78,7 +88,8 @@ export const attachServiceToConversation = async (req, res, next) => {
 
     if (existingIndex >= 0) {
       conv.linkedServices[existingIndex] = {
-        ...conv.linkedServices[existingIndex].toObject?.() || conv.linkedServices[existingIndex],
+        ...(conv.linkedServices[existingIndex].toObject?.() ||
+          conv.linkedServices[existingIndex]),
         ...newItem,
       };
     } else {
@@ -114,13 +125,14 @@ export const getConversations = async (req, res, next) => {
 export const getSingleConversation = async (req, res, next) => {
   try {
     const conversationId = req.params.id;
-    console.log("Fetching conversation with ID:", conversationId);
+
     if (!mongoose.Types.ObjectId.isValid(conversationId)) {
       return res.status(400).json({ message: "Invalid conversation id" });
     }
 
     const conversation = await Conversation.findById(conversationId);
-    if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
     return res.status(200).json(conversation);
   } catch (error) {
     console.error("Error fetching conversation:", error);
@@ -130,8 +142,6 @@ export const getSingleConversation = async (req, res, next) => {
 
 export const updateConversation = async (req, res, next) => {
   try {
-    console.log("Request ID:", req.params.id);
-    console.log("isAdmin:", req.isAdmin);
     const update = {};
     if (req.isAdmin) update.readByAdmin = true;
     else update.readByBuyer = true;
@@ -142,7 +152,8 @@ export const updateConversation = async (req, res, next) => {
       { new: true }
     );
 
-    if (!updatedConversation) return res.status(404).json({ message: "Conversation not found" });
+    if (!updatedConversation)
+      return res.status(404).json({ message: "Conversation not found" });
     return res.status(200).json(updatedConversation);
   } catch (error) {
     console.error("Error updating conversation:", error);
@@ -185,27 +196,42 @@ export const sendSmsToConversation = async (req, res, next) => {
     if (!req.isAdmin) return res.status(403).json({ message: "Forbidden" });
 
     const convId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(convId)) return res.status(400).json({ message: "Invalid conversation id" });
+    if (!mongoose.Types.ObjectId.isValid(convId))
+      return res.status(400).json({ message: "Invalid conversation id" });
 
     const conversation = await Conversation.findById(convId);
-    if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
 
     const buyer = await User.findById(conversation.buyerId);
     if (!buyer) return res.status(404).json({ message: "Buyer not found" });
 
     const phone = buyer.phone || buyer.mobile || buyer.phoneNumber;
-    if (!phone) return res.status(400).json({ message: "Buyer has no phone number on record" });
+    if (!phone)
+      return res
+        .status(400)
+        .json({ message: "Buyer has no phone number on record" });
 
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-      return res.status(501).json({ message: "SMS service not configured on server" });
+    if (
+      !process.env.TWILIO_ACCOUNT_SID ||
+      !process.env.TWILIO_AUTH_TOKEN ||
+      !process.env.TWILIO_PHONE_NUMBER
+    ) {
+      return res
+        .status(501)
+        .json({ message: "SMS service not configured on server" });
     }
 
     // dynamic import to avoid hard dependency when Twilio not installed
-    const Twilio = await import('twilio');
-    const client = Twilio.default(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const Twilio = await import("twilio");
+    const client = Twilio.default(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
 
     const { body } = req.body;
-    if (!body || typeof body !== 'string') return res.status(400).json({ message: 'SMS body required' });
+    if (!body || typeof body !== "string")
+      return res.status(400).json({ message: "SMS body required" });
 
     const msg = await client.messages.create({
       body,
@@ -214,11 +240,13 @@ export const sendSmsToConversation = async (req, res, next) => {
     });
 
     // Optionally, record that an SMS was sent: update conversation.lastMessage
-    await Conversation.findByIdAndUpdate(convId, { lastMessage: `[SMS sent] ${body}` });
+    await Conversation.findByIdAndUpdate(convId, {
+      lastMessage: `[SMS sent] ${body}`,
+    });
 
-    return res.status(200).json({ message: 'SMS sent', sid: msg.sid });
+    return res.status(200).json({ message: "SMS sent", sid: msg.sid });
   } catch (error) {
-    console.error('Error sending SMS:', error);
+    console.error("Error sending SMS:", error);
     next(error);
   }
 };
@@ -235,14 +263,17 @@ export const deleteConversation = async (req, res, next) => {
     if (!conversation) {
       conversation = await Conversation.findOne({ id: paramId });
     }
-    if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
 
     const isParticipant =
       String(conversation.buyerId) === String(req.userId) ||
       String(conversation.adminId) === String(req.userId);
 
     if (!isParticipant) {
-      return res.status(403).json({ message: "You are not allowed to delete this conversation" });
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to delete this conversation" });
     }
 
     await Conversation.deleteOne({ _id: conversation._id });

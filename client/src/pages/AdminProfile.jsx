@@ -38,7 +38,7 @@ const AdminProfile = () => {
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-[#00DCEE]">
             <img
-              src={user.img || "https://via.placeholder.com/150"}
+              src={user.img?.url || "https://via.placeholder.com/150"}
               alt={`${user.username}'s profile`}
               className="w-full h-full object-cover"
             />

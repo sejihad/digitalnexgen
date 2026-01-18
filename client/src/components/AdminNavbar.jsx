@@ -32,7 +32,7 @@ const AdminNavbar = () => {
   const [activePath, setActivePath] = useState("");
 
   const adminId = useSelector(
-    (state) => state.auth.user._id || state.auth.user.id
+    (state) => state.auth.user._id || state.auth.user.id,
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const AdminNavbar = () => {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
-    if (userData?.img) setProfileImage(userData.img);
+    if (userData?.img) setProfileImage(userData.img?.url);
     setActivePath(location.pathname);
   }, [location.pathname, adminId]);
 

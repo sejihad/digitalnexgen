@@ -84,10 +84,7 @@ const Gallery = ({ category }) => {
                   navigate(`/${subCategory}/${svc._id}`);
                 } catch (err) {
                   // Fallback to services with helpful filters
-                  console.error(
-                    "Failed to fetch linked service for gallery",
-                    err
-                  );
+
                   const qp = new URLSearchParams({
                     category: gallery.category || "",
                     q: gallery.imageTitle || "",

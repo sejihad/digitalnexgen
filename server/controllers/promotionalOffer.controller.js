@@ -25,8 +25,6 @@ export const getPromotionalOffers = async (req, res, next) => {
     // Check if request is from admin panel (you can pass ?admin=true in query)
     const isAdminRequest = req.query.admin === "true" || req.isAdmin;
 
-    console.log("Fetching offers - isAdmin:", isAdminRequest);
-
     // If admin, show all offers; otherwise, only active offers that haven't expired
     const filter = isAdminRequest
       ? {}
@@ -35,13 +33,9 @@ export const getPromotionalOffers = async (req, res, next) => {
           endDate: { $gt: new Date() }, // Only get offers that haven't expired
         };
 
-    console.log("Filter applied:", filter);
-
     const offers = await PromotionalOffer.find(filter)
       .sort({ order: 1, createdAt: -1 })
       .populate("serviceId");
-
-    console.log("Offers found:", offers.length);
 
     res.status(200).json(offers);
   } catch (error) {

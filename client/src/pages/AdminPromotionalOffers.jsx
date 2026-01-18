@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Calendar, Edit, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Plus, Edit, Trash2, Eye, EyeOff, Calendar } from "lucide-react";
 
 const AdminPromotionalOffers = () => {
   const navigate = useNavigate();
@@ -16,10 +16,12 @@ const AdminPromotionalOffers = () => {
   const fetchOffers = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers?admin=true`,
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/api/promotional-offers?admin=true`,
         { withCredentials: true }
       );
-      console.log("Admin fetched offers:", response.data);
+
       setOffers(response.data);
     } catch (error) {
       console.error("Error fetching offers:", error);
@@ -33,7 +35,9 @@ const AdminPromotionalOffers = () => {
   const handleToggleStatus = async (id) => {
     try {
       await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}/toggle`,
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/api/promotional-offers/${id}/toggle`,
         {},
         { withCredentials: true }
       );
@@ -153,7 +157,9 @@ const AdminPromotionalOffers = () => {
                       <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <span className="font-semibold">Price:</span>
-                          <span className="line-through">${offer.originalPrice}</span>
+                          <span className="line-through">
+                            ${offer.originalPrice}
+                          </span>
                           <span className="text-pink-500 font-bold">
                             ${offer.offerPrice}
                           </span>
@@ -161,14 +167,17 @@ const AdminPromotionalOffers = () => {
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {formatDate(offer.startDate)} - {formatDate(offer.endDate)}
+                            {formatDate(offer.startDate)} -{" "}
+                            {formatDate(offer.endDate)}
                           </span>
                         </div>
                         <div>
-                          <span className="font-semibold">Badge:</span> {offer.badge}
+                          <span className="font-semibold">Badge:</span>{" "}
+                          {offer.badge}
                         </div>
                         <div>
-                          <span className="font-semibold">Category:</span> {offer.category}
+                          <span className="font-semibold">Category:</span>{" "}
+                          {offer.category}
                         </div>
                       </div>
 
@@ -193,7 +202,12 @@ const AdminPromotionalOffers = () => {
                         onClick={() => {
                           // Ask for confirmation before deactivating an active offer
                           if (offer.isActive) {
-                            if (!window.confirm("Are you sure you want to deactivate this offer?")) return;
+                            if (
+                              !window.confirm(
+                                "Are you sure you want to deactivate this offer?"
+                              )
+                            )
+                              return;
                           }
                           handleToggleStatus(offer._id);
                         }}
@@ -219,7 +233,9 @@ const AdminPromotionalOffers = () => {
 
                       <button
                         onClick={() =>
-                          navigate(`/admin/promotional-offers/edit/${offer._id}`)
+                          navigate(
+                            `/admin/promotional-offers/edit/${offer._id}`
+                          )
                         }
                         className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-lg font-semibold hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 transition-colors"
                         title="Edit"

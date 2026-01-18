@@ -1,5 +1,5 @@
-import Message from "../models/message.model.js";
 import Conversation from "../models/conversation.model.js";
+import Message from "../models/message.model.js";
 
 export const createMessage = async (req, res, next) => {
   try {
@@ -34,9 +34,9 @@ export const createMessage = async (req, res, next) => {
 
 export const getMessages = async (req, res, next) => {
   try {
-    const messages = await Message.find({ conversationId: req.params.id }).sort(
-      "createdAt"
-    );
+    const messages = await Message.find({ conversationId: req.params.id })
+      .populate("userId", "username isAdmin")
+      .sort("createdAt");
     res.status(200).json(messages);
   } catch (error) {
     next(error);

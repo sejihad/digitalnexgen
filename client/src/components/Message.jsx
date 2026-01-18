@@ -45,10 +45,10 @@ const Message = ({ conversationId }) => {
       ? buyerId
       : buyerId
     : sellerId && sellerId !== meId
-    ? sellerId
-    : adminId && adminId !== meId
-    ? adminId
-    : sellerId || adminId || buyerId || "";
+      ? sellerId
+      : adminId && adminId !== meId
+        ? adminId
+        : sellerId || adminId || buyerId || "";
 
   // derive isAdmin once from stored user to avoid effect dependency churn
   useEffect(() => {
@@ -191,9 +191,7 @@ const Message = ({ conversationId }) => {
             }
           }
         }
-      } catch (error) {
-        console.error("Error fetching conversation:", error);
-      }
+      } catch (error) {}
     };
 
     fetchConversation();
@@ -209,8 +207,15 @@ const Message = ({ conversationId }) => {
           { withCredentials: true }
         );
         const u = res?.data || {};
-        const display = u.fullName || u.name || u.username || "";
-        if (display) setHeaderName(display);
+
+        if (u) {
+          if (isAdmin) {
+            setHeaderName(u.username);
+          } else {
+            setHeaderName("Admin");
+          }
+        }
+
         setHeaderUser(u);
       } catch {
         // ignore
@@ -341,7 +346,6 @@ const Message = ({ conversationId }) => {
         });
       }
     } catch (err) {
-      console.error(err);
     } finally {
       setIsSending(false);
     }
@@ -349,7 +353,6 @@ const Message = ({ conversationId }) => {
 
   const handleCreateOffer = async () => {
     if (!newOffer.description || !newOffer.price || !newOffer.deliveryTime) {
-      console.error("Incomplete offer details.");
       return;
     }
 
@@ -367,9 +370,7 @@ const Message = ({ conversationId }) => {
       setOffers((prev) => [...prev, response.data]);
       setNewOffer({ description: "", price: "", deliveryTime: "" });
       setShowOfferForm(false);
-    } catch (error) {
-      console.error("Error creating offer:", error);
-    }
+    } catch (error) {}
   };
 
   const handleRespondToOffer = async (offerId, status) => {
@@ -385,9 +386,7 @@ const Message = ({ conversationId }) => {
           offer._id === offerId ? { ...offer, ...response.data } : offer
         )
       );
-    } catch (error) {
-      console.error("Error responding to offer:", error);
-    }
+    } catch (error) {}
   };
 
   // Responsive design for messages
@@ -415,10 +414,7 @@ const Message = ({ conversationId }) => {
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg md:text-2xl font-bold text-[#00DCEE] truncate">
-                  {headerUser?.name ||
-                    headerUser?.username ||
-                    headerName ||
-                    "Conversation"}
+                  {headerName || "Conversation"}
                 </h1>
                 {isTypingVisible && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 italic">
@@ -441,17 +437,17 @@ const Message = ({ conversationId }) => {
           </div>
 
           {/* Gig info in header for mobile */}
-          {(stateServiceTitle || conversation?.service?.title) && (
+          {/* {(stateServiceTitle || conversation?.service?.title) && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
               {stateServiceTitle || conversation?.service?.title}
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Main Content Area with Scroll */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Saved gigs carousel */}
-          {savedGigs.length > 0 && (
+          {/* {savedGigs.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Saved Gigs
@@ -495,7 +491,7 @@ const Message = ({ conversationId }) => {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Messages Container */}
           <div
@@ -513,9 +509,18 @@ const Message = ({ conversationId }) => {
               <>
                 {conversation.messages.map((msg, index) => {
                   const isSender =
-                    String(msg.userId) ===
-                    String(currentUser.id || currentUser._id);
-
+                    String(msg.userId?._id || msg.userId) === meId;
+                  let displayName = "";
+                  if (isAdmin) {
+                    // Admin dekhe sob username
+                    displayName =
+                      msg.userId?.username || msg.userId?.name || "User";
+                  } else {
+                    // Normal user dekhe admin messages as "Admin"
+                    displayName = msg.userId?.isAdmin
+                      ? "Admin"
+                      : msg.userId?.username || "User";
+                  }
                   return (
                     <div
                       key={index}
@@ -525,9 +530,7 @@ const Message = ({ conversationId }) => {
                     >
                       {!isSender && (
                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-black dark:text-white font-semibold text-xs md:text-sm flex-shrink-0">
-                          {String(msg.userId || "")
-                            .slice(-2)
-                            .toUpperCase()}
+                          {displayName}
                         </div>
                       )}
 
@@ -589,8 +592,8 @@ const Message = ({ conversationId }) => {
                                 offer.status === "accepted"
                                   ? "text-green-500"
                                   : offer.status === "declined"
-                                  ? "text-red-500"
-                                  : "text-yellow-500"
+                                    ? "text-red-500"
+                                    : "text-yellow-500"
                               }`}
                             >
                               {offer.status}

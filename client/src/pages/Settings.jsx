@@ -2,7 +2,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import uploadImage from "../utils/uploadImage";
 
 const Settings = () => {
   const [user, setUser] = useState({
@@ -17,7 +16,7 @@ const Settings = () => {
   const [isUploading, setIsUploading] = useState(false);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const userId = useSelector(
-    (state) => state.auth.user._id || state.auth.user.id
+    (state) => state.auth.user._id || state.auth.user.id,
   );
 
   useEffect(() => {
@@ -51,32 +50,33 @@ const Settings = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      let imageUrl = null;
+      const formData = new FormData();
+
+      // Text fields
+      formData.append("username", user.username);
+      formData.append("email", user.email);
+      formData.append("country", user.country);
+      formData.append("phone", user.phone);
+
+      // File field
       if (newImage) {
-        setIsUploading(true);
-        try {
-          imageUrl = await uploadImage(newImage);
-          setIsUploading(false);
-        } catch (uploadError) {
-          setError("Failed to upload the new image.");
-          setIsUploading(false);
-          return;
-        }
+        formData.append("img", newImage); // 'img' => backend field name
       }
 
-      // Prepare the update payload
-      const updatedData = {
-        ...user,
-        ...(imageUrl && { img: imageUrl }), // Only include img if a new image URL exists
-      };
-
-      await axios.put(`${apiBaseUrl}/api/users/${userId}`, updatedData, {
+      // Axios request
+      await axios.put(`${apiBaseUrl}/api/users/${userId}`, formData, {
         withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
+
       setSuccessMessage("Profile updated successfully!");
       setError(null);
-    } catch {
+    } catch (err) {
+      console.log(err);
       setError("Failed to update profile.");
       setSuccessMessage(null);
     }
@@ -93,7 +93,10 @@ const Settings = () => {
         <form onSubmit={handleSubmit}>
           {/* Username */}
           <div className="mb-4">
-            <label htmlFor="username" className="block text-sm text-gray-600 dark:text-gray-300">
+            <label
+              htmlFor="username"
+              className="block text-sm text-gray-600 dark:text-gray-300"
+            >
               Username
             </label>
             <input
@@ -108,7 +111,10 @@ const Settings = () => {
 
           {/* Email */}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm text-gray-600 dark:text-gray-300">
+            <label
+              htmlFor="email"
+              className="block text-sm text-gray-600 dark:text-gray-300"
+            >
               Email
             </label>
             <input
@@ -123,7 +129,10 @@ const Settings = () => {
 
           {/* Country */}
           <div className="mb-4">
-            <label htmlFor="country" className="block text-sm text-gray-600 dark:text-gray-300">
+            <label
+              htmlFor="country"
+              className="block text-sm text-gray-600 dark:text-gray-300"
+            >
               Country
             </label>
             <input
@@ -138,7 +147,10 @@ const Settings = () => {
 
           {/* Phone */}
           <div className="mb-4">
-            <label htmlFor="phone" className="block text-sm text-gray-600 dark:text-gray-300">
+            <label
+              htmlFor="phone"
+              className="block text-sm text-gray-600 dark:text-gray-300"
+            >
               Phone
             </label>
             <input
@@ -153,7 +165,10 @@ const Settings = () => {
 
           {/* Profile Image */}
           <div className="mb-4">
-            <label htmlFor="img" className="block text-sm text-gray-600 dark:text-gray-300">
+            <label
+              htmlFor="img"
+              className="block text-sm text-gray-600 dark:text-gray-300"
+            >
               Profile Image
             </label>
             <input
@@ -165,12 +180,14 @@ const Settings = () => {
               className="w-full px-4 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-black/10 dark:border-white/10 focus:outline-none"
             />
             {isUploading && (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Uploading...</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                Uploading...
+              </p>
             )}
             {user.img && !newImage && (
               <div className="mt-4">
                 <img
-                  src={user.img}
+                  src={user.img?.url}
                   alt="Current Profile"
                   className="w-20 h-20 rounded-full object-cover"
                 />
@@ -178,7 +195,9 @@ const Settings = () => {
             )}
             {newImage && (
               <div className="mt-4">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">New image selected!</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  New image selected!
+                </p>
               </div>
             )}
           </div>

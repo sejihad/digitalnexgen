@@ -44,7 +44,6 @@ const Chat = () => {
           setSelectedId(res.data[0]._id);
         }
       } catch (err) {
-        console.error(err);
         toast.error("Error fetching conversations.");
       }
     };

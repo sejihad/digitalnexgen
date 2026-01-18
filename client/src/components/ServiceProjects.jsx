@@ -21,7 +21,7 @@
 //         );
 //         setProjects(filtered);
 //       } catch (error) {
-//         console.error("Error fetching projects:", error);
+//
 //       }
 //     };
 //     fetchProjects();

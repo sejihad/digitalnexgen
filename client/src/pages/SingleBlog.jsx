@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 const SingleBlog = () => {
@@ -11,9 +11,9 @@ const SingleBlog = () => {
     const fetchBlog = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`
+          `${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`,
         );
-       
+
         setBlog(response.data);
       } catch (error) {
         console.error("Error fetching blog:", error);
@@ -21,7 +21,7 @@ const SingleBlog = () => {
     };
 
     fetchBlog();
-  }, [id]); 
+  }, [id]);
 
   if (!blog) {
     return <div className="text-gray-400 text-center mt-10">Loading...</div>;
@@ -33,8 +33,12 @@ const SingleBlog = () => {
 
   return (
     <div className="p-8 max-w-[1440px] w-11/12 mx-auto">
-      <h1 className="text-3xl font-bold text-white mb-2 font-roboto">{blog.title}</h1>
-      <p className="text-sm text-gray-400 mb-6"> <span className="font-bold font-openSans">Created At: </span>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 font-roboto">
+        {blog.title}
+      </h1>
+      <p className="text-sm text-black dark:text-gray-400 mb-6">
+        {" "}
+        <span className="font-bold font-openSans">Created At: </span>
         {new Date(blog.createdAt).toLocaleDateString()}
       </p>
 
@@ -42,7 +46,7 @@ const SingleBlog = () => {
         <div className="mb-6">
           {/* Main Image */}
           <img
-            src={blog.images[selectedImageIndex]}
+            src={blog.images?.[selectedImageIndex]?.url}
             alt={`Blog Image ${selectedImageIndex + 1}`}
             className="w-full h-[350px] object-cover rounded-md border border-gray-600"
           />
@@ -63,14 +67,11 @@ const SingleBlog = () => {
                   ? "border-red-500"
                   : "border-gray-600"
               }`}
-              style={{
-                flex: "0 0 auto",
-                width: "80px",
-              }}
+              style={{ flex: "0 0 auto", width: "80px" }}
               onClick={() => handleThumbnailClick(index)}
             >
               <img
-                src={image}
+                src={image.url}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-20 h-20 object-cover rounded-md border"
               />
@@ -79,7 +80,9 @@ const SingleBlog = () => {
         </div>
       )}
 
-      <div className="mt-6 text-gray-300 font-openSans">{blog.description}</div>
+      <div className="mt-6 text-black dark:text-gray-300 font-openSans">
+        {blog.description}
+      </div>
     </div>
   );
 };

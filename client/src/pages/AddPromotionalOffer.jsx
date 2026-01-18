@@ -85,20 +85,15 @@ const AddPromotionalOffer = () => {
         order: Number(data.order),
       };
 
-      console.log("Submitting offer data:", offerData);
-
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`,
         offerData,
         { withCredentials: true }
       );
 
-      console.log("Offer created successfully:", response.data);
       toast.success("Promotional offer created successfully!");
       navigate("/admin/promotional-offers");
     } catch (error) {
-      console.error("Error creating promotional offer:", error);
-      console.error("Error response:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to create offer");
     } finally {
       dispatch(hideLoading());
@@ -113,12 +108,7 @@ const AddPromotionalOffer = () => {
       .then((res) => {
         if (mounted) setServicesList(res.data || []);
       })
-      .catch((err) => {
-        console.error(
-          "Failed to fetch services for promotional offer selector",
-          err
-        );
-      });
+      .catch((err) => {});
     return () => {
       mounted = false;
     };

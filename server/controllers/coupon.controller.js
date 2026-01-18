@@ -107,7 +107,6 @@ export const verifyCoupon = async (req, res) => {
   );
   const finalPrice = parseFloat((price - discountAmount).toFixed(0));
 
-  console.log(finalPrice);
   res.json({
     valid: true,
     discountValue: coupon.discountValue,

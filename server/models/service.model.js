@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
-
 const packageSchema = new mongoose.Schema({
   name: { type: String, required: true },
   desc: { type: String, required: true },
@@ -9,7 +8,6 @@ const packageSchema = new mongoose.Schema({
   regularPrice: { type: Number, required: true },
   salePrice: { type: Number, required: false },
 });
-
 const serviceSchema = new mongoose.Schema(
   {
     userId: {
@@ -21,8 +19,12 @@ const serviceSchema = new mongoose.Schema(
     desc: { type: String, required: true },
     category: { type: String, required: true },
     subCategory: { type: String, required: true },
-    coverImage: { type: String, required: true },
-    otherImages: { type: [String], required: false },
+    videoUrl: { type: String },
+    coverImage: {
+      public_id: { type: String, required: true },
+      url: { type: String, required: true },
+    },
+    otherImages: [{ public_id: { type: String }, url: { type: String } }],
     shortTitle: { type: String, required: true },
     shortDesc: { type: String, required: true },
     features: { type: [String], required: false },
@@ -34,6 +36,5 @@ const serviceSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 export default mongoose.model("Service", serviceSchema);
-4
+4;

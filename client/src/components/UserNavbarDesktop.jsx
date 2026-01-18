@@ -19,7 +19,7 @@ const UserNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
   const userId = useSelector(
-    (state) => state.auth.user._id || state.auth.user.id
+    (state) => state.auth.user._id || state.auth.user.id,
   );
 
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -31,7 +31,7 @@ const UserNavbar = () => {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
-    if (userData?.img) setProfileImage(userData.img);
+    if (userData?.img?.url) setProfileImage(userData.img.url);
   }, [userId]);
 
   const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
@@ -158,7 +158,7 @@ const UserNavbar = () => {
           <div className="group relative cursor-pointer">
             <span
               className={`flex items-center gap-1 dark:text-white ${
-                isActive("/blog") || isActive("/about")
+                isActive("/blog") || isActive("/about") || isActive("/contact")
                   ? "text-primaryRgb"
                   : "hover:text-primaryRgb"
               }`}
@@ -185,6 +185,16 @@ const UserNavbar = () => {
                 }`}
               >
                 About
+              </Link>
+              <Link
+                to="/contact"
+                className={`block px-4 py-2  dark:hover:bg-[#444444] dark:text-white ${
+                  isActive("/contact")
+                    ? "text-primaryRgb"
+                    : "hover:text-primaryRgb"
+                }`}
+              >
+                Contact
               </Link>
             </div>
           </div>

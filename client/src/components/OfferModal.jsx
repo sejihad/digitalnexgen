@@ -51,7 +51,6 @@ const OfferModal = () => {
           } catch {}
         }
       } catch (err) {
-        console.error("Failed to fetch latest offer", err);
         setHasOffer(false); // Error হলেও offer নেই
         try {
           sessionStorage.removeItem("offerEndTime");

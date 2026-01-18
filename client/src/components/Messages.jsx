@@ -24,7 +24,6 @@ const Messages = () => {
         );
         setConversations(response.data);
       } catch (error) {
-        console.error("Error fetching conversations:", error);
         toast.error("Error fetching conversations, please try again.");
       } finally {
         dispatch(hideLoading());
@@ -114,7 +113,6 @@ const Messages = () => {
       );
       toast.success("Conversation marked as read.");
     } catch (error) {
-      console.error("Error updating read status:", error);
       toast.error("Error updating read status, please try again.");
     }
   };
@@ -159,7 +157,11 @@ const Messages = () => {
               </th>
               {conversations.some((conv) =>
                 isAdmin ? !conv.readByAdmin : !conv.readByBuyer
-              ) && <th className="p-3 border-b border-gray-200 dark:border-gray-700">Actions</th>}
+              ) && (
+                <th className="p-3 border-b border-gray-200 dark:border-gray-700">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -172,13 +174,15 @@ const Messages = () => {
                 }
               >
                 <td className="p-3 border-b text-sm lg:text-lg border-gray-200 dark:border-gray-700">
-                  {isAdmin ? (buyerNames[conv._id] || "Loading...") : (counterpartNames[conv._id] || "Loading...")}
+                  {isAdmin
+                    ? buyerNames[conv._id] || "Loading..."
+                    : counterpartNames[conv._id] || "Loading..."}
                 </td>
                 <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-sm lg:text-lg">
                   {conv.lastMessage}
                 </td>
                 <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-sm lg:text-lg">
-                  {new Date(conv.updatedAt).toLocaleDateString()} {" "}
+                  {new Date(conv.updatedAt).toLocaleDateString()}{" "}
                   {new Date(conv.updatedAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

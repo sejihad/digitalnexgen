@@ -1,11 +1,11 @@
-import React, { useState } from "react";
 import axios from "axios";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
-import Logo from "../assets/logo.png";
-import DarkLogo from "../assets/DarkLogo.png"
+import DarkLogo from "../assets/DarkLogo.png";
 import element1 from "../assets/elements/element-1.png";
 import element2 from "../assets/elements/element-2.png";
+import Logo from "../assets/logo.png";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -17,14 +17,14 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Email being sent:", email);
+
     dispatch(showLoading());
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/auth/forgot-password`,
         { email }
       );
-   
+
       setMessage(res.data.message || "Password reset email sent!");
       setError("");
     } catch (err) {
@@ -44,16 +44,16 @@ const ForgotPassword = () => {
           <div className="flex flex-col gap-6">
             <div className="text-primaryText flex flex-col gap-5">
               <div className="flex justify-center lg:justify-start">
-                 <img
-              src={Logo}
-              alt="Logo"
-              className="dark:hidden ml-[-15px] mb-2"
-            />
-            <img
-              src={DarkLogo}
-              alt="Logo Of Digital NexGen "
-              className=" hidden dark:block ml-[-15px] mb-2"
-            />
+                <img
+                  src={Logo}
+                  alt="Logo"
+                  className="dark:hidden ml-[-15px] mb-2"
+                />
+                <img
+                  src={DarkLogo}
+                  alt="Logo Of Digital NexGen "
+                  className=" hidden dark:block ml-[-15px] mb-2"
+                />
               </div>
               <div>
                 <h3 className="text-2xl font-openSans font-medium text-center lg:text-left text-white">

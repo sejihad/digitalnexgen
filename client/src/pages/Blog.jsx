@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
 import { useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -15,9 +15,9 @@ const Blog = () => {
       dispatch(showLoading());
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/blogs`
+          `${import.meta.env.VITE_API_BASE_URL}/api/blogs`,
         );
-     
+
         setBlogs(response.data);
       } catch (error) {
         console.error("Error fetching blogs:", error);
@@ -39,9 +39,9 @@ const Blog = () => {
         title="Voices Behind the Screen"
         paragraph="Explore stories, insights, and ideas shared from every corner of the world."
       />
-      
+
       <div className="py-8 max-w-[1440px] w-11/12 mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-200 font-roboto">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-gray-200 font-roboto">
           Our Blogs
         </h1>
         {blogs.length > 0 ? (
@@ -53,15 +53,16 @@ const Blog = () => {
                 onClick={() => navigate(`/blog/${blog._id}`)}
               >
                 <img
-                  src={blog.images[0]}
+                  src={blog.images?.[0]?.url}
                   alt={blog.title}
                   className="w-full h-48 object-cover"
                 />
+
                 <div className="p-4">
-                  <h2 className="text-xl font-semibold mb-2 font-roboto">
+                  <h2 className="text-xl text-gray-900 dark:text-gray-200 font-semibold mb-2 font-roboto">
                     {blog.title}
                   </h2>
-                  <p className="text-gray-400 line-clamp-3 font-openSans">
+                  <p className="text-gray-900 dark:text-gray-400 line-clamp-3 font-openSans">
                     {blog.description}
                   </p>
                 </div>

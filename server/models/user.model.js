@@ -32,7 +32,8 @@ const userSchema = new Schema(
       type: String,
     },
     img: {
-      type: String,
+      url: { type: String },
+      public_id: { type: String },
     },
     country: {
       type: String,
@@ -59,7 +60,7 @@ const userSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 userSchema.index({ username: 1, provider: 1 }, { unique: true });

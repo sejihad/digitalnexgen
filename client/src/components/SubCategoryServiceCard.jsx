@@ -23,52 +23,11 @@ const SubCategoryServiceCard = ({ service }) => {
       </div>
 
       <div className="relative">
-        {service.coverImage.endsWith(".mp4") ? (
-          <div className="relative">
-            <video
-              muted
-              autoPlay
-              loop
-              className="w-full h-48 object-cover rounded-md group-hover:opacity-90 transition-opacity duration-300 "
-            >
-              <source src={service.coverImage} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                const videoElement = e.currentTarget.previousElementSibling;
-                if (videoElement.paused) {
-                  videoElement.play();
-                } else {
-                  videoElement.pause();
-                }
-              }}
-              className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-10 h-10"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5.25 5.25v13.5l13.5-6.75-13.5-6.75z"
-                />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <img
-            src={service.coverImage}
-            alt={service.shortTitle}
-            className="w-full h-48 object-cover rounded-md group-hover:opacity-90 transition-opacity duration-300"
-          />
-        )}
+        <img
+          src={service.coverImage?.url}
+          alt={service.shortTitle}
+          className="w-full h-48 object-cover rounded-md group-hover:opacity-90 transition-opacity duration-300"
+        />
       </div>
 
       <div className="py-4">

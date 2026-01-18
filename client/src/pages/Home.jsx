@@ -25,14 +25,12 @@ const Home = () => {
           bloomSize="600px"
         />
       </div>
-
+      <div className="lg:mb-16">
+        <StatisticsSection></StatisticsSection>
+      </div>
       {/* <HomeVideo /> */}
       <div className="lg:mb-16">
         <Gallery category="hero section" />
-      </div>
-
-      <div className="lg:mb-16">
-        <StatisticsSection></StatisticsSection>
       </div>
     </div>
   );

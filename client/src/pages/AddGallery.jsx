@@ -1,10 +1,9 @@
-
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
-import axios from "axios";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 import uploadImage from "../utils/uploadImage";
 
 const AddGallery = () => {
@@ -34,9 +33,7 @@ const AddGallery = () => {
       .then((res) => {
         if (mounted) setServicesList(res.data || []);
       })
-      .catch((err) => {
-        console.error("Failed to fetch services for gallery selector", err);
-      });
+      .catch((err) => {});
     return () => {
       mounted = false;
     };
@@ -59,22 +56,7 @@ const AddGallery = () => {
         serviceId: data.serviceId ? data.serviceId : undefined,
       };
 
-  // Fetch services for Linked Service selector
-  useEffect(() => {
-    let mounted = true;
-    axios
-      .get(`${import.meta.env.VITE_API_BASE_URL}/api/services`)
-      .then((res) => {
-        if (mounted) setServicesList(res.data || []);
-      })
-      .catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error("Failed to fetch services for gallery selector", err);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+      // Fetch services for Linked Service selector
 
       await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/galleries`,
@@ -85,12 +67,25 @@ const AddGallery = () => {
       toast.success("Gallery item created successfully!");
       reset();
     } catch (error) {
-      toast.error(error?.message || "Failed to create gallery item. Please try again.");
+      toast.error(
+        error?.message || "Failed to create gallery item. Please try again."
+      );
     } finally {
       dispatch(hideLoading());
     }
   };
-
+  useEffect(() => {
+    let mounted = true;
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/api/services`)
+      .then((res) => {
+        if (mounted) setServicesList(res.data || []);
+      })
+      .catch((err) => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <div className="p-6 text-white bg-[#333333] max-w-[800px] mx-auto rounded-md mt-4">
       <h1 className="text-center text-3xl font-bold mb-4 font-roboto">

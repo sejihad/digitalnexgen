@@ -1,3 +1,5 @@
+import deleteFromS3 from "../config/deleteFromS3.js";
+import uploadToS3 from "../config/uploadToS3.js";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 
@@ -49,7 +51,7 @@ export const updateUser = async (req, res, next) => {
         return res
           .status(400)
           .send(
-            "Invalid phone format. Use +countrycode followed by 7-15 digits."
+            "Invalid phone format. Use +countrycode followed by 7-15 digits.",
           );
       }
       if (ph) user.phone = ph;
@@ -63,13 +65,24 @@ export const updateUser = async (req, res, next) => {
       if (num) user.number = num;
     }
 
-    if (req.body.img) {
-      user.img = req.body.img;
+    if (req.files && req.files.img) {
+      // 1️⃣ Delete old image from S3 if exists
+      if (user.img?.public_id) {
+        await deleteFromS3(user.img.public_id);
+      }
+
+      // 2️⃣ Upload new image to S3
+      const uploaded = await uploadToS3(req.files.img, "users"); // req.body.img = File object / base64
+      user.img = {
+        public_id: uploaded.key,
+        url: uploaded.url,
+      };
     }
 
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
   } catch (error) {
+    console.log(error);
     res.status(500).send("Something went wrong!");
   }
 };

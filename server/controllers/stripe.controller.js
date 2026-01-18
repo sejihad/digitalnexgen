@@ -7,9 +7,6 @@ dotenv.config();
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 let stripe = null;
 if (!stripeSecret) {
-  console.warn(
-    "[stripe] Missing STRIPE_SECRET_KEY. Stripe routes will be disabled."
-  );
 } else {
   stripe = new Stripe(stripeSecret);
 }
@@ -48,7 +45,6 @@ export const createCheckoutSession = async (req, res, next) => {
 
     res.status(200).json({ url: session.url });
   } catch (err) {
-    console.log("❌ Error creating checkout session:", err);
     next(err);
   }
 };
@@ -70,7 +66,6 @@ export const stripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("⚠️ Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -91,7 +86,6 @@ export const stripeWebhook = async (req, res) => {
       // ✅ Find user from metadata
       const user = await User.findById(session.metadata.userId);
       if (!user) {
-        console.error("⚠️ User not found!");
         return res.status(404).send("User not found");
       }
 
@@ -120,7 +114,6 @@ export const stripeWebhook = async (req, res) => {
 
       await newOrder.save();
     } catch (err) {
-      console.error("❌ Order creation failed:", err);
       return res.status(500).send("Internal server error");
     }
   }

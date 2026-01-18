@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { Send, X, MessageCircle, Minimize2 } from "lucide-react";
-import { useSocket } from "../context/SocketContext";
 import axios from "axios";
+import { MessageCircle, Minimize2, Send, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useSocket } from "../context/SocketContext";
 
 const ChatBox = ({ currentUser, adminId, onClose }) => {
   const [messages, setMessages] = useState([]);
@@ -14,7 +14,8 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
   const { socket, isConnected, sendMessage: socketSendMessage } = useSocket();
 
   // Get API base URL with fallback
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8800";
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8800";
 
   useEffect(() => {
     // Validate required props
@@ -40,7 +41,6 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
         );
         setMessages(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
-        console.error("Error fetching messages:", error);
         setError("Failed to load chat history");
         setMessages([]);
       } finally {
@@ -57,10 +57,11 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
         if (data.message.senderId !== currentUser._id) {
           setMessages((prev) => {
             // Check for duplicates
-            const exists = prev.some(msg =>
-              msg._id === data.message._id ||
-              msg.timestamp === data.message.timestamp ||
-              (msg.tempId && msg.tempId === data.message.tempId)
+            const exists = prev.some(
+              (msg) =>
+                msg._id === data.message._id ||
+                msg.timestamp === data.message.timestamp ||
+                (msg.tempId && msg.tempId === data.message.tempId)
             );
             if (!exists) {
               return [...prev, data.message];
@@ -100,7 +101,7 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
       receiverId: adminId,
       text: messageText,
       timestamp: new Date(),
-      tempId: `temp_${Date.now()}_${Math.random()}`
+      tempId: `temp_${Date.now()}_${Math.random()}`,
     };
 
     // Add to local state immediately for better UX
@@ -115,17 +116,16 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
       });
 
       // Save to database
-      await axios.post(
-        `${API_BASE_URL}/api/chats`,
-        message,
-        { withCredentials: true }
-      );
+      await axios.post(`${API_BASE_URL}/api/chats`, message, {
+        withCredentials: true,
+      });
     } catch (error) {
-      console.error("Error sending message:", error);
       setError("Failed to send message. Please try again.");
 
       // Remove failed message from local state
-      setMessages((prev) => prev.filter(msg => msg.tempId !== message.tempId));
+      setMessages((prev) =>
+        prev.filter((msg) => msg.tempId !== message.tempId)
+      );
 
       // Restore input text on error
       setInput(messageText);
@@ -169,7 +169,9 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
       <div className="fixed bottom-5 right-5 w-80 h-96 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl z-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primaryRgb mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Loading chat...</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Loading chat...
+          </p>
         </div>
       </div>
     );
@@ -258,9 +260,11 @@ const ChatBox = ({ currentUser, adminId, onClose }) => {
 
       {/* Connection Status */}
       <div className="px-3 pb-2">
-        <div className={`text-xs text-center ${
-          isConnected ? "text-green-600" : "text-red-500"
-        }`}>
+        <div
+          className={`text-xs text-center ${
+            isConnected ? "text-green-600" : "text-red-500"
+          }`}
+        >
           {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
         </div>
       </div>

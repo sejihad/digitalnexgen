@@ -2,11 +2,11 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import fileUpload from "express-fileupload";
 import http from "http"; // <-- add this
 import mongoose from "mongoose";
 import passport from "passport";
 import { Server } from "socket.io"; // <-- add this
-
 import { stripeWebhook } from "./controllers/stripe.controller.js";
 import authRoute from "./routes/auth.route.js";
 import blogRoute from "./routes/blog.route.js";
@@ -56,9 +56,10 @@ app.use(
 
 connectPassport();
 app.use(passport.initialize());
-app.use(express.json());
+app.use(fileUpload());
 app.use(cookieParser());
-
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Routes
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
@@ -108,26 +109,20 @@ const io = new Server(httpServer, {
 
 // Simple Socket.IO example
 io.on("connection", (socket) => {
-  console.log("✅ Socket connected:", socket.id);
-
   // Join conversation room
   socket.on("conversation:join", (conversationId) => {
     socket.join(conversationId);
-    console.log(`User joined room: ${conversationId}`);
   });
 
   // Send message
   socket.on("message:send", ({ conversationId, message }) => {
-    console.log("Message sent to room", conversationId, message);
     // Broadcast to all in room except sender
     socket
       .to(conversationId)
       .emit("message:receive", { conversationId, message });
   });
 
-  socket.on("disconnect", () => {
-    console.log("❌ Socket disconnected:", socket.id);
-  });
+  socket.on("disconnect", () => {});
 });
 
 // Start server

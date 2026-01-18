@@ -1,11 +1,10 @@
-import { useForm } from "react-hook-form";
-import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
-import uploadImage from "../utils/uploadImage";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const EditBlog = () => {
   const { id } = useParams();
@@ -27,7 +26,7 @@ const EditBlog = () => {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         const blog = response.data;
 
@@ -47,25 +46,34 @@ const EditBlog = () => {
   const onSubmit = async (data) => {
     dispatch(showLoading());
     try {
-      const imageUrls = data.images
-        ? await Promise.all(Array.from(data.images).map(uploadImage))
-        : [];
+      const formData = new FormData();
 
-      const updatedData = {
-        ...data,
-        images: imageUrls.length ? imageUrls : data.images,
-      };
+      // text fields
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+
+      // images only if user selects new ones
+      if (data.images && data.images.length > 0) {
+        for (let i = 0; i < data.images.length; i++) {
+          formData.append("images", data.images[i]);
+        }
+      }
 
       await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`,
-        updatedData,
-        { withCredentials: true }
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
 
       toast.success("Blog updated successfully!");
       navigate("/admin/blogs");
     } catch (error) {
-      toast.error("Failed to update blog. Please try again.");
+      toast.error("Failed to update blog.");
     } finally {
       dispatch(hideLoading());
     }

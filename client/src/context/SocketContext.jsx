@@ -42,7 +42,6 @@ export const SocketProvider = ({ children }) => {
     );
 
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
       setIsConnected(true);
 
       // 🔑 backend token expect করে
@@ -50,12 +49,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", reason);
       setIsConnected(false);
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("❌ Socket error:", err.message);
       setIsConnected(false);
     });
 

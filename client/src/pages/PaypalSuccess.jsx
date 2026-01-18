@@ -16,7 +16,6 @@ const PaypalSuccess = () => {
           { withCredentials: true }
         );
 
-        console.log("✅ Order captured:", res.data);
         navigate("/orders"); // show success message
       } catch (err) {
         console.error("❌ Payment capture failed:", err);

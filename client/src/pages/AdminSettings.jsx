@@ -2,7 +2,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import uploadImage from "../utils/uploadImage";
 
 const AdminSettings = () => {
   const [user, setUser] = useState({
@@ -17,7 +16,7 @@ const AdminSettings = () => {
   const [isUploading, setIsUploading] = useState(false);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const adminId = useSelector(
-    (state) => state.auth.user._id || state.auth.user.id
+    (state) => state.auth.user._id || state.auth.user.id,
   );
   useEffect(() => {
     const fetchUser = async () => {
@@ -51,33 +50,43 @@ const AdminSettings = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let imageUrl = null;
+      setIsUploading(true);
+
+      // 1️⃣ Create FormData
+      const formData = new FormData();
+      formData.append("username", user.username);
+      formData.append("email", user.email);
+      formData.append("country", user.country);
+      formData.append("phone", user.phone || "");
+
+      // 2️⃣ Append image file if selected
       if (newImage) {
-        setIsUploading(true);
-        try {
-          imageUrl = await uploadImage(newImage);
-          setIsUploading(false);
-        } catch (uploadError) {
-          setError("Failed to upload the new image.");
-          setIsUploading(false);
-          return;
-        }
+        formData.append("img", newImage); // key name must match backend
       }
 
-      // Prepare the update payload
-      const updatedData = {
-        ...user,
-        ...(imageUrl && { img: imageUrl }), // Only include img if a new image URL exists
-      };
+      // 3️⃣ Send to backend
+      const { data } = await axios.put(
+        `${apiBaseUrl}/api/users/${adminId}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data", // Important!
+          },
+        },
+      );
 
-      await axios.put(`${apiBaseUrl}/api/users/${adminId}`, updatedData, {
-        withCredentials: true,
-      });
       setSuccessMessage("Profile updated successfully!");
       setError(null);
-    } catch {
+      setIsUploading(false);
+
+      // Optional: update local state with returned user
+      setUser(data);
+      setNewImage(null);
+    } catch (err) {
       setError("Failed to update profile.");
       setSuccessMessage(null);
+      setIsUploading(false);
     }
   };
 
@@ -169,7 +178,7 @@ const AdminSettings = () => {
             {user.img && !newImage && (
               <div className="mt-4">
                 <img
-                  src={user.img}
+                  src={user.img?.url}
                   alt="Current Profile"
                   className="w-20 h-20 rounded-full object-cover"
                 />

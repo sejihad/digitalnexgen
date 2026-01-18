@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminGalleries = () => {
   const [galleries, setGalleries] = useState([]);
@@ -17,7 +17,6 @@ const AdminGalleries = () => {
         );
         setGalleries(response.data);
       } catch (error) {
-        console.error("Error fetching galleries:", error);
         setError("Failed to fetch galleries. Please try again later.");
       } finally {
         dispatch(hideLoading());
@@ -44,7 +43,6 @@ const AdminGalleries = () => {
       setGalleries(galleries.filter((gallery) => gallery._id !== id));
       alert("Gallery item deleted successfully.");
     } catch (error) {
-      console.error("Error deleting gallery item:", error);
       alert("Failed to delete the gallery item. Please try again.");
     } finally {
       dispatch(hideLoading());
@@ -73,10 +71,7 @@ const AdminGalleries = () => {
             </thead>
             <tbody>
               {galleries.map((gallery, index) => (
-                <tr
-                  key={gallery._id}
-                  className="bg-gray-900 hover:bg-gray-700"
-                >
+                <tr key={gallery._id} className="bg-gray-900 hover:bg-gray-700">
                   <td className="border border-gray-700 px-4 py-2">
                     {index + 1}
                   </td>

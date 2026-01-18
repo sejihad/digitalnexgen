@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
-import uploadImage from "../utils/uploadImage";
 
 const AddService = () => {
   const dispatch = useDispatch();
@@ -20,6 +19,7 @@ const AddService = () => {
       title: "",
       category: "",
       subCategory: "",
+      videoUrl: "",
       coverImage: null,
       otherImages: [],
       desc: "",
@@ -184,27 +184,53 @@ const AddService = () => {
   const onSubmit = async (data) => {
     dispatch(showLoading());
     try {
-      const coverImageUrl = await uploadImage(data.coverImage[0]);
-      const otherImageUrls = await Promise.all(
-        Array.from(data.otherImages).map(uploadImage)
-      );
+      const formData = new FormData();
 
-      const serviceData = {
-        ...data,
-        coverImage: coverImageUrl,
-        otherImages: otherImageUrls.filter(Boolean),
-      };
+      // text fields
+      [
+        "title",
+        "category",
+        "subCategory",
+        "desc",
+        "shortTitle",
+        "shortDesc",
+        "videoUrl",
+      ].forEach((key) => formData.append(key, data[key] || ""));
+
+      // cover image
+      if (!data.coverImage || data.coverImage.length === 0) {
+        toast.error("Cover image is required");
+        dispatch(hideLoading());
+        return;
+      }
+
+      formData.append("coverImage", data.coverImage[0]);
+
+      // unlimited images
+      if (data.otherImages && data.otherImages.length > 0) {
+        for (let i = 0; i < data.otherImages.length; i++) {
+          formData.append("otherImages", data.otherImages[i]);
+        }
+      }
+
+      // arrays
+      formData.append("features", JSON.stringify(data.features));
+      formData.append("packages", JSON.stringify(data.packages));
 
       await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/services`,
-        serviceData,
-        { withCredentials: true }
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
       );
 
       toast.success("Service created successfully!");
       reset();
-    } catch (error) {
-      toast.error("Failed to create service. Please try again.");
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to create service");
     } finally {
       dispatch(hideLoading());
     }
@@ -222,7 +248,11 @@ const AddService = () => {
           className="w-full p-2 rounded bg-gray-700"
         />
         {errors.title && <p className="text-red-500">{errors.title.message}</p>}
-
+        <input
+          {...register("videoUrl")}
+          placeholder="Video URL (optional)"
+          className="w-full p-2 rounded bg-gray-700"
+        />
         <select
           {...register("category", { required: "Category is required" })}
           onChange={(e) => {
@@ -259,7 +289,10 @@ const AddService = () => {
         )}
 
         <input
-          {...register("coverImage", { required: "Cover image is required" })}
+          {...register("coverImage", {
+            validate: (files) =>
+              (files && files.length > 0) || "Cover image is required",
+          })}
           type="file"
           className="w-full p-2 rounded bg-gray-700"
         />
@@ -389,9 +422,9 @@ const AddService = () => {
                   placeholder={`${pkg.name} Sale Price`}
                   className="w-full p-2 rounded bg-gray-700"
                 />
-                {errors.packages?.[index]?.sellPrice && (
+                {errors.packages?.[index]?.selePrice && (
                   <p className="text-red-500">
-                    {errors.packages[index].sellPrice.message}
+                    {errors.packages[index].selePrice.message}
                   </p>
                 )}
               </div>

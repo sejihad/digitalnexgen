@@ -1,12 +1,4 @@
-import {
-  BookOpen,
-  Gift,
-  Home,
-  Info,
-  Layers,
-  MessageSquare,
-  User,
-} from "lucide-react";
+import { Gift, Home, Layers, MessageSquare, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import DarkLogo from "../assets/DarkLogo.png";
 import Logo from "../assets/logo.png";
@@ -195,9 +187,10 @@ const GuestNavbar = () => {
           aria-label="Messages (login)"
         >
           <MessageSquare size={20} />
+          <span className="text-xs">Messages</span>
         </Link>
 
-        <Link
+        {/* <Link
           to="/blog"
           className={`flex flex-col items-center ${
             isActive("/blog")
@@ -207,8 +200,8 @@ const GuestNavbar = () => {
         >
           <BookOpen size={20} />
           <span className="text-xs">Blog</span>
-        </Link>
-        <Link
+        </Link> */}
+        {/* <Link
           to="/about"
           className={`flex flex-col items-center ${
             isActive("/about")
@@ -218,7 +211,7 @@ const GuestNavbar = () => {
         >
           <Info size={20} />
           <span className="text-xs">About</span>
-        </Link>
+        </Link> */}
         <Link
           to="/auth/login"
           className={`flex flex-col items-center ${

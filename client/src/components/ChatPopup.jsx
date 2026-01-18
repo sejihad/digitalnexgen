@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
 import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+import io from "socket.io-client";
 
 const socket = io("http://localhost:8800");
 
@@ -16,7 +16,7 @@ const ChatPopup = ({ userId, adminId, onClose }) => {
     axios
       .get(`http://localhost:8800/api/chats/${userId}/${adminId}`)
       .then((res) => setMessages(res.data))
-      .catch(console.error);
+      .catch();
 
     // Listen for new messages
     socket.on("receiveMessage", (message) => {
@@ -47,7 +47,9 @@ const ChatPopup = ({ userId, adminId, onClose }) => {
     <div className="fixed bottom-20 right-5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl w-80 h-96 flex flex-col z-50">
       <div className="flex justify-between items-center bg-green-600 text-white px-4 py-2 rounded-t-lg">
         <span>Digital NexGen Support</span>
-        <button onClick={onClose} className="font-bold text-lg">&times;</button>
+        <button onClick={onClose} className="font-bold text-lg">
+          &times;
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">

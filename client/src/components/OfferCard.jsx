@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Star, ArrowRight, Clock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { ArrowRight, Star } from "lucide-react";
 import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const OfferCard = ({ offer }) => {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ const OfferCard = ({ offer }) => {
     minutes: 0,
     seconds: 0,
   });
-  
+
   // Individual countdown timer for this offer
   useEffect(() => {
     if (!offer.endDate) return;
@@ -26,7 +26,9 @@ const OfferCard = ({ offer }) => {
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          hours: Math.floor(
+            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          ),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),
         });
@@ -50,7 +52,9 @@ const OfferCard = ({ offer }) => {
 
       {/* Discount Banner */}
       <div className="bg-gradient-to-r dark:border dark:border-teal-50 shadow-[0_.14px_2.29266px_rgba(0,0,0,0.03),_0_.37px_4.42626px_rgba(0,0,0,0.047),_0_3px_7px_rgba(0,0,0,0.09)] border border-green-400 text-gray-700  dark:text-white text-center py-4">
-        <p className="text-xl  font-extrabold  tracking-wide">{offer.discount}</p>
+        <p className="text-xl  font-extrabold  tracking-wide">
+          {offer.discount}
+        </p>
       </div>
 
       {/* Card Content */}
@@ -116,8 +120,13 @@ const OfferCard = ({ offer }) => {
                 key={idx}
                 className="flex items-start gap-2 text-gray-700 dark:text-gray-200"
               >
-                <Star className="w-4 h-4 text-primaryRgb flex-shrink-0 mt-0.5" fill="currentColor" />
-                <span className="text-sm leading-relaxed font-medium">{feature}</span>
+                <Star
+                  className="w-4 h-4 text-primaryRgb flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                />
+                <span className="text-sm leading-relaxed font-medium">
+                  {feature}
+                </span>
               </li>
             ))}
           </ul>
@@ -126,37 +135,51 @@ const OfferCard = ({ offer }) => {
         {/* CTA Button */}
         <button
           onClick={async () => {
-              // Try to navigate to the linked service if available.
-              // serviceRef can be a string id or a populated object (due to .populate('serviceId')).
-              const rawRef = offer.serviceId || offer.service || null;
-              if (!rawRef) {
-                navigate("/services");
-                return;
-              }
-              // If populated object, use it directly
-              if (typeof rawRef === "object" && rawRef !== null) {
-                const svc = rawRef._id ? rawRef : rawRef.serviceId || rawRef;
-                const subCategory = svc.subCategory || svc.category || "services";
-                navigate(`/${subCategory}/${svc._id}${offer._id ? `?offer=${offer._id}` : ""}`);
-                return;
-              }
+            // Try to navigate to the linked service if available.
+            // serviceRef can be a string id or a populated object (due to .populate('serviceId')).
+            const rawRef = offer.serviceId || offer.service || null;
+            if (!rawRef) {
+              navigate("/services");
+              return;
+            }
+            // If populated object, use it directly
+            if (typeof rawRef === "object" && rawRef !== null) {
+              const svc = rawRef._id ? rawRef : rawRef.serviceId || rawRef;
+              const subCategory = svc.subCategory || svc.category || "services";
+              navigate(
+                `/${subCategory}/${svc._id}${
+                  offer._id ? `?offer=${offer._id}` : ""
+                }`
+              );
+              return;
+            }
 
-              // Otherwise rawRef is assumed to be an id string — fetch the service to get subCategory
-              try {
-                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/services/single-service/${rawRef}`);
-                const svc = res.data;
-                const subCategory = svc.subCategory || svc.category || "services";
-                navigate(`/${subCategory}/${svc._id}${offer._id ? `?offer=${offer._id}` : ""}`);
-              } catch (err) {
-                console.error("Failed to navigate to service:", err);
-                // fallback
-                navigate("/services");
-              }
-            }}
+            // Otherwise rawRef is assumed to be an id string — fetch the service to get subCategory
+            try {
+              const res = await axios.get(
+                `${
+                  import.meta.env.VITE_API_BASE_URL
+                }/api/services/single-service/${rawRef}`
+              );
+              const svc = res.data;
+              const subCategory = svc.subCategory || svc.category || "services";
+              navigate(
+                `/${subCategory}/${svc._id}${
+                  offer._id ? `?offer=${offer._id}` : ""
+                }`
+              );
+            } catch (err) {
+              // fallback
+              navigate("/services");
+            }
+          }}
           className="w-full border border-green-400 dark:border dark:border-white dark:text-white text-gray-600 py-3 rounded-lg font-bold text-base uppercase tracking-wider hover:opacity-90 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 shadow-xl"
         >
           <span>Claim This Offer</span>
-          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" strokeWidth={3} />
+          <ArrowRight
+            className="w-5 h-5 group-hover:translate-x-2 transition-transform"
+            strokeWidth={3}
+          />
         </button>
       </div>
     </div>
@@ -173,10 +196,7 @@ OfferCard.propTypes = {
     originalPrice: PropTypes.number.isRequired,
     features: PropTypes.arrayOf(PropTypes.string).isRequired,
     endDate: PropTypes.string.isRequired,
-    serviceId: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.object,
-    ]),
+    serviceId: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     service: PropTypes.object,
   }).isRequired,
 };

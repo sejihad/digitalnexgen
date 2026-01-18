@@ -5,7 +5,6 @@ import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
-import uploadImage from "../utils/uploadImage";
 
 const EditService = () => {
   const { id } = useParams();
@@ -177,28 +176,43 @@ const EditService = () => {
   const onSubmit = async (data) => {
     dispatch(showLoading());
     try {
-      let coverImageUrl = data.coverImage;
-      if (data.coverImage instanceof FileList && data.coverImage.length > 0) {
-        coverImageUrl = await uploadImage(data.coverImage[0]);
+      const formData = new FormData();
+
+      // 1️⃣ Text fields
+      [
+        "title",
+        "category",
+        "subCategory",
+        "desc",
+        "shortTitle",
+        "shortDesc",
+        "videoUrl",
+      ].forEach((key) => formData.append(key, data[key] || ""));
+
+      // 2️⃣ Cover image: append only if user selected a new file
+      if (data.coverImage && data.coverImage.length > 0) {
+        formData.append("coverImage", data.coverImage[0]); // File object
       }
 
-      let otherImageUrls = data.otherImages;
-      if (data.otherImages instanceof FileList && data.otherImages.length > 0) {
-        otherImageUrls = await Promise.all(
-          Array.from(data.otherImages).map((file) => uploadImage(file))
-        );
+      // 3️⃣ Other images: append only if user selected new files
+      if (data.otherImages && data.otherImages.length > 0) {
+        for (let i = 0; i < data.otherImages.length; i++) {
+          formData.append("otherImages", data.otherImages[i]);
+        }
       }
 
-      const updatedData = {
-        ...data,
-        coverImage: coverImageUrl,
-        otherImages: otherImageUrls,
-      };
+      // 4️⃣ Arrays
+      formData.append("features", JSON.stringify(data.features || []));
+      formData.append("packages", JSON.stringify(data.packages || []));
 
+      // 5️⃣ Send request
       await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/services/${id}`,
-        updatedData,
-        { withCredentials: true }
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
       );
 
       toast.success("Service updated successfully!");
@@ -218,6 +232,11 @@ const EditService = () => {
         <input
           {...register("title")}
           placeholder="Title"
+          className="w-full p-2 rounded bg-gray-700"
+        />
+        <input
+          {...register("videoUrl")}
+          placeholder="Video URL (optional)"
           className="w-full p-2 rounded bg-gray-700"
         />
         <select

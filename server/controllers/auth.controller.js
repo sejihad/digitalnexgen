@@ -50,17 +50,6 @@ export const register = async (req, res, next) => {
     const username = candidate;
     const hashedPassword = bcrypt.hashSync(req.body.password, 7);
 
-    // TEMP: debug incoming payload
-    // console.log("[register] body:", {
-    //   username: username,
-    //   name: req.body.name,
-    //   email: req.body.email,
-    //   country: req.body.country,
-    //   phone: req.body.phone,
-    //   number: req.body.number,
-    //   img: req.body.img,
-    // });
-
     const newUser = new User({
       username: username,
       name: req.body.name || provided,
@@ -86,7 +75,8 @@ export const firebaseVerify = async (req, res, next) => {
     if (!idToken) return next(createError(400, "idToken is required"));
 
     const adminApp = getFirebaseAdmin();
-    if (!adminApp) return next(createError(503, "Authentication service unavailable"));
+    if (!adminApp)
+      return next(createError(503, "Authentication service unavailable"));
 
     const decoded = await adminApp.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
@@ -111,7 +101,10 @@ export const firebaseVerify = async (req, res, next) => {
 
     if (!user) {
       // Create new user record
-      const baseUsername = (name || "user").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9._-]/g, "");
+      const baseUsername = (name || "user")
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9._-]/g, "");
       let candidate = (baseUsername || "user").slice(0, 24) || "user";
       let counter = 0;
       while (await User.exists({ username: candidate })) {
@@ -136,9 +129,18 @@ export const firebaseVerify = async (req, res, next) => {
 
     // Upsert optional fields from client if provided and missing in DB
     let updated = false;
-    if (nameInput && !user.name) { user.name = nameInput; updated = true; }
-    if (country && !user.country) { user.country = country; updated = true; }
-    if (img && !user.img) { user.img = img; updated = true; }
+    if (nameInput && !user.name) {
+      user.name = nameInput;
+      updated = true;
+    }
+    if (country && !user.country) {
+      user.country = country;
+      updated = true;
+    }
+    if (img && !user.img) {
+      user.img = img;
+      updated = true;
+    }
     if (updated) await user.save();
 
     const token = jwt.sign(
@@ -169,10 +171,7 @@ export const login = async (req, res, next) => {
     }
 
     const user = await User.findOne({
-      $or: [
-        { email: identifier },
-        { username: identifier },
-      ],
+      $or: [{ email: identifier }, { username: identifier }],
     });
 
     if (!user) return next(createError(404, "User not found"));

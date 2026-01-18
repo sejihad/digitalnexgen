@@ -45,9 +45,7 @@ const Overview = () => {
         setTotalServices(services.data.totalServices);
         setTotalConversations(conversations.data.count);
         setTotalOrders(orders.data.ordersCount);
-      } catch (error) {
-        console.error("Error fetching counts:", error);
-      }
+      } catch (error) {}
     };
 
     fetchCounts();
