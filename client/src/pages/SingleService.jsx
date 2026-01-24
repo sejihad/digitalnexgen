@@ -20,6 +20,7 @@ const SingleService = () => {
   const [selectedRating, setSelectedRating] = useState(0);
   const [description, setDescription] = useState("");
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const isLoading = useSelector((state) => state.loading.isLoading);
   const user = useSelector((state) => state.auth.user);
   const [contacting, setContacting] = useState(false);
 
@@ -45,7 +46,7 @@ const SingleService = () => {
         },
         {
           withCredentials: true,
-        }
+        },
       );
 
       const data = res.data;
@@ -78,27 +79,31 @@ const SingleService = () => {
       navigate("/auth/login");
       return;
     }
-
+    dispatch(showLoading());
     const basePrice =
       offerPriceMap?.[selectedPackage] ?? selectedPackageDetails.salePrice;
     const finalPrice = basePrice - discountAmount;
-
+    const params = new URLSearchParams(window.location.search);
+    const offerId = params.get("offer"); // optional offer id
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/stripe/checkout`,
         {
           title: service.title,
-          price: finalPrice,
           name: selectedPackageDetails.name,
           serviceId: service._id,
+          offerId: offerId || null,
+          couponCode: isCouponApplied ? couponCode : null,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       window.location.href = res.data.url;
     } catch (error) {
       console.error(error);
       toast("❌ Failed to create Stripe session.");
+    } finally {
+      dispatch(hideLoading());
     }
   };
 
@@ -107,20 +112,22 @@ const SingleService = () => {
       navigate("/auth/login");
       return;
     }
-
-    const basePrice = offerPriceOverride ?? selectedPackageDetails.salePrice;
+    dispatch(showLoading());
+    const basePrice = offerPriceMap ?? selectedPackageDetails.salePrice;
     const finalPrice = basePrice - discountAmount;
-
+    const params = new URLSearchParams(window.location.search);
+    const offerId = params.get("offer"); // optional offer id
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/paypal/checkout`,
         {
           title: service.title,
-          price: finalPrice,
           name: selectedPackageDetails.name,
           serviceId: service._id,
+          offerId: offerId || null,
+          couponCode: isCouponApplied ? couponCode : null,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       const orderID = res.data.id;
@@ -129,6 +136,8 @@ const SingleService = () => {
     } catch (err) {
       console.error(err);
       toast("❌ Failed to create PayPal order.");
+    } finally {
+      dispatch(hideLoading());
     }
   };
 
@@ -139,7 +148,7 @@ const SingleService = () => {
         const serviceResponse = await axios.get(
           `${
             import.meta.env.VITE_API_BASE_URL
-          }/api/services/single-service/${id}`
+          }/api/services/single-service/${id}`,
         );
         setService(serviceResponse.data);
 
@@ -153,17 +162,17 @@ const SingleService = () => {
               const o = await axios.get(
                 `${
                   import.meta.env.VITE_API_BASE_URL
-                }/api/promotional-offers/${offerId}`
+                }/api/promotional-offers/${offerId}`,
               );
               off = o.data;
             } catch {
               // fallback to list
               try {
                 const list = await axios.get(
-                  `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`
+                  `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`,
                 );
                 off = (list.data || []).find(
-                  (x) => String(x._id) === String(offerId)
+                  (x) => String(x._id) === String(offerId),
                 );
               } catch {}
             }
@@ -212,7 +221,7 @@ const SingleService = () => {
         }
 
         const reviewsResponse = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/reviews/${id}`
+          `${import.meta.env.VITE_API_BASE_URL}/api/reviews/${id}`,
         );
 
         setReviews(reviewsResponse.data.reverse());
@@ -253,7 +262,7 @@ const SingleService = () => {
   };
 
   const selectedPackageDetails = service.packages.find(
-    (pkg) => pkg.name.toLowerCase() === selectedPackage
+    (pkg) => pkg.name.toLowerCase() === selectedPackage,
   );
 
   const handleContactClick = async (event) => {
@@ -304,7 +313,7 @@ const SingleService = () => {
           serviceId: service._id,
           serviceTitle: service.title,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (response?.data?._id) {
@@ -324,7 +333,7 @@ const SingleService = () => {
           const merged = [
             item,
             ...prev.filter(
-              (g) => String(g.serviceId) !== String(item.serviceId)
+              (g) => String(g.serviceId) !== String(item.serviceId),
             ),
           ];
           localStorage.setItem(key, JSON.stringify(merged));
@@ -343,7 +352,7 @@ const SingleService = () => {
               subCategory: service.subCategory,
               coverImage: service.coverImage?.url,
             },
-            { withCredentials: true }
+            { withCredentials: true },
           );
         } catch (err) {
           void err;
@@ -368,7 +377,7 @@ const SingleService = () => {
           const merged = [
             item,
             ...prev.filter(
-              (g) => String(g.serviceId) !== String(item.serviceId)
+              (g) => String(g.serviceId) !== String(item.serviceId),
             ),
           ];
           localStorage.setItem(key, JSON.stringify(merged));
@@ -387,7 +396,7 @@ const SingleService = () => {
               subCategory: service.subCategory,
               coverImage: service.coverImage?.url,
             },
-            { withCredentials: true }
+            { withCredentials: true },
           );
         } catch (err) {
           void err;
@@ -447,7 +456,7 @@ const SingleService = () => {
           userImage: img,
           country,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setSelectedRating(0);
@@ -457,7 +466,7 @@ const SingleService = () => {
     } catch (error) {
       console.error("Error submitting review:", error);
       toast.error(
-        "An error occurred while submitting your review. Please try again."
+        "An error occurred while submitting your review. Please try again.",
       );
     }
   };
@@ -466,10 +475,10 @@ const SingleService = () => {
     try {
       await axios.delete(
         `${import.meta.env.VITE_API_BASE_URL}/api/reviews/${reviewId}`,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       setReviews((prevReviews) =>
-        prevReviews.filter((r) => r._id !== reviewId)
+        prevReviews.filter((r) => r._id !== reviewId),
       );
       toast.success("Review deleted successfully!");
     } catch (error) {
@@ -816,15 +825,21 @@ const SingleService = () => {
                             <div className="flex flex-col space-y-4">
                               <button
                                 onClick={handleStripeClick}
-                                className="bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-all shadow-md"
+                                disabled={isLoading}
+                                className="bg-white text-black font-semibold py-3 rounded-lg hover:bg-white-400 transition-all shadow-md"
                               >
-                                💳 Pay with Stripe
+                                {isLoading
+                                  ? "Payment Processing..."
+                                  : " 💳 Pay with Card or Others"}
                               </button>
                               <button
                                 onClick={handlePaypalClick}
-                                className="bg-yellow-500 text-white font-semibold py-3 rounded-lg hover:bg-yellow-600 transition-all shadow-md"
+                                disabled={isLoading}
+                                className="bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 transition-all shadow-md"
                               >
-                                🅿️ Pay with PayPal
+                                {isLoading
+                                  ? "Payment Processing..."
+                                  : "🅿️ Pay with PayPal"}
                               </button>
                               <button
                                 onClick={() => setShowOptions(false)}
@@ -848,9 +863,7 @@ const SingleService = () => {
                       disabled={contacting}
                       aria-busy={contacting}
                     >
-                      {contacting
-                        ? "Opening conversation..."
-                        : "Contact Seller"}
+                      {contacting ? "Opening conversation..." : "Live Chat"}
                     </button>
                   </>
                 ) : (

@@ -82,7 +82,6 @@ export const updateUser = async (req, res, next) => {
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log(error);
     res.status(500).send("Something went wrong!");
   }
 };

@@ -50,7 +50,7 @@ const AdminOrder = () => {
       const res = await axios.put(
         `${apiBaseUrl}/api/orders/${id}/update-status`,
         { newStatus },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (res.data && res.data.order) {
@@ -101,7 +101,7 @@ const AdminOrder = () => {
         `Date: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
         pageWidth - 20,
         45,
-        { align: "right" }
+        { align: "right" },
       );
 
       // Divider line
@@ -130,7 +130,7 @@ const AdminOrder = () => {
       doc.setFont("helvetica", "normal");
       doc.text(order.service.name, 115, 76);
       doc.text(`Type: ${order.service.type}`, 115, 84);
-      doc.text(`Price: $${order.service.price.toFixed(2)}`, 115, 92);
+      doc.text(`Price: $${order.finalPrice}`, 115, 92);
 
       // Payment details section
       doc.setFont("helvetica", "bold");
@@ -154,7 +154,7 @@ const AdminOrder = () => {
         null,
         {
           color: order.payment.status === "paid" ? "#4CAF50" : "#FF9800",
-        }
+        },
       );
 
       // Order status with badge effect
@@ -247,9 +247,44 @@ const AdminOrder = () => {
             <div className="space-y-1">
               <p>{order.service.name}</p>
               <p>{order.service.type}</p>
-              <p>${order.service.price.toFixed(2)}</p>
+              <p>${order.finalPrice}</p>
             </div>
           </div>
+        </div>
+        <div className="space-y-2 text-sm sm:text-base">
+          {/* Original Price */}
+          <p>
+            Original Price:{" "}
+            <span className=" text-gray-500">${order.service.price}</span>
+          </p>
+
+          {/* Offer */}
+          {order.service.offer?.price && (
+            <div className="border-l-4 border-green-500 pl-3">
+              <p className="text-green-600 dark:text-green-400 font-medium">
+                Offer Price: ${order.service.offer.price}
+              </p>
+              <p className="text-xs text-gray-500 break-all">
+                Offer Title: {order.service.offer.title}
+              </p>
+              <p className="text-xs text-gray-400 break-all">
+                Offer ID: {order.service.offer.id}
+              </p>
+            </div>
+          )}
+
+          {/* Coupon */}
+          {order.coupon?.code && (
+            <p className="text-blue-600 dark:text-blue-400">
+              Coupon ({order.coupon.code}): −$
+              {order.coupon.discountAmount} ({order.coupon.discountPercent}%)
+            </p>
+          )}
+
+          {/* Final Price */}
+          <p className="font-bold text-lg text-primaryRgb">
+            Final Price: ${order.finalPrice}
+          </p>
         </div>
 
         {/* Payment Section */}
@@ -269,8 +304,8 @@ const AdminOrder = () => {
                   order.payment.status === "paid"
                     ? "bg-green-900 text-green-300"
                     : order.payment.status === "pending"
-                    ? "bg-yellow-900 text-yellow-300"
-                    : "bg-red-900 text-red-300"
+                      ? "bg-yellow-900 text-yellow-300"
+                      : "bg-red-900 text-red-300"
                 }`}
               >
                 {order.payment.status}
@@ -290,10 +325,10 @@ const AdminOrder = () => {
                 order.order_status === "completed"
                   ? "bg-green-900 text-green-300"
                   : order.order_status === "pending"
-                  ? "bg-yellow-900 text-yellow-300"
-                  : order.order_status === "in progress"
-                  ? "bg-blue-900 text-blue-300"
-                  : "bg-red-900 text-red-300"
+                    ? "bg-yellow-900 text-yellow-300"
+                    : order.order_status === "in progress"
+                      ? "bg-blue-900 text-blue-300"
+                      : "bg-red-900 text-red-300"
               }`}
             >
               {order.order_status}
@@ -315,7 +350,7 @@ const AdminOrder = () => {
                   >
                     {isUpdating ? "Updating..." : `Mark as ${status}`}
                   </button>
-                )
+                ),
               )}
             </div>
           </div>

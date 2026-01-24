@@ -112,9 +112,9 @@ const Message = ({ conversationId }) => {
   }, [socket, conversationId, routeId]);
 
   // Auto-scroll to bottom
-  useEffect(() => {
-    scrollToBottom();
-  }, [conversation.messages, offers, isTypingVisible]);
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, [conversation.messages, offers, isTypingVisible]);
 
   // Fetch conversation data
   useEffect(() => {
@@ -124,7 +124,7 @@ const Message = ({ conversationId }) => {
           `${import.meta.env.VITE_API_BASE_URL}/api/conversations/single/${
             conversationId || routeId
           }`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         if (conversationRes.data) {
@@ -132,14 +132,14 @@ const Message = ({ conversationId }) => {
             `${import.meta.env.VITE_API_BASE_URL}/api/messages/${
               conversationId || routeId
             }`,
-            { withCredentials: true }
+            { withCredentials: true },
           );
 
           const offersRes = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/offers?conversationId=${
               conversationId || routeId
             }`,
-            { withCredentials: true }
+            { withCredentials: true },
           );
 
           setOffers(offersRes.data || []);
@@ -150,7 +150,7 @@ const Message = ({ conversationId }) => {
 
           // Merge server-linkedServices
           const serverLinked = Array.isArray(
-            conversationRes.data.linkedServices
+            conversationRes.data.linkedServices,
           )
             ? conversationRes.data.linkedServices
             : [];
@@ -170,8 +170,8 @@ const Message = ({ conversationId }) => {
                 ...prev.filter(
                   (g) =>
                     !normalized.some(
-                      (n) => String(n.serviceId) === String(g.serviceId)
-                    )
+                      (n) => String(n.serviceId) === String(g.serviceId),
+                    ),
                 ),
               ];
               localStorage.setItem(key, JSON.stringify(merged));
@@ -186,7 +186,7 @@ const Message = ({ conversationId }) => {
                   savedAt: s.savedAt
                     ? new Date(s.savedAt).getTime()
                     : Date.now(),
-                }))
+                })),
               );
             }
           }
@@ -204,7 +204,7 @@ const Message = ({ conversationId }) => {
         if (!counterpartId) return;
         const res = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/users/${counterpartId}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         const u = res?.data || {};
 
@@ -246,7 +246,7 @@ const Message = ({ conversationId }) => {
         const res = await axios.get(
           `${
             import.meta.env.VITE_API_BASE_URL
-          }/api/services/single-service/${serviceId}`
+          }/api/services/single-service/${serviceId}`,
         );
         if (isMounted) {
           setGig(res.data);
@@ -263,7 +263,7 @@ const Message = ({ conversationId }) => {
             const merged = [
               item,
               ...prev.filter(
-                (g) => String(g.serviceId) !== String(item.serviceId)
+                (g) => String(g.serviceId) !== String(item.serviceId),
               ),
             ];
             localStorage.setItem(key, JSON.stringify(merged));
@@ -326,7 +326,7 @@ const Message = ({ conversationId }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
         { conversationId: conversationId || routeId, message: newMessage },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setConversation((prev) => {
@@ -364,7 +364,7 @@ const Message = ({ conversationId }) => {
           buyerId: conversation.buyerId,
           offerDetails: newOffer,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setOffers((prev) => [...prev, response.data]);
@@ -378,13 +378,13 @@ const Message = ({ conversationId }) => {
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/offers/${offerId}`,
         { status },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setOffers((prev) =>
         prev.map((offer) =>
-          offer._id === offerId ? { ...offer, ...response.data } : offer
-        )
+          offer._id === offerId ? { ...offer, ...response.data } : offer,
+        ),
       );
     } catch (error) {}
   };

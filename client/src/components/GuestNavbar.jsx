@@ -140,7 +140,7 @@ const GuestNavbar = () => {
             className="font-openSans text-primaryRgb hover:text-primaryText  dark:hover:text-[#ededed] hover:bg-primaryRgb transition-all border py-1 px-5 rounded-md border-primaryRgb duration-300"
             to="/auth/login"
           >
-            Join
+            Sign In
           </Link>
         </div>
       </div>

@@ -43,7 +43,7 @@ export const updateCoupon = async (req, res) => {
         ...(code && { code: code.toUpperCase().trim() }),
         ...(discountValue && { discountValue: Number(discountValue) }),
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedCoupon) {
@@ -102,10 +102,8 @@ export const verifyCoupon = async (req, res) => {
     return res.json({ valid: false });
   }
 
-  const discountAmount = parseFloat(
-    ((price * coupon.discountValue) / 100).toFixed(0)
-  );
-  const finalPrice = parseFloat((price - discountAmount).toFixed(0));
+  const discountAmount = parseFloat((price * coupon.discountValue) / 100);
+  const finalPrice = parseFloat(price - discountAmount);
 
   res.json({
     valid: true,

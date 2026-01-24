@@ -57,6 +57,12 @@ const userSchema = new Schema(
     resetPasswordExpiry: {
       type: Date,
     },
+    isTwoFactorEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    twoFactorCode: String,
+    twoFactorExpire: Date,
   },
   {
     timestamps: true,

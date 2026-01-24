@@ -1,24 +1,40 @@
 import axios from "axios";
 import "boxicons/css/boxicons.min.css";
-import {
-  fetchSignInMethodsForEmail,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-import { useEffect, useState } from "react";
+import { signInWithPopup } from "firebase/auth";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import Turnstile from "react-turnstile";
+import countryCodes from "../../data/countryCodes.json";
 import { auth, providers } from "../../firebase";
-import { loginUser, registerUser, setUser } from "../../redux/authSlice";
+import {
+  loginUser,
+  registerUser,
+  resetOtp,
+  verifyOtp,
+} from "../../redux/authSlice";
 import uploadImage from "../../utils/uploadImage";
 import "./login.css";
 
 const Login = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get auth state from Redux
+  const { error, loading, otpPending, otpUserId, otpMessage, isAuthenticated } =
+    useSelector((state) => state.auth);
+
+  // Local states
+  const [otp, setOtp] = useState("");
+  const [cfTokenLogin, setCfTokenLogin] = useState("");
+
   const [loginCredentials, setLoginCredentials] = useState({
     email: "",
     password: "",
   });
+
   const [registerCredentials, setRegisterCredentials] = useState({
     name: "",
     password: "",
@@ -28,17 +44,38 @@ const Login = () => {
     countryCode: "+880",
     profilePicture: null,
   });
-  // Guided linking flow state
-  const [pendingLinkProviderId, setPendingLinkProviderId] = useState(null); // e.g., "facebook.com" (the provider the user originally tried)
-  const [resolveWithProviderId, setResolveWithProviderId] = useState(null); // e.g., "google.com" (the provider we must sign in with first)
-  // We will not auto-link credentials; users will log in with the existing provider and can link later in settings.
 
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const { loading, isAuthenticated } = useSelector((state) => state.auth);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigateAfterLogin();
+    }
+  }, [isAuthenticated, navigate]);
+  const prevErrorRef = useRef(null);
+  // Show error toast if any
+  useEffect(() => {
+    // Only show toast if error exists and is different from previous
+    if (error && error !== prevErrorRef.current) {
+      console.log("Showing error toast:", error); // Debug log
+      toast.error(error, {
+        toastId: error, // Prevent duplicate toasts
+        position: "top-right",
+        autoClose: 5000,
+      });
+
+      // Update the ref
+      prevErrorRef.current = error;
+
+      // Clear error after showing
+      setTimeout(() => {
+        dispatch(resetError());
+      }, 3000);
+    }
+  }, [error, dispatch]);
+
+  // Navigate after successful login
   const navigateAfterLogin = (userData) => {
     try {
       const params = new URLSearchParams(location.search);
@@ -47,70 +84,164 @@ const Login = () => {
         navigate(redirect, { replace: true });
         return;
       }
-    } catch {}
+    } catch (err) {
+      console.error("Error parsing redirect URL:", err);
+    }
+
     const loggedUser = userData || JSON.parse(localStorage.getItem("user"));
-    if (loggedUser?.isAdmin) navigate("/admin");
-    else navigate("/service-list");
-  };
-
-  // Map Firebase providerId to our providers map
-  const providerFromId = (providerId) => {
-    switch (providerId) {
-      case "google.com":
-        return providers.google;
-      case "facebook.com":
-        return providers.facebook;
-      case "github.com":
-        return providers.github;
-      case "twitter.com":
-        return providers.twitter;
-      default:
-        return null;
+    if (loggedUser?.isAdmin) {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/service-list", { replace: true });
     }
   };
 
-  const credentialFromError = (err) => {
-    const pid = err?.customData?.providerId;
-    switch (pid) {
-      case "google.com":
-        return GoogleAuthProvider.credentialFromError(err);
-
-      default:
-        return null;
+  // Handle OTP submission
+  const handleOtpSubmit = async () => {
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP");
+      return;
     }
-  };
 
-  // Fallback: Build credential manually from error tokens if provider helpers return null
-  const buildPendingCredential = (err) => {
-    const pid = err?.customData?.providerId;
-    const accessToken =
-      err?.customData?.oauthAccessToken || err?.customData?.accessToken;
-    const idToken = err?.customData?.oauthIdToken || err?.customData?.idToken;
+    if (!otpUserId) {
+      toast.error("Session expired. Please login again.");
+      dispatch(resetOtp());
+      return;
+    }
+
     try {
-      switch (pid) {
-        case "google.com":
-          // Google uses ID token
-          if (idToken) return GoogleAuthProvider.credential(idToken);
-          return null;
+      await dispatch(
+        verifyOtp({
+          userId: otpUserId,
+          otp,
+        }),
+      ).unwrap();
 
-        default:
-          return null;
+      toast.success("Login successful!");
+      // Navigation will happen automatically via useEffect
+    } catch (err) {
+      // Error is already shown via useEffect
+      setOtp(""); // Clear OTP on error
+    }
+  };
+
+  // Handle login form submission
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+
+    if (!cfTokenLogin) {
+      toast.error("Please complete the verification first");
+      return;
+    }
+
+    if (!loginCredentials.email || !loginCredentials.password) {
+      toast.error("Please enter email and password");
+      return;
+    }
+
+    dispatch(
+      loginUser({
+        email: loginCredentials.email,
+        password: loginCredentials.password,
+        cfToken: cfTokenLogin,
+      }),
+    )
+      .unwrap()
+      .then((res) => {
+        if (res.twoFactorRequired) {
+          toast.info(res.message || "OTP sent to your email");
+          // No need to dispatch anything - reducer handles it
+        } else {
+          toast.success("Login successful!");
+          navigateAfterLogin(res);
+        }
+      })
+      .catch((err) => {
+        // Error is handled by reducer and shown via useEffect
+        console.error("Login error:", err);
+      });
+  };
+
+  // Handle register form submission
+  // Handle register form submission
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!registerCredentials.name) {
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!registerCredentials.email) {
+      toast.error("Email is required");
+      return;
+    }
+
+    if (!registerCredentials.password) {
+      toast.error("Password is required");
+      return;
+    }
+
+    if (registerCredentials.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    let profilePictureUrl = null;
+    if (registerCredentials.profilePicture) {
+      try {
+        profilePictureUrl = await uploadImage(
+          registerCredentials.profilePicture,
+        );
+      } catch (err) {
+        toast.error("Error uploading profile picture");
+        return;
       }
-    } catch {
-      return null;
+    }
+
+    // Format phone number
+    const cleanPhone = (registerCredentials.phone || "").replace(/[^0-9]/g, "");
+    let combinedPhone = undefined;
+
+    if (cleanPhone) {
+      const localForE164 = cleanPhone.startsWith("0")
+        ? cleanPhone.slice(1)
+        : cleanPhone;
+      combinedPhone =
+        (registerCredentials.countryCode || "+880") + localForE164;
+    }
+
+    const userData = {
+      name: registerCredentials.name,
+      password: registerCredentials.password,
+      email: registerCredentials.email,
+      country: registerCredentials.country,
+      phone: combinedPhone,
+      number: cleanPhone,
+      img: profilePictureUrl,
+    };
+
+    try {
+      const result = await dispatch(registerUser(userData)).unwrap();
+
+      if (result.twoFactorRequired) {
+        toast.info(
+          "Registration successful! Please verify OTP sent to your email.",
+        );
+        // Auto-fill login for OTP verification
+        setLoginCredentials({
+          email: registerCredentials.email,
+          password: registerCredentials.password,
+        });
+      }
+    } catch (err) {
+      // সরাসরি error show করুন
+      toast.error(err || "Registration failed");
     }
   };
 
-  const providerIdFromKey = (key) => {
-    switch (key) {
-      case "google":
-        return "google.com";
-
-      default:
-        return null;
-    }
-  };
-
+  // Handle social login
   const handleSocialLogin = async (providerKey) => {
     try {
       const provider = providers[providerKey];
@@ -118,249 +249,53 @@ const Login = () => {
         toast.error("Provider not configured");
         return;
       }
-      // Ensure we request email scope for providers that need it
-      try {
-        if (providerKey === "facebook" && provider.addScope)
-          provider.addScope("email");
-        if (providerKey === "github" && provider.addScope)
-          provider.addScope("user:email");
-      } catch (e) {
-        /* no-op: scope add optional */
-      }
 
-      // If we are in guided resolve step and user clicked the resolving provider, first sign in
-      const thisProviderId = providerIdFromKey(providerKey);
-      if (resolveWithProviderId && thisProviderId !== resolveWithProviderId) {
-        const readable =
-          resolveWithProviderId === "google.com"
-            ? "Google"
-            : resolveWithProviderId === "facebook.com"
-            ? "Facebook"
-            : resolveWithProviderId === "github.com"
-            ? "GitHub"
-            : resolveWithProviderId === "twitter.com"
-            ? "Twitter"
-            : resolveWithProviderId;
-        toast.error(`Please click the ${readable} button first to continue.`);
-        return;
-      }
-      if (resolveWithProviderId && thisProviderId === resolveWithProviderId) {
-        // Clean session to avoid conflicts
-        try {
-          await auth.signOut();
-        } catch (e) {
-          /* ignore */
-        }
-        const existingResult = await signInWithPopup(auth, provider);
-
-        // Finish backend session
-        const idToken = await (
-          existingResult.user || auth.currentUser
-        ).getIdToken();
-        const { data } = await axios.post(
-          `${apiBaseUrl}/api/auth/firebase`,
-          { idToken },
-          { withCredentials: true }
-        );
-        // Clear guided state
-        setPendingLinkProviderId(null);
-        setResolveWithProviderId(null);
-
-        dispatch(setUser(data));
-        toast.success("Logged in successfully");
-        navigateAfterLogin(data);
-        return;
-      }
-
-      // Normal social sign-in (ensure clean session)
+      // Sign out first to ensure clean state
       try {
         await auth.signOut();
       } catch (e) {
-        /* ignore */
+        // Ignore sign out errors
       }
+
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
+
       const { data } = await axios.post(
         `${apiBaseUrl}/api/auth/firebase`,
         { idToken },
-        { withCredentials: true }
+        { withCredentials: true },
       );
-      dispatch(setUser(data));
-      toast.success("Logged in successfully");
+
+      // Dispatch setUser action if you have one, or handle login
+      // For now, we'll navigate directly
+      localStorage.setItem("user", JSON.stringify(data));
+      toast.success("Social login successful!");
       navigateAfterLogin(data);
     } catch (err) {
-      // Handle account linking when email exists with a different provider
+      console.error("Social login error:", err);
+
       if (err?.code === "auth/account-exists-with-different-credential") {
-        try {
-          const email = err?.customData?.email;
-          let pendingCred = credentialFromError(err);
-          if (!pendingCred) pendingCred = buildPendingCredential(err);
-          if (!email) throw err;
-
-          const methods = await fetchSignInMethodsForEmail(auth, email);
-          if (!methods || methods.length === 0) throw err;
-
-          // If password-based, we cannot auto-resolve via popup
-          if (methods.includes("password")) {
-            toast.error(
-              "This email is registered with password. Please sign in using email/password first, then retry the social button to link."
-            );
-            return;
-          }
-          // Guided two-step: ask user to click the existing provider button, then we will link the intended one
-          const existingPid = methods[0];
-          setPendingLinkProviderId(err?.customData?.providerId || null);
-          setResolveWithProviderId(existingPid || null);
-          // No auto-linking; users can link later if needed
-          const readable =
-            existingPid === "google.com"
-              ? "Google"
-              : existingPid === "facebook.com"
-              ? "Facebook"
-              : existingPid === "github.com"
-              ? "GitHub"
-              : existingPid === "twitter.com"
-              ? "Twitter"
-              : existingPid;
-          const humanList = methods
-            .map((m) =>
-              m === "google.com"
-                ? "Google"
-                : m === "facebook.com"
-                ? "Facebook"
-                : m === "github.com"
-                ? "GitHub"
-                : m === "twitter.com"
-                ? "Twitter"
-                : m
-            )
-            .join(", ");
-          toast.info(`Email: ${email}. Existing methods: ${humanList}`);
-          toast.error(
-            `This email exists with ${readable}. Click the ${readable} button now. After that, we will link your ${providerKey} account automatically.`
-          );
-          return;
-        } catch (linkErr) {
-          console.error("Linking flow failed:", linkErr);
-          const msg =
-            linkErr?.response?.data?.message ||
-            linkErr?.message ||
-            "Login failed";
-          toast.error(msg);
-          return;
-        }
-      }
-
-      console.error("Social login failed:", err);
-      const msg =
-        err?.response?.data?.message || err?.message || "Login failed";
-      toast.error(msg);
-    }
-  };
-
-  // Local toggle only (no navigation). Buttons below will add/remove 'active' on the container.
-
-  // Redirect after auth
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigateAfterLogin();
-    }
-  }, [isAuthenticated]);
-
-  // Show toast if Google redirect returned with phone_required error
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const err = params.get("error");
-    if (err === "phone_required") {
-      toast.error("Before login, add a phone number to your Gmail account");
-      // Clean the URL
-      navigate("/auth/login", { replace: true });
-    }
-  }, [location.search, navigate]);
-
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    dispatch(
-      loginUser({
-        email: loginCredentials.email,
-        password: loginCredentials.password,
-      })
-    )
-      .unwrap()
-      .then(() => {
-        toast.success("Successfully Signed In!");
-        navigateAfterLogin();
-      })
-      .catch((err) => toast.error(err || "Sign-in failed. Please try again."));
-  };
-
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    let profilePictureUrl = null;
-    if (registerCredentials.profilePicture) {
-      try {
-        profilePictureUrl = await uploadImage(
-          registerCredentials.profilePicture
+        const email = err?.customData?.email;
+        toast.error(
+          `This email (${email}) is already registered with a different method. Please login using that method.`,
         );
-      } catch (err) {
-        toast.error("Error uploading image");
-        return;
+      } else {
+        const msg =
+          err?.response?.data?.message || err?.message || "Login failed";
+        toast.error(msg);
       }
-    }
-
-    const cleanPhone = (registerCredentials.phone || "").replace(/[^0-9]/g, "");
-
-    let localForE164 = cleanPhone;
-    let combinedPhone = undefined;
-
-    // Country-specific normalization (no validation)
-    if ((registerCredentials.countryCode || "") === "+880") {
-      // Remove a single leading trunk '0' for BD then build E.164
-      localForE164 = cleanPhone.startsWith("0")
-        ? cleanPhone.slice(1)
-        : cleanPhone;
-      combinedPhone = "+880" + localForE164;
-    } else {
-      // Generic: remove one trunk '0' then build E.164
-      localForE164 = cleanPhone.startsWith("0")
-        ? cleanPhone.slice(1)
-        : cleanPhone;
-      combinedPhone =
-        (registerCredentials.countryCode || "") + localForE164 || undefined;
-    }
-
-    const userData = {
-      username: registerCredentials.name,
-      password: registerCredentials.password,
-      email: registerCredentials.email,
-      country: registerCredentials.country,
-      phone: combinedPhone, // E.164 format: +8801950789774
-      number: cleanPhone, // Local digits only: 1950789774
-      img: profilePictureUrl,
-    };
-
-    try {
-      await dispatch(registerUser(userData)).unwrap();
-      toast.success("Successfully Registered!");
-      await dispatch(
-        loginUser({
-          email: registerCredentials.email,
-          password: registerCredentials.password,
-        })
-      ).unwrap();
-      toast.success("Successfully Signed In!");
-      navigateAfterLogin();
-    } catch (err) {
-      toast.error(err || "Sign Up failed. Please try again.");
     }
   };
 
+  // Handle input changes
   const handleLoginInputChange = (e) => {
     const { name, value } = e.target;
     setLoginCredentials((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleRegisterInputChange = (e) => {
     const { name, value } = e.target;
+
     if (name === "phone") {
       const digits = value.replace(/[^0-9]/g, "");
       setRegisterCredentials((prev) => ({ ...prev, phone: digits }));
@@ -368,11 +303,14 @@ const Login = () => {
       setRegisterCredentials((prev) => ({ ...prev, [name]: value }));
     }
   };
+
   const handleFileChange = (e) => {
-    setRegisterCredentials((prev) => ({
-      ...prev,
-      profilePicture: e.target.files[0],
-    }));
+    if (e.target.files && e.target.files[0]) {
+      setRegisterCredentials((prev) => ({
+        ...prev,
+        profilePicture: e.target.files[0],
+      }));
+    }
   };
 
   return (
@@ -380,114 +318,202 @@ const Login = () => {
       <div className="containers bg-white shadow-lg dark:shadow-gray-700/50">
         {/* Login Form */}
         <div className="form-box login">
-          <form onSubmit={handleLoginSubmit}>
-            <h1>Login</h1>
-            <div className="input-box">
-              <input
-                type="email"
-                placeholder="Email"
-                name="email"
-                value={loginCredentials.email}
-                onChange={handleLoginInputChange}
-                required
-              />
-              <i className="bx bx-envelope"></i>
+          {otpPending ? (
+            <div className="otp-container">
+              <h2>Enter OTP</h2>
+              <p className="otp-message">{otpMessage}</p>
+
+              <div className="input-box">
+                <input
+                  type="text"
+                  placeholder="Enter 6-digit OTP"
+                  value={otp}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, "");
+                    if (value.length <= 6) setOtp(value);
+                  }}
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+                <i className="bx bx-key"></i>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  className="btn flex-1"
+                  onClick={handleOtpSubmit}
+                  disabled={loading || otp.length !== 6}
+                >
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn flex-1 bg-gray-500 hover:bg-gray-600"
+                  onClick={() => dispatch(resetOtp())}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                OTP expires in 5 minutes. Check your email spam folder if not
+                received.
+              </p>
             </div>
-            <div className="input-box">
-              <input
-                type="password"
-                placeholder="Password"
-                name="password"
-                autoComplete="current-password"
-                value={loginCredentials.password}
-                onChange={handleLoginInputChange}
-                required
-              />
-              <i className="bx bx-lock-alt"></i>
-            </div>
-            <div className="forget-link">
-              <a href="/auth/forgot-password">Forget Password?</a>
-            </div>
-            <button type="submit" className="login-btn btn" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </button>
-            <p>or login with social accounts</p>
-            <div className="social-icons">
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSocialLogin("google");
-                }}
+          ) : (
+            <form onSubmit={handleLoginSubmit}>
+              <h1>Login</h1>
+
+              <div className="input-box">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  name="email"
+                  value={loginCredentials.email}
+                  onChange={handleLoginInputChange}
+                  required
+                  disabled={loading}
+                />
+                <i className="bx bx-envelope"></i>
+              </div>
+
+              <div className="input-box">
+                <input
+                  type="password"
+                  placeholder="Password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={loginCredentials.password}
+                  onChange={handleLoginInputChange}
+                  required
+                  disabled={loading}
+                />
+                <i className="bx bx-lock-alt"></i>
+              </div>
+
+              <div className="turnstile-container" style={{ margin: "10px 0" }}>
+                <Turnstile
+                  sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                  onVerify={(token) => setCfTokenLogin(token)}
+                  onExpire={() => setCfTokenLogin("")}
+                  onError={() => {
+                    toast.error("Verification failed. Please try again.");
+                    setCfTokenLogin("");
+                  }}
+                />
+              </div>
+
+              <div className="forget-link">
+                <a href="/auth/forgot-password">Forgot Password?</a>
+              </div>
+
+              <button
+                type="submit"
+                className="login-btn btn"
+                disabled={loading || !cfTokenLogin}
               >
-                <i className="bx bxl-google"></i>
-              </a>
-            </div>
-          </form>
+                {loading ? "Logging in..." : "Login"}
+              </button>
+
+              <p className="divider">or login with social accounts</p>
+
+              <div className="social-icons">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSocialLogin("google");
+                  }}
+                  className="social-icon google"
+                  title="Login with Google"
+                >
+                  <i className="bx bxl-google"></i>
+                </a>
+              </div>
+            </form>
+          )}
         </div>
 
         {/* Register Form */}
         <div className="form-box register">
           <form onSubmit={handleRegisterSubmit}>
             <h1>Registration</h1>
+
             <div className="input-boxs">
               <input
                 type="text"
-                placeholder="Name"
+                placeholder="Full Name *"
                 name="name"
                 value={registerCredentials.name}
                 onChange={handleRegisterInputChange}
                 required
+                disabled={loading}
               />
               <i className="bx bx-user"></i>
             </div>
+
             <div className="input-boxs">
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="Email *"
                 name="email"
                 value={registerCredentials.email}
                 onChange={handleRegisterInputChange}
                 required
+                disabled={loading}
               />
               <i className="bx bx-envelope"></i>
             </div>
+
             <div className="input-boxs">
               <div className="flex gap-2 items-center">
                 <select
                   name="countryCode"
                   value={registerCredentials.countryCode || "+880"}
                   onChange={handleRegisterInputChange}
-                  className=" py-2 w-[50px] rounded-md border border-gray-300 bg-white text-gray-700 dark:border-gray-700"
+                  className="py-2 w-[80px] rounded-md border border-gray-300 bg-white text-gray-700 dark:border-gray-700"
                 >
-                  <option value={"+880"}>+880 (BD)</option>
-                  <option value={"+91"}>+91 (IN)</option>
-                  <option value={"+1"}>+1 (US)</option>
-                  <option value={"+44"}>+44 (UK)</option>
-                  <option value={"+971"}>+971 (AE)</option>
+                  {Object.entries(countryCodes).map(
+                    ([country, code]) =>
+                      code && (
+                        <option key={country} value={`+${code}`}>
+                          +{code} ({country})
+                        </option>
+                      ),
+                  )}
                 </select>
+
                 <input
                   type="text"
-                  placeholder="Phone Number"
+                  placeholder="Phone Number "
                   name="phone"
                   value={registerCredentials.phone}
                   onChange={handleRegisterInputChange}
                   inputMode="numeric"
+                  disabled={loading}
                 />
               </div>
               <i className="bx bx-phone"></i>
             </div>
+
             <div className="input-boxs">
               <input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (min 6 characters) *"
                 name="password"
                 value={registerCredentials.password}
                 onChange={handleRegisterInputChange}
                 required
+                minLength={6}
+                disabled={loading}
               />
               <i className="bx bx-lock-alt"></i>
             </div>
+
             <button
               type="submit"
               className="register-btn btn"
@@ -495,7 +521,9 @@ const Login = () => {
             >
               {loading ? "Registering..." : "Register"}
             </button>
-            <p>or login with social accounts</p>
+
+            <p className="divider">or register with social accounts</p>
+
             <div className="social-icons">
               <a
                 href="#"
@@ -503,6 +531,8 @@ const Login = () => {
                   e.preventDefault();
                   handleSocialLogin("google");
                 }}
+                className="social-icon google"
+                title="Register with Google"
               >
                 <i className="bx bxl-google"></i>
               </a>
@@ -511,7 +541,7 @@ const Login = () => {
         </div>
 
         {/* Toggle Box */}
-        <div className="toggle-box">
+        <div className="toggle-box before:bg-[#339e3cff] dark:before:bg-[#211f1f]">
           <div className="toggle-panel toggle-left">
             <h1>Hello, Welcome</h1>
             <p>Don't have an account?</p>
@@ -520,9 +550,9 @@ const Login = () => {
               onClick={(e) => {
                 e.preventDefault();
                 const container = document.querySelector(".containers");
-                if (!container) return;
-                container.classList.add("active");
+                if (container) container.classList.add("active");
               }}
+              disabled={loading || otpPending}
             >
               Register
             </button>
@@ -536,9 +566,9 @@ const Login = () => {
               onClick={(e) => {
                 e.preventDefault();
                 const container = document.querySelector(".containers");
-                if (!container) return;
-                container.classList.remove("active");
+                if (container) container.classList.remove("active");
               }}
+              disabled={loading || otpPending}
             >
               Login
             </button>

@@ -89,7 +89,7 @@ const AdminOrders = () => {
                     <p className="font-medium text-white">
                       {order.service.name}
                     </p>
-                    <p className="text-white">${order.service.price}</p>
+                    <p className="text-white">${order.finalPrice}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs text-gray-400">Status</p>
@@ -168,7 +168,7 @@ const AdminOrders = () => {
                   <td className="p-3 text-sm text-white">
                     {order.service.name}
                   </td>
-                  <td className="p-3 text-white">${order.service.price}</td>
+                  <td className="p-3 text-white">${order.finalPrice}</td>
                   <td className="p-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${

@@ -1,9 +1,7 @@
 import express from "express";
 import {
-  facebookCallback,
-  facebookLogin,
+  enableTwoFactor,
   forgotPassword,
-  firebaseVerify,
   googleCallback,
   googleLogin,
   login,
@@ -11,6 +9,7 @@ import {
   register,
   resetPassword,
   updatePassword,
+  verifyOtp,
 } from "../controllers/auth.controller.js";
 import { verifyToken } from "../middleware/jwt.js";
 
@@ -19,19 +18,15 @@ const router = express.Router();
 router.post("/register", register);
 router.post("/login", login);
 
+router.post("/verify-otp", verifyOtp);
 router.get("/googlelogin", googleLogin);
 router.get("/google/callback", googleCallback);
 
-router.get("/facebooklogin", facebookLogin);
-router.get("/facebook/callback", facebookCallback);
 router.put("/update-password", verifyToken, updatePassword);
-
-// Firebase hybrid auth: client sends Firebase ID token, server verifies and issues cookie
-router.post("/firebase", firebaseVerify);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 
 router.post("/logout", logout);
-
+router.put("/twofactor/toggle", verifyToken, enableTwoFactor);
 export default router;

@@ -212,6 +212,7 @@ form {
   left: -250%;
   height: 100%;
   background: #339e3cff;
+  /* background: black; */
   z-index: 2;
   transition: 1.8s ease-in-out;
   border-radius: 150px;

@@ -84,7 +84,7 @@ const Order = () => {
         `Date: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
         pageWidth - 20,
         45,
-        { align: "right" }
+        { align: "right" },
       );
 
       doc.setDrawColor(lightBorder);
@@ -111,7 +111,7 @@ const Order = () => {
       doc.setFont("helvetica", "normal");
       doc.text(order.service.name, 115, 76);
       doc.text(`Type: ${order.service.type}`, 115, 84);
-      doc.text(`Price: $${order.service.price.toFixed(2)}`, 115, 92);
+      doc.text(`Price: $${order.finalPrice}`, 115, 92);
 
       // Payment info
       const paymentY = 123;
@@ -150,9 +150,14 @@ const Order = () => {
     };
   };
 
-  if (error) return <p className="text-red-500 dark:text-red-400 p-6">{error}</p>;
+  if (error)
+    return <p className="text-red-500 dark:text-red-400 p-6">{error}</p>;
   if (!order)
-    return <p className="text-gray-600 dark:text-gray-300 p-6">Loading order details...</p>;
+    return (
+      <p className="text-gray-600 dark:text-gray-300 p-6">
+        Loading order details...
+      </p>
+    );
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex justify-center items-start p-4 sm:p-8 text-gray-900 dark:text-gray-100 font-sans">
@@ -188,11 +193,45 @@ const Order = () => {
             <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
               <p>Name: {order.service.name}</p>
               <p>Type: {order.service.type}</p>
-              <p>Price: ${order.service.price.toFixed(2)}</p>
+              <p>Price: ${order.finalPrice}</p>
             </div>
           </div>
         </div>
+        <div className="space-y-2 text-sm sm:text-base">
+          {/* Original Price */}
+          <p>
+            Original Price:{" "}
+            <span className=" text-gray-500">${order.service.price}</span>
+          </p>
 
+          {/* Offer */}
+          {order.service.offer?.price && (
+            <div className="border-l-4 border-green-500 pl-3">
+              <p className="text-green-600 dark:text-green-400 font-medium">
+                Offer Price: ${order.service.offer.price}
+              </p>
+              <p className="text-xs text-gray-500 break-all">
+                Offer Title: {order.service.offer.title}
+              </p>
+              <p className="text-xs text-gray-400 break-all">
+                Offer ID: {order.service.offer.id}
+              </p>
+            </div>
+          )}
+
+          {/* Coupon */}
+          {order.coupon?.code && (
+            <p className="text-blue-600 dark:text-blue-400">
+              Coupon ({order.coupon.code}): −$
+              {order.coupon.discountAmount} ({order.coupon.discountPercent}%)
+            </p>
+          )}
+
+          {/* Final Price */}
+          <p className="font-bold text-lg text-primaryRgb">
+            Final Price: ${order.finalPrice}
+          </p>
+        </div>
         {/* Payment */}
         <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-lg mb-4 sm:mb-6 text-gray-700 dark:text-gray-300 border border-black/5 dark:border-white/10">
           <h2 className="font-semibold text-base sm:text-lg text-primaryRgb mb-2 sm:mb-3">
@@ -210,8 +249,8 @@ const Order = () => {
                   order.payment.status === "paid"
                     ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
                     : order.payment.status === "pending"
-                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                      : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
                 }`}
               >
                 {order.payment.status}
@@ -231,10 +270,10 @@ const Order = () => {
                 order.order_status === "completed"
                   ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
                   : order.order_status === "pending"
-                  ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                  : order.order_status === "in progress"
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                  : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
+                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                    : order.order_status === "in progress"
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                      : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
               }`}
             >
               {order.order_status}

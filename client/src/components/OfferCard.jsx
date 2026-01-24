@@ -27,7 +27,7 @@ const OfferCard = ({ offer }) => {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor(
-            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
           ),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),
@@ -46,9 +46,9 @@ const OfferCard = ({ offer }) => {
   return (
     <div className="group relative overflow-hidden transition-transform shadow-[0_.14px_2.29266px_rgba(0,0,0,0.03),_0_.37px_4.42626px_rgba(0,0,0,0.047),_0_3px_7px_rgba(0,0,0,0.09)] duration-300 transform hover:-translate-y-2 bg-white rounded-2xl  border border-gray-100 flex flex-col dark:bg-white/10 dark:border-white/20 dark:shadow-xl md:col-2 dis">
       {/* Badge */}
-      {/* <div className="absolute top-0 right-1 bg-green-400 text-white px-1  py-1 rounded-full text-[8px] font-bold uppercase tracking-wide z-10 shadow-lg">
+      <div className="absolute top-0 right-1 bg-green-400 text-white px-1  py-1 rounded-full text-[8px] font-bold uppercase tracking-wide z-10 shadow-lg">
         {offer.badge}
-      </div> */}
+      </div>
 
       {/* Discount Banner */}
       <div className="bg-gradient-to-r dark:border dark:border-teal-50 shadow-[0_.14px_2.29266px_rgba(0,0,0,0.03),_0_.37px_4.42626px_rgba(0,0,0,0.047),_0_3px_7px_rgba(0,0,0,0.09)] border border-green-400 text-gray-700  dark:text-white text-center py-4">
@@ -62,6 +62,10 @@ const OfferCard = ({ offer }) => {
         <h3 className="text-xl font-bold text-gray-500  dark:text-white mb-4 text-center leading-tight">
           {offer.title}
         </h3>
+
+        <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+          {offer.description}
+        </p>
 
         {/* Individual Countdown Timer */}
         <div className="bg-green-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4 border border-green-200 dark:border-gray-600">
@@ -149,7 +153,7 @@ const OfferCard = ({ offer }) => {
               navigate(
                 `/${subCategory}/${svc._id}${
                   offer._id ? `?offer=${offer._id}` : ""
-                }`
+                }`,
               );
               return;
             }
@@ -159,14 +163,14 @@ const OfferCard = ({ offer }) => {
               const res = await axios.get(
                 `${
                   import.meta.env.VITE_API_BASE_URL
-                }/api/services/single-service/${rawRef}`
+                }/api/services/single-service/${rawRef}`,
               );
               const svc = res.data;
               const subCategory = svc.subCategory || svc.category || "services";
               navigate(
                 `/${subCategory}/${svc._id}${
                   offer._id ? `?offer=${offer._id}` : ""
-                }`
+                }`,
               );
             } catch (err) {
               // fallback
@@ -190,6 +194,7 @@ OfferCard.propTypes = {
   offer: PropTypes.shape({
     _id: PropTypes.string,
     title: PropTypes.string.isRequired,
+    description: PropTypes.string,
     discount: PropTypes.string.isRequired,
     badge: PropTypes.string,
     offerPrice: PropTypes.number.isRequired,

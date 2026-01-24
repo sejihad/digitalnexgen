@@ -23,7 +23,7 @@ const OfferPage = () => {
     const fetchOffers = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`
+          `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`,
         );
         setOffers(response.data);
 
@@ -43,7 +43,7 @@ const OfferPage = () => {
               window.dispatchEvent(
                 new CustomEvent("offerEndTimeUpdated", {
                   detail: { offerEndTime: earliestEndDate },
-                })
+                }),
               );
             } catch {
               // ignore if dispatch fails
@@ -59,7 +59,7 @@ const OfferPage = () => {
               window.dispatchEvent(
                 new CustomEvent("offerEndTimeUpdated", {
                   detail: { offerEndTime: null },
-                })
+                }),
               );
             } catch {
               // ignore
@@ -91,7 +91,7 @@ const OfferPage = () => {
         const timeData = {
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor(
-            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
           ),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),
@@ -225,7 +225,7 @@ const OfferPage = () => {
         )}
 
         {/* Offers Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-4 md:mb-10">
+        <div className="grid grid-cols-1 gap-6 mb-4 md:mb-10">
           {offers.map((offer, index) => (
             <OfferCard key={offer._id || index} offer={offer} />
           ))}

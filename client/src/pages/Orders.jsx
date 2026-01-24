@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -30,17 +31,17 @@ const Orders = () => {
       const res = await axios.put(
         `${apiBaseUrl}/api/orders/${orderId}/request-cancel`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       toast.success("Cancel request sent.");
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
-          order._id === orderId ? { ...order, cancel_request: true } : order
-        )
+          order._id === orderId ? { ...order, cancel_request: true } : order,
+        ),
       );
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to send cancel request."
+        error.response?.data?.message || "Failed to send cancel request.",
       );
     }
   };
@@ -50,12 +51,16 @@ const Orders = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <h2 className="text-xl md:text-2xl font-bold mb-4 text-primaryRgb">My Orders</h2>
+      <h2 className="text-xl md:text-2xl font-bold mb-4 text-primaryRgb">
+        My Orders
+      </h2>
 
       {/* Mobile View - Cards with Horizontal Scroll */}
       <div className="md:hidden space-y-4">
         {orders.length === 0 ? (
-          <div className="text-center p-5 text-gray-500 dark:text-gray-400">No orders found.</div>
+          <div className="text-center p-5 text-gray-500 dark:text-gray-400">
+            No orders found.
+          </div>
         ) : (
           orders.map((order) => (
             <div
@@ -65,9 +70,7 @@ const Orders = () => {
               <div className="min-w-[300px]">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="font-medium">
-                      {order.service.name}
-                    </h3>
+                    <h3 className="font-medium">{order.service.name}</h3>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
                       Order ID: {order._id}
                     </div>
@@ -85,7 +88,7 @@ const Orders = () => {
 
                 <div className="flex justify-between items-center mt-4">
                   <div>
-                    <p>${order.service.price}</p>
+                    <p>${order.finalPrice}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
                       Status: {order.order_status}
                     </p>
@@ -152,7 +155,10 @@ const Orders = () => {
             <tbody className="bg-white dark:bg-transparent text-gray-900 dark:text-gray-100">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center p-5 text-gray-500 dark:text-gray-400">
+                  <td
+                    colSpan="6"
+                    className="text-center p-5 text-gray-500 dark:text-gray-400"
+                  >
                     No orders found.
                   </td>
                 </tr>
@@ -169,7 +175,7 @@ const Orders = () => {
                       {order.service.name}
                     </td>
                     <td className="p-3 whitespace-nowrap">
-                      ${order.service.price}
+                      ${order.finalPrice}
                     </td>
                     <td className="p-3 whitespace-nowrap">
                       <span

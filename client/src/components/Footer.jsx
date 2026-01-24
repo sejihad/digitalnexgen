@@ -11,7 +11,7 @@ const Footer = () => {
 
   return (
     <footer className="mt-8 text-white py-10 border-t border-primaryRgb pb-20">
-      <div className="container mx-auto px-5 lg:px-0">
+      <div className="container mx-auto px-2 lg:px-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 text-center lg:text-left">
           {/* === About Section === */}
           <div>
@@ -159,21 +159,31 @@ const Footer = () => {
               Contact Us
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-1 font-medium">
-              Digital NexGen
+              DIGITAL NEXGEN LTD
             </p>
+            <p
+              style={{ fontSize: "15px" }}
+              className="text-gray-600 dark:text-gray-400 mb-1 font-medium"
+            >
+              Company Number: 16930063
+            </p>
+
             <p className="text-gray-600 dark:text-gray-400 mb-1">
               Suite A, 82 James Carter Road, Mildenhall, Bury St. Edmunds,
               United Kingdom, IP28 7DE
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-1"></p>
-            <p className="text-gray-600 dark:text-gray-400 mb-1">
+            <p
+              style={{ fontSize: "15px" }}
+              className="text-gray-600 dark:text-gray-400 mb-1"
+            >
               Email: info@digitalnexgen.co
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-3">
               Phone: +44 7482 799 921
             </p>
 
-            <div className="flex relative z-50  justify-center lg:justify-start space-x-5 mb-4">
+            <div className="flex relative z-50  justify-center lg:justify-start space-x-5 mb-10">
               <a
                 href="https://www.facebook.com/profile.php?id=61558536931762&amp;mibextid=ZbWKwL"
                 target="_blank"
@@ -209,13 +219,11 @@ const Footer = () => {
                 <Youtube />
               </a>
             </div>
-
-            <div className="flex justify-center lg:justify-start">
-              {!isAdminRoute && <Newsletter />}
-            </div>
           </div>
         </div>
-
+        <div className="flex justify-center lg:justify-end">
+          {!isAdminRoute && <Newsletter />}
+        </div>
         <hr className="dark:border-gray-700 my-10" />
         <p className="text-center text-gray-600 dark:text-gray-400">
           &copy; {new Date().getFullYear()} Digital NexGen. All rights reserved.

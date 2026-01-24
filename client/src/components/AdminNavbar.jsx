@@ -11,26 +11,28 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
+  Moon,
   Package,
   Settings,
   ShoppingBag,
   Star,
+  Sun,
   Tag,
   User,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Logo from "../assets/logo.png";
 import placeholder from "../assets/user.png";
+import { ThemeContext } from "../context/ThemeContext";
 import { handleLogout } from "../utils/authUtils";
-
 const AdminNavbar = () => {
   const [isSidebarHidden, setIsSidebarHidden] = useState(false);
   const [profileImage, setProfileImage] = useState(placeholder);
   const [activePath, setActivePath] = useState("");
-
+  const [username, setUsername] = useState("");
   const adminId = useSelector(
     (state) => state.auth.user._id || state.auth.user.id,
   );
@@ -42,6 +44,7 @@ const AdminNavbar = () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     if (userData?.img) setProfileImage(userData.img?.url);
     setActivePath(location.pathname);
+    setUsername(userData?.name);
   }, [location.pathname, adminId]);
 
   const logout = () => handleLogout(dispatch, navigate);
@@ -160,6 +163,12 @@ const AdminNavbar = () => {
           count: null,
         },
         {
+          path: "/admin/newsletters",
+          label: "Newsletters",
+          icon: <Mail className="w-5 h-5" />,
+          count: null,
+        },
+        {
           path: "/admin/review",
           label: "Reviews",
           icon: <Star className="w-5 h-5" />,
@@ -197,7 +206,7 @@ const AdminNavbar = () => {
       icon: <MessageSquare className="w-5 h-5" />,
     },
   ];
-
+  const { theme, toggleTheme } = useContext(ThemeContext);
   return (
     <>
       {/* Single Toggle Button - Always Visible */}
@@ -221,9 +230,23 @@ const AdminNavbar = () => {
         {/* Logo Section */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between">
+            {/* Left: Logo */}
             <Link to="/admin" className="flex items-center space-x-3">
               <img src={Logo} alt="Logo" className="h-8 w-auto" />
             </Link>
+
+            {/* Right: Theme Toggle Button */}
+            <button
+              className="text-green-800 dark:text-white hover:text-green-700 dark:hover:text-gray-300 transition-colors"
+              onClick={toggleTheme}
+              aria-label="Toggle Theme"
+            >
+              {theme === "light" ? (
+                <Moon className="w-5 h-5" />
+              ) : (
+                <Sun className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -243,7 +266,7 @@ const AdminNavbar = () => {
                 Admin
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Administrator
+                {username}
               </p>
             </div>
           </div>

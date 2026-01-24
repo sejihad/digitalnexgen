@@ -223,13 +223,12 @@ const AddService = () => {
         {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
-        }
+        },
       );
 
       toast.success("Service created successfully!");
       reset();
     } catch (err) {
-      console.log(err);
       toast.error("Failed to create service");
     } finally {
       dispatch(hideLoading());

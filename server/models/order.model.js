@@ -7,6 +7,20 @@ const serviceOrderSchema = new mongoose.Schema(
       name: { type: String, required: true },
       type: { type: String, required: true },
       price: { type: Number, required: true },
+      offer: {
+        id: { type: String },
+        title: { type: String },
+        price: { type: Number },
+      },
+    },
+    finalPrice: {
+      type: Number,
+      required: true,
+    },
+    coupon: {
+      code: String,
+      discountPercent: Number,
+      discountAmount: Number,
     },
     user: {
       id: { type: String, required: true },
@@ -33,7 +47,7 @@ const serviceOrderSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Order", serviceOrderSchema);

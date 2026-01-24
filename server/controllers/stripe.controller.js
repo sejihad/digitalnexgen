@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import Stripe from "stripe";
 import ServiceOrder from "../models/order.model.js";
 import User from "../models/user.model.js";
+import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
 dotenv.config();
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -18,8 +19,18 @@ export const createCheckoutSession = async (req, res, next) => {
         .status(503)
         .json({ message: "Stripe not configured on server" });
     }
-    const { title, price, name, serviceId } = req.body;
-
+    const { title, couponCode, offerId, name, serviceId } = req.body;
+    if (!serviceId || !name || !title) {
+      return res
+        .status(400)
+        .json({ message: "serviceId, name, and title are required" });
+    }
+    const pricing = await calculateFinalPrice({
+      serviceId,
+      name,
+      couponCode,
+      offerId,
+    });
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       success_url: `${process.env.CLIENT_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
@@ -29,7 +40,7 @@ export const createCheckoutSession = async (req, res, next) => {
           price_data: {
             currency: "usd",
             product_data: { name: `${title} - ${name}` },
-            unit_amount: price * 100,
+            unit_amount: pricing.finalPrice * 100,
           },
           quantity: 1,
         },
@@ -37,9 +48,21 @@ export const createCheckoutSession = async (req, res, next) => {
       metadata: {
         serviceId,
         userId: req.userId,
-        serviceName: name,
-        serviceTitle: title,
-        servicePrice: price,
+        name,
+        title,
+        servicePrice: pricing.servicePrice,
+        offerId: offerId || "",
+        offerPrice: pricing.offer ? pricing.offer.offerPrice : "",
+        offerTitle: pricing.offer ? pricing.offer.offerTitle : "",
+
+        couponCode: couponCode || "",
+        couponDiscountPercent: pricing.coupon
+          ? pricing.coupon.discountPercent
+          : "",
+        couponDiscountAmount: pricing.coupon
+          ? pricing.coupon.discountAmount
+          : "",
+        finalPrice: pricing.finalPrice,
       },
     });
 
@@ -63,7 +86,7 @@ export const stripeWebhook = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -93,9 +116,21 @@ export const stripeWebhook = async (req, res) => {
       const newOrder = new ServiceOrder({
         service: {
           id: session.metadata.serviceId,
-          name: session.metadata.serviceTitle,
-          type: session.metadata.serviceName,
-          price: session.metadata.servicePrice,
+          name: session.metadata.title,
+          type: session.metadata.name,
+          price: Number(session.metadata.servicePrice),
+          offer: {
+            id: session.metadata.offerId || null,
+            title: session.metadata.offerTitle || null,
+            price: Number(session.metadata.offerPrice) || null,
+          },
+        },
+        finalPrice: Number(session.metadata.finalPrice),
+        coupon: {
+          code: session.metadata.couponCode || null,
+          discountPercent:
+            Number(session.metadata.couponDiscountPercent) || null,
+          discountAmount: Number(session.metadata.couponDiscountAmount) || null,
         },
         user: {
           id: user._id,

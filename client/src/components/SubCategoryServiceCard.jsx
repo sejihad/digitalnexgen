@@ -35,7 +35,7 @@ const SubCategoryServiceCard = ({ service }) => {
           {service.shortTitle}
         </h3>
 
-        <p className="text-base text-primaryText mt-2 line-clamp-2">
+        <p className="text-base text-primaryText dark:text-gray-200 mt-2 line-clamp-2">
           {service.shortDesc}
         </p>
 
@@ -74,7 +74,7 @@ const SubCategoryServiceCard = ({ service }) => {
         <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-md">
           {getDiscountPercentage(
             service.packages[0]?.regularPrice,
-            service.packages[0]?.salePrice
+            service.packages[0]?.salePrice,
           )}
           % OFF
         </div>
