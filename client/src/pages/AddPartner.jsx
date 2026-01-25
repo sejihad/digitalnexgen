@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
 import axios from "axios";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
-import uploadImage from "../utils/uploadImage"; // your image upload utility
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AddPartner = () => {
   const dispatch = useDispatch();
@@ -30,18 +29,20 @@ const AddPartner = () => {
 
     dispatch(showLoading());
     try {
-      const logoUrl = await uploadImage(data.logo[0]);
-
-      const partnerData = {
-        name: data.name,
-        logoUrl,
-        websiteUrl: data.websiteUrl || "",
-      };
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("websiteUrl", data.websiteUrl || "");
+      formData.append("logo", data.logo[0]); // 🔥 file directly
 
       await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/partners`,
-        partnerData,
-        { withCredentials: true }
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
 
       toast.success("Partner added successfully!");
@@ -63,7 +64,9 @@ const AddPartner = () => {
 
   return (
     <div className="p-6 text-white bg-[#333333] max-w-[600px] mx-auto rounded-md mt-4">
-      <h1 className="text-center text-3xl font-bold mb-4 font-roboto">Add New Partner</h1>
+      <h1 className="text-center text-3xl font-bold mb-4 font-roboto">
+        Add New Partner
+      </h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Name */}
         <input
@@ -101,7 +104,10 @@ const AddPartner = () => {
           </div>
         )}
 
-        <button type="submit" className="w-full p-2 bg-primaryRgb rounded text-white">
+        <button
+          type="submit"
+          className="w-full p-2 bg-primaryRgb rounded text-white"
+        >
           Submit
         </button>
       </form>

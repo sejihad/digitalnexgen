@@ -35,6 +35,7 @@ import Coupons from "../pages/Coupons";
 import Dashboard from "../pages/Dashboard";
 import DigitalMarketing from "../pages/DigitalMarketing";
 import EditBlog from "../pages/EditBlog";
+import EditGallery from "../pages/EditGallery.jsx";
 import EditPartner from "../pages/EditPartner";
 import EditProject from "../pages/EditProject";
 import EditPromotionalOffer from "../pages/EditPromotionalOffer";
@@ -42,6 +43,7 @@ import EditService from "../pages/EditService";
 import ForgotPassword from "../pages/Forgot/ForgotPassword";
 import GraphicsDesign from "../pages/GraphicsDesign";
 import Home from "../pages/Home";
+import GoogleSuccess from "../pages/Login/GoogleSuccess.jsx";
 import Login from "../pages/Login/Login";
 import NotFound from "../pages/NotFound";
 import OfferPage from "../pages/OfferPage";
@@ -90,6 +92,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="/chat" element={<Chat />} />
           <Route path="messages" element={<Messages />} />
           <Route path="services" element={<Services />} />
+          <Route path="google-success" element={<GoogleSuccess />} />
           <Route path="service-list" element={<ServiceList />} />
           <Route path="programming-tech" element={<ProgrammingTech />} />
           <Route
@@ -221,6 +224,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="add-partners" element={<AddPartner />} />
           <Route path="partners" element={<AdminPartners />} />
           <Route path="partners/edit/:id" element={<EditPartner />} />
+          <Route path="galleries/edit/:id" element={<EditGallery />} />
           <Route path="newsletters" element={<AdminNewsLatters />} />
           <Route path="projects" element={<AdminProjects />} />
           <Route path="projects/edit/:id" element={<EditProject />} />

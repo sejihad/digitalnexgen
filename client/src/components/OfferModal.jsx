@@ -22,7 +22,7 @@ const OfferModal = () => {
   const persistedEnd = sessionStorage.getItem("offerEndTime");
   const now = new Date().getTime();
   const [offerEndTime, setOfferEndTime] = useState(
-    persistedEnd ? Number(persistedEnd) : now + 24 * 60 * 60 * 1000
+    persistedEnd ? Number(persistedEnd) : now + 24 * 60 * 60 * 1000,
   ); // fallback to 24 hours
 
   // Listen for global updates (OfferPage can dispatch this when it computes the real end time)
@@ -31,7 +31,7 @@ const OfferModal = () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/latest`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         if (res.data) {
@@ -100,30 +100,33 @@ const OfferModal = () => {
     : null;
 
   useEffect(() => {
-    // Don't show modal if no active offer
-    if (!hasOffer) {
-      return;
-    }
+    if (!hasOffer) return;
 
-    // Don't show modal on admin routes or when already on the offers page
+    // Don't show modal on admin routes or offers page
     if (
       location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/special-offers")
-    ) {
+    )
       return;
+
+    // Safe parsing from localStorage
+    const userString = localStorage.getItem("user");
+    let user = null;
+
+    try {
+      user =
+        userString && userString !== "undefined"
+          ? JSON.parse(userString)
+          : null;
+    } catch {
+      user = null;
     }
 
-    // Check if user is admin
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.isAdmin) {
-      return;
-    }
+    if (user?.isAdmin) return; // Safe optional chaining
 
-    // Check if modal was already shown in this session
     const modalShown = sessionStorage.getItem("offerModalShown");
 
     if (!modalShown && offerEndTime) {
-      // Show modal after 500ms delay (for testing - change back to 2000 for production)
       const timer = setTimeout(() => {
         setIsOpen(true);
         sessionStorage.setItem("offerModalShown", "true");
@@ -131,7 +134,7 @@ const OfferModal = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [location.pathname, offerEndTime, hasOffer]); // hasOffer dependency যোগ করুন
+  }, [location.pathname, offerEndTime, hasOffer]);
 
   useEffect(() => {
     if (!isOpen || !hasOffer) return;
@@ -144,7 +147,7 @@ const OfferModal = () => {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor(
-            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
           ),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),

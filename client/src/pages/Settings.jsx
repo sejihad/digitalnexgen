@@ -49,14 +49,13 @@ const Settings = () => {
       const response = await axios.put(
         `${apiBaseUrl}/api/auth/twofactor/toggle`,
         {},
-        {
-          withCredentials: true,
-        },
+        { withCredentials: true },
       );
 
-      if (response.data.success) {
-        // Update local state
-        const updatedTwoFactorStatus = response.data.isTwoFactorEnabled;
+      const updatedTwoFactorStatus = response.data.user?.isTwoFactorEnabled;
+
+      if (typeof updatedTwoFactorStatus === "boolean") {
+        // ✅ Use backend value directly
         setUserState((prev) => ({
           ...prev,
           isTwoFactorEnabled: updatedTwoFactorStatus,
@@ -73,6 +72,9 @@ const Settings = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
 
         toast.success(response.data.message || "2FA updated successfully");
+      } else {
+        toast.error("Failed to fetch updated 2FA status");
+        console.error("2FA toggle response invalid:", response.data);
       }
     } catch (error) {
       const errorMessage =
@@ -167,82 +169,84 @@ const Settings = () => {
         <h1 className="text-3xl font-bold text-primaryRgb mb-6">Settings</h1>
 
         {/* Two Factor Authentication Section - Simplified */}
-        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Two Factor Authentication (2FA)
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                Add an extra layer of security to your account
-              </p>
-            </div>
+        {authUser.provider === "local" && (
+          <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Two Factor Authentication (2FA)
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  Add an extra layer of security to your account
+                </p>
+              </div>
 
-            <button
-              type="button"
-              onClick={handleToggleTwoFactor}
-              disabled={twoFactorLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(12,187,20)] ${
-                user.isTwoFactorEnabled
-                  ? "bg-[rgb(12,187,20)]"
-                  : "bg-gray-300 dark:bg-gray-600"
-              }`}
-            >
-              <span className="sr-only">
-                {user.isTwoFactorEnabled ? "Disable" : "Enable"} 2FA
-              </span>
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                  user.isTwoFactorEnabled ? "translate-x-6" : "translate-x-1"
+              <button
+                type="button"
+                onClick={handleToggleTwoFactor}
+                disabled={twoFactorLoading}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(12,187,20)] ${
+                  user.isTwoFactorEnabled
+                    ? "bg-[rgb(12,187,20)]"
+                    : "bg-gray-300 dark:bg-gray-600"
                 }`}
-              />
-            </button>
-          </div>
-
-          <div className="mt-3 flex items-center">
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                user.isTwoFactorEnabled
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
-              }`}
-            >
-              {user.isTwoFactorEnabled ? "🛡️ Enabled" : "⚠️ Disabled"}
+              >
+                <span className="sr-only">
+                  {user.isTwoFactorEnabled ? "Disable" : "Enable"} 2FA
+                </span>
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                    user.isTwoFactorEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
 
-            <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
-              {user.isTwoFactorEnabled
-                ? "OTP will be required for each login"
-                : "No OTP required for login"}
-            </span>
+            <div className="mt-3 flex items-center">
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  user.isTwoFactorEnabled
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                    : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                }`}
+              >
+                {user.isTwoFactorEnabled ? "🛡️ Enabled" : "⚠️ Disabled"}
+              </div>
 
-            {twoFactorLoading && (
-              <span className="ml-3 text-sm text-gray-500">
-                <svg
-                  className="animate-spin h-4 w-4 text-[rgb(12,187,20)] inline mr-1"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Updating...
+              <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                {user.isTwoFactorEnabled
+                  ? "OTP will be required for each login"
+                  : "No OTP required for login"}
               </span>
-            )}
+
+              {twoFactorLoading && (
+                <span className="ml-3 text-sm text-gray-500">
+                  <svg
+                    className="animate-spin h-4 w-4 text-[rgb(12,187,20)] inline mr-1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Updating...
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Username */}
@@ -397,14 +401,16 @@ const Settings = () => {
             )}
           </button>
 
-          <div className="mt-6 space-y-3">
-            <Link
-              to="/update-password"
-              className="block w-full text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-3 px-4 rounded-md font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-            >
-              Change Password
-            </Link>
-          </div>
+          {authUser.provider === "local" && (
+            <div className="mt-6 space-y-3">
+              <Link
+                to="/update-password"
+                className="block w-full text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-3 px-4 rounded-md font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+              >
+                Change Password
+              </Link>
+            </div>
+          )}
         </form>
       </div>
     </div>

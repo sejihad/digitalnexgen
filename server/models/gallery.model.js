@@ -1,11 +1,10 @@
-import mongoose from "mongoose";
-import { Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const gallerySchema = new Schema(
   {
-    imageUrl: {
-      type: String,
-      required: true,
+    image: {
+      public_id: { type: String, required: true },
+      url: { type: String, required: true },
     },
     category: {
       type: String,
@@ -23,7 +22,7 @@ const gallerySchema = new Schema(
       ref: "Service",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Gallery", gallerySchema);

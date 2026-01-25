@@ -30,49 +30,44 @@ export const getUser = async (req, res, next) => {
     res.status(500).send("Something went wrong!");
   }
 };
-
 export const updateUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).send("User not found");
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
+    // Only allow user to update own profile
     if (req.userId !== user._id.toString()) {
       return next(createError(403, "You can update only your account!"));
     }
 
+    // Update basic fields
     user.username = req.body.username || user.username;
     user.email = req.body.email || user.email;
     user.country = req.body.country || user.country;
 
-    // simple validation and normalization
-    if (typeof req.body.phone === "string") {
-      const ph = req.body.phone.trim();
-      if (ph && !/^\+\d{7,15}$/.test(ph)) {
-        return res
-          .status(400)
-          .send(
-            "Invalid phone format. Use +countrycode followed by 7-15 digits.",
-          );
+    // Unified phone/number logic (same as registration)
+    const phoneInput = String(req.body.phone || "").replace(/[^0-9]/g, ""); // remove non-digits
+    if (phoneInput) {
+      let combinedPhone = phoneInput;
+      // Optional: add country code if passed separately
+      if (req.body.countryCode) {
+        const code = String(req.body.countryCode).replace(/\D/g, ""); // only digits
+        combinedPhone = `+${code}${phoneInput.startsWith("0") ? phoneInput.slice(1) : phoneInput}`;
       }
-      if (ph) user.phone = ph;
+      user.phone = combinedPhone; // E164 format
+      user.number = phoneInput; // raw number without country code
     }
 
-    if (typeof req.body.number === "string") {
-      const num = req.body.number.trim();
-      if (num && !/^\d{7,15}$/.test(num)) {
-        return res.status(400).send("Invalid number format. Use 7-15 digits.");
-      }
-      if (num) user.number = num;
-    }
-
+    // Handle profile image
     if (req.files && req.files.img) {
-      // 1️⃣ Delete old image from S3 if exists
       if (user.img?.public_id) {
         await deleteFromS3(user.img.public_id);
       }
 
-      // 2️⃣ Upload new image to S3
-      const uploaded = await uploadToS3(req.files.img, "users"); // req.body.img = File object / base64
+      const uploaded = await uploadToS3(req.files.img, "users");
       user.img = {
         public_id: uploaded.key,
         url: uploaded.url,
@@ -82,7 +77,8 @@ export const updateUser = async (req, res, next) => {
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).send("Something went wrong!");
+    console.error("Update user error:", error);
+    res.status(500).json({ success: false, message: "Something went wrong!" });
   }
 };
 

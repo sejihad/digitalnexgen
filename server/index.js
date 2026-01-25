@@ -7,6 +7,8 @@ import http from "http"; // <-- add this
 import mongoose from "mongoose";
 import passport from "passport";
 import { Server } from "socket.io"; // <-- add this
+import "./config/passport.js";
+import { initializePassport } from "./config/passport.js";
 import { stripeWebhook } from "./controllers/stripe.controller.js";
 import authRoute from "./routes/auth.route.js";
 import blogRoute from "./routes/blog.route.js";
@@ -26,17 +28,14 @@ import reviewRoute from "./routes/review.route.js";
 import serviceRoute from "./routes/service.route.js";
 import stripeRoute from "./routes/stripe.route.js";
 import userRoute from "./routes/user.route.js";
-import { connectPassport } from "./utils/passport.js";
-
 dotenv.config();
-
 const app = express();
 
 // Stripe webhook
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
-  stripeWebhook
+  stripeWebhook,
 );
 
 const allowedOrigins = [
@@ -51,11 +50,11 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-  })
+  }),
 );
-
-connectPassport();
+initializePassport();
 app.use(passport.initialize());
+
 app.use(fileUpload());
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));

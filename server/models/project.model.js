@@ -4,7 +4,12 @@ const { Schema } = mongoose;
 const projectSchema = new Schema(
   {
     title: { type: String, required: true },
-    images: [{ type: String }],
+    images: [
+      {
+        public_id: { type: String, required: true },
+        url: { type: String, required: true },
+      },
+    ],
     description: { type: String, required: true },
     category: { type: String, required: true },
     subCategory: { type: String, required: true },
@@ -17,7 +22,7 @@ const projectSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Project", projectSchema);

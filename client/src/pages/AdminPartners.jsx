@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminPartners = () => {
   const [partners, setPartners] = useState([]);
@@ -17,7 +17,7 @@ const AdminPartners = () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/partners`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         setPartners(res.data);
         setFilteredPartners(res.data);
@@ -35,23 +35,24 @@ const AdminPartners = () => {
     const query = e.target.value.toLowerCase();
     setSearch(query);
     setFilteredPartners(
-      partners.filter((p) => p.name.toLowerCase().includes(query))
+      partners.filter((p) => p.name.toLowerCase().includes(query)),
     );
   };
 
   // Delete partner
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this partner?")) return;
+    if (!window.confirm("Are you sure you want to delete this partner?"))
+      return;
     dispatch(showLoading());
     try {
       await axios.delete(
         `${import.meta.env.VITE_API_BASE_URL}/api/partners/${id}`,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       const updated = partners.filter((p) => p._id !== id);
       setPartners(updated);
       setFilteredPartners(
-        updated.filter((p) => p.name.toLowerCase().includes(search))
+        updated.filter((p) => p.name.toLowerCase().includes(search)),
       );
       toast.success("Partner deleted successfully.");
     } catch (err) {
@@ -68,11 +69,16 @@ const AdminPartners = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-white text-xl font-bold mb-4">Admin Partners</h1>
+      <h1 className="text-black dark:text-white text-xl font-bold mb-4">
+        Admin Partners
+      </h1>
 
       {/* Search Input */}
       <div className="mb-4">
-        <label htmlFor="searchPartners" className="text-white mr-2">
+        <label
+          htmlFor="searchPartners"
+          className="text-black dark:text-white mr-2"
+        >
           Search Partners:
         </label>
         <input
@@ -93,10 +99,18 @@ const AdminPartners = () => {
           <table className="table-auto w-full text-white border-collapse border border-gray-700">
             <thead>
               <tr className="bg-gray-800">
-                <th className="border border-gray-700 px-4 py-2 text-center">#</th>
-                <th className="border border-gray-700 px-4 py-2 text-center">Logo</th>
-                <th className="border border-gray-700 px-4 py-2 text-center">Name</th>
-                <th className="border border-gray-700 px-4 py-2 text-center">Actions</th>
+                <th className="border border-gray-700 px-4 py-2 text-center">
+                  #
+                </th>
+                <th className="border border-gray-700 px-4 py-2 text-center">
+                  Logo
+                </th>
+                <th className="border border-gray-700 px-4 py-2 text-center">
+                  Name
+                </th>
+                <th className="border border-gray-700 px-4 py-2 text-center">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -107,7 +121,7 @@ const AdminPartners = () => {
                   </td>
                   <td className="border border-gray-700 px-4 py-2 text-center">
                     <img
-                      src={partner.logoUrl}
+                      src={partner.logo?.url}
                       alt={partner.name}
                       className="w-20 h-20 object-contain mx-auto rounded-md bg-gray-800"
                     />

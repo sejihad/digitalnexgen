@@ -1,13 +1,11 @@
-import axios from "axios";
 import "boxicons/css/boxicons.min.css";
-import { signInWithPopup } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
+import { FaGoogle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Turnstile from "react-turnstile";
 import countryCodes from "../../data/countryCodes.json";
-import { auth, providers } from "../../firebase";
 import {
   loginUser,
   registerUser,
@@ -16,7 +14,6 @@ import {
 } from "../../redux/authSlice";
 import uploadImage from "../../utils/uploadImage";
 import "./login.css";
-
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -242,50 +239,6 @@ const Login = () => {
   };
 
   // Handle social login
-  const handleSocialLogin = async (providerKey) => {
-    try {
-      const provider = providers[providerKey];
-      if (!provider) {
-        toast.error("Provider not configured");
-        return;
-      }
-
-      // Sign out first to ensure clean state
-      try {
-        await auth.signOut();
-      } catch (e) {
-        // Ignore sign out errors
-      }
-
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-
-      const { data } = await axios.post(
-        `${apiBaseUrl}/api/auth/firebase`,
-        { idToken },
-        { withCredentials: true },
-      );
-
-      // Dispatch setUser action if you have one, or handle login
-      // For now, we'll navigate directly
-      localStorage.setItem("user", JSON.stringify(data));
-      toast.success("Social login successful!");
-      navigateAfterLogin(data);
-    } catch (err) {
-      console.error("Social login error:", err);
-
-      if (err?.code === "auth/account-exists-with-different-credential") {
-        const email = err?.customData?.email;
-        toast.error(
-          `This email (${email}) is already registered with a different method. Please login using that method.`,
-        );
-      } else {
-        const msg =
-          err?.response?.data?.message || err?.message || "Login failed";
-        toast.error(msg);
-      }
-    }
-  };
 
   // Handle input changes
   const handleLoginInputChange = (e) => {
@@ -422,16 +375,8 @@ const Login = () => {
               <p className="divider">or login with social accounts</p>
 
               <div className="social-icons">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSocialLogin("google");
-                  }}
-                  className="social-icon google"
-                  title="Login with Google"
-                >
-                  <i className="bx bxl-google"></i>
+                <a href={`${apiBaseUrl}/api/auth/google`} aria-label="Google">
+                  <FaGoogle className="icon" />
                 </a>
               </div>
             </form>
@@ -525,16 +470,8 @@ const Login = () => {
             <p className="divider">or register with social accounts</p>
 
             <div className="social-icons">
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSocialLogin("google");
-                }}
-                className="social-icon google"
-                title="Register with Google"
-              >
-                <i className="bx bxl-google"></i>
+              <a href={`${apiBaseUrl}/api/auth/google`} aria-label="Google">
+                <FaGoogle className="icon" />
               </a>
             </div>
           </form>

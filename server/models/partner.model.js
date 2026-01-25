@@ -4,10 +4,13 @@ const { Schema } = mongoose;
 const partnerSchema = new Schema(
   {
     name: { type: String, required: true },
-    logoUrl: { type: String, required: true },
-    website: { type: String }, 
+    logo: {
+      public_id: { type: String, required: true },
+      url: { type: String, required: true },
+    },
+    website: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Partner", partnerSchema);

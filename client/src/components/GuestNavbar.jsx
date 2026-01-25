@@ -137,10 +137,18 @@ const GuestNavbar = () => {
           </button>
 
           <Link
-            className="font-openSans text-primaryRgb hover:text-primaryText  dark:hover:text-[#ededed] hover:bg-primaryRgb transition-all border py-1 px-5 rounded-md border-primaryRgb duration-300"
             to="/auth/login"
+            className="flex items-center gap-2
+    border border-primaryRgb rounded-md
+    px-4 py-2 sm:px-6
+    text-xs sm:text-base
+    text-primaryRgb
+    transition-all duration-300
+    hover:bg-primaryRgb hover:text-white
+    active:scale-95"
           >
-            Sign In
+            <User size={18} />
+            <span className="hidden sm:inline">Sign In</span>
           </Link>
         </div>
       </div>

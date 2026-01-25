@@ -1,11 +1,10 @@
-import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
-import uploadImage from "../utils/uploadImage";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const EditPartner = () => {
   const { id } = useParams();
@@ -32,12 +31,12 @@ const EditPartner = () => {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/partners/${id}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         const partner = response.data;
         setValue("name", partner.name);
         setValue("website", partner.website || "");
-        setLogoPreview(partner.logoUrl || null);
+        setLogoPreview(partner.logo?.url || null);
       } catch (error) {
         toast.error("Failed to fetch partner details.");
       } finally {
@@ -51,22 +50,24 @@ const EditPartner = () => {
   const onSubmit = async (data) => {
     dispatch(showLoading());
     try {
-      let logoUrl = logoPreview;
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("website", data.website || "");
 
+      // 🔥 only append file if user selected new logo
       if (data.logo && data.logo[0]) {
-        logoUrl = await uploadImage(data.logo[0]);
+        formData.append("logo", data.logo[0]);
       }
-
-      const updatedPartner = {
-        name: data.name,
-        website: data.website || "",
-        logoUrl,
-      };
 
       await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/partners/${id}`,
-        updatedPartner,
-        { withCredentials: true }
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
 
       toast.success("Partner updated successfully!");
@@ -87,7 +88,9 @@ const EditPartner = () => {
 
   return (
     <div className="p-6 text-white bg-[#333333] max-w-[600px] mx-auto rounded-md mt-4">
-      <h1 className="text-center text-3xl font-bold mb-4 font-roboto">Edit Partner</h1>
+      <h1 className="text-center text-3xl font-bold mb-4 font-roboto">
+        Edit Partner
+      </h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Name */}
         <input
@@ -124,7 +127,10 @@ const EditPartner = () => {
           </div>
         )}
 
-        <button type="submit" className="w-full p-2 bg-primaryRgb rounded text-white">
+        <button
+          type="submit"
+          className="w-full p-2 bg-primaryRgb rounded text-white"
+        >
           Update Partner
         </button>
       </form>

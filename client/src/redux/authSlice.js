@@ -1,3 +1,4 @@
+// src/redux/authSlice.js
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -19,7 +20,6 @@ export const loginUser = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      // Improved error parsing
       let errorMessage = "Login failed";
 
       if (error.response?.data?.message) {
@@ -39,7 +39,7 @@ export const loginUser = createAsyncThunk(
   },
 );
 
-// Verify OTP thunk
+// Verify OTP
 export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
   async ({ userId, otp }, { rejectWithValue }) => {
@@ -73,7 +73,6 @@ export const registerUser = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      // Improved error parsing for registration
       let errorMessage = "Registration failed";
 
       if (error.response?.data?.message) {
@@ -112,9 +111,13 @@ export const logoutUser = createAsyncThunk(
 
 // ======================= Slice ======================= //
 
+// Safe parsing for localStorage
+const storedUser = localStorage.getItem("user");
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem("user")) || null,
-  isAuthenticated: !!localStorage.getItem("user"),
+  user:
+    storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null,
+  isAuthenticated: storedUser && storedUser !== "undefined" ? true : false,
   loading: false,
   error: null,
   otpPending: false,
@@ -138,6 +141,7 @@ const authSlice = createSlice({
       state.otpPending = false;
       state.otpUserId = null;
       state.otpMessage = "";
+      state.error = null;
     },
     resetError(state) {
       state.error = null;
@@ -162,7 +166,6 @@ const authSlice = createSlice({
     builder.addCase(loginUser.fulfilled, (state, action) => {
       state.loading = false;
 
-      // Check for OTP requirement
       if (action.payload.twoFactorRequired) {
         state.otpPending = true;
         state.otpUserId = action.payload.userId;
@@ -170,7 +173,6 @@ const authSlice = createSlice({
           action.payload.message || "Enter OTP sent to your email";
         state.error = null;
       } else {
-        // Normal login success
         state.user = action.payload;
         state.isAuthenticated = true;
         localStorage.setItem("user", JSON.stringify(action.payload));
@@ -195,7 +197,6 @@ const authSlice = createSlice({
     });
     builder.addCase(registerUser.fulfilled, (state, action) => {
       state.loading = false;
-      // Registration might also require OTP
       if (action.payload.twoFactorRequired) {
         state.otpPending = true;
         state.otpUserId = action.payload.userId;
@@ -247,8 +248,7 @@ const authSlice = createSlice({
     builder.addCase(verifyOtp.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload || "OTP verification failed";
-      // Keep OTP pending so user can try again
-      state.otpPending = true;
+      state.otpPending = true; // Keep OTP pending so user can try again
     });
   },
 });

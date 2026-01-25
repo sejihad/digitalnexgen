@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import passport from "passport";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 import sendEmail from "../utils/sendEmail.js";
@@ -290,7 +289,60 @@ export const verifyOtp = async (req, res, next) => {
     });
   }
 };
+export const googleLoginCallback = async (req, res, next) => {
+  try {
+    const user = req.user;
 
+    if (!user) {
+      return next(
+        new ErrorHandler(
+          "Google authentication failed. Please try again.",
+          401,
+        ),
+      );
+    }
+    if (user.isNewUser) {
+      const message = `
+      Hi ${user.name},
+
+      🎉 Welcome to Digital Nexgen!
+
+      Your Google account has been created successfully.
+      You can now log in anytime using Google Login.
+
+      We're excited to have you on board!
+
+      Regards,
+      Digital Nexgen Team
+    `;
+
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: "Account Created🎉",
+          message,
+        });
+      } catch (err) {}
+    }
+
+    const token = jwt.sign(
+      { id: user._id, isAdmin: user.isAdmin },
+      process.env.JWT_KEY,
+      { expiresIn: "30d" },
+    );
+
+    res.cookie("accessToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.redirect(`${process.env.CLIENT_BASE_URL}/google-success`);
+  } catch (err) {
+    next(err);
+  }
+};
 export const enableTwoFactor = async (req, res, next) => {
   console.log("Toggling Two Factor Authentication for user:", req.userId);
   try {
@@ -316,47 +368,6 @@ export const enableTwoFactor = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-export const googleLogin = passport.authenticate("google", {
-  scope: ["profile", "email"],
-  session: false,
-});
-
-export const googleCallback = (req, res, next) => {
-  passport.authenticate("google", {
-    failureRedirect: `${process.env.CLIENT_BASE_URL}/auth/login`,
-    session: false,
-  })(req, res, async (err) => {
-    if (err) return next(err);
-
-    const token = jwt.sign(
-      { id: req.user._id, isAdmin: req.user.isAdmin },
-      process.env.JWT_KEY,
-      { expiresIn: "30d" },
-    );
-
-    const userData = {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
-      img: req.user.img,
-      isAdmin: req.user.isAdmin,
-    };
-
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    res.redirect(
-      `${process.env.CLIENT_BASE_URL}/google/callback?user=${encodeURIComponent(
-        JSON.stringify(userData),
-      )}`,
-    );
-  });
 };
 
 export const logout = async (req, res) => {

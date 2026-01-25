@@ -37,13 +37,13 @@ const Hero = ({
     const fetchLogos = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/partners`
+          `${import.meta.env.VITE_API_BASE_URL}/api/partners`,
         );
 
         // Only keep name and logoUrl
         const formatted = response.data.map((item) => ({
           name: item.name,
-          logoUrl: item.logoUrl,
+          logoUrl: item.logo?.url,
         }));
 
         setLogos(formatted);
@@ -103,7 +103,7 @@ const Hero = ({
           {isHomePage && (
             <div className="overflow-hidden w-full mt-10 slider-section">
               <div className="flex animate-slide whitespace-nowrap">
-                {[...logos, ...logos].map((logo, index) => (
+                {logos.map((logo, index) => (
                   <img
                     key={index}
                     src={logo.logoUrl}
