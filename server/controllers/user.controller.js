@@ -3,22 +3,99 @@ import uploadToS3 from "../config/uploadToS3.js";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 
-export const deleteUser = async (req, res, next) => {
+export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).send("User not found");
-
-    if (req.userId !== user._id.toString()) {
-      return next(createError(403, "You can delete only your account!"));
+    // 🔐 Admin check
+    if (!req.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only.",
+      });
     }
 
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // ❌ optional: admin যেন নিজেকে delete না করে
+    // if (user.isAdmin) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Admin user cannot be deleted",
+    //   });
+    // }
+    if (user.img?.public_id) {
+      await deleteFromS3(user.img.public_id);
+    }
     await User.findByIdAndDelete(req.params.id);
-    res.status(200).send("User deleted successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
   } catch (error) {
-    res.status(500).send("Something went wrong!");
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong!",
+    });
   }
 };
+// Update user role (isAdmin)
+export const updateUserRole = async (req, res) => {
+  try {
+    // 🔐 Admin check
+    if (!req.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only.",
+      });
+    }
 
+    const { id } = req.params;
+    const { isAdmin } = req.body;
+
+    // নিজেকে update করতে বাধা (optional)
+    // if (id === req.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "You cannot change your own admin status",
+    //   });
+    // }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.isAdmin = isAdmin;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User role updated to ${isAdmin ? "Admin" : "User"} successfully`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
 export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);

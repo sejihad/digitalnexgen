@@ -1,17 +1,54 @@
+import axios from "axios";
 import { Code, Globe2, Paintbrush, Rocket } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const statsData = [
-  { icon: Code, value: 900, label: "Clients Served" },
-  { icon: Paintbrush, value: 205, label: "Projects Completed" },
-  { icon: Rocket, value: 40, label: "Ongoing Projects" },
-  { icon: Globe2, value: 12, label: "Countries Reached" },
-];
-
 const StatisticsSection = () => {
-  const [counts, setCounts] = useState(statsData.map(() => 0));
+  const [statsData, setStatsData] = useState([]);
+  const [counts, setCounts] = useState([]);
 
+  // 🔹 Fetch statistics from API
   useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/statistic`,
+        );
+
+        const stat = res.data.statistic;
+
+        const formattedStats = [
+          { icon: Code, value: stat.clientsServed, label: "Clients Served" },
+          {
+            icon: Paintbrush,
+            value: stat.projectsCompleted,
+            label: "Projects Completed",
+          },
+          {
+            icon: Rocket,
+            value: stat.ongoingProjects,
+            label: "Ongoing Projects",
+          },
+          {
+            icon: Globe2,
+            value: stat.countriesReached,
+            label: "Countries Reached",
+          },
+        ];
+
+        setStatsData(formattedStats);
+        setCounts(formattedStats.map(() => 0));
+      } catch (err) {
+        console.error("Failed to load statistics", err);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  // 🔹 Counter animation
+  useEffect(() => {
+    if (!statsData.length) return;
+
     const duration = 1500;
     const interval = 30;
 
@@ -25,6 +62,7 @@ const StatisticsSection = () => {
           start = stat.value;
           clearInterval(counter);
         }
+
         setCounts((prev) => {
           const updated = [...prev];
           updated[index] = Math.floor(start);
@@ -32,7 +70,7 @@ const StatisticsSection = () => {
         });
       }, interval);
     });
-  }, []);
+  }, [statsData]);
 
   return (
     <section className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-11/12 max-w-[1440px] mt-8 pb-10 mx-auto">

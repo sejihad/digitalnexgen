@@ -7,6 +7,7 @@ import {
   getUsers,
   updateUser,
   updateUsername,
+  updateUserRole,
 } from "../controllers/user.controller.js";
 import { verifyAnyAuth } from "../middleware/authAny.js";
 import { verifyToken } from "../middleware/jwt.js";
@@ -22,6 +23,7 @@ router.get("/check-username", checkUsernameAvailability);
 router.delete("/:id", verifyAnyAuth, deleteUser);
 router.get("/:id", verifyAnyAuth, getUser);
 router.put("/:id", verifyAnyAuth, updateUser);
+router.put("/:id/role", verifyToken, updateUserRole);
 router.put("/me/username", verifyAnyAuth, updateUsername);
 
 export default router;

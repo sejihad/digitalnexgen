@@ -28,6 +28,9 @@ import AdminPromotionalOffers from "../pages/AdminPromotionalOffers";
 import AdminReviews from "../pages/AdminReviews";
 import AdminServices from "../pages/AdminServices";
 import AdminSettings from "../pages/AdminSettings";
+import AdminStatistics from "../pages/AdminStatistics.jsx";
+import EditUser from "../pages/AdminUserRoleManager.jsx";
+import AdminUsers from "../pages/AdminUsers.jsx";
 import Blog from "../pages/Blog";
 import Business from "../pages/Business";
 import Contact from "../pages/Contact";
@@ -225,8 +228,11 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="partners" element={<AdminPartners />} />
           <Route path="partners/edit/:id" element={<EditPartner />} />
           <Route path="galleries/edit/:id" element={<EditGallery />} />
+          <Route path="users/edit/:id" element={<EditUser />} />
+          <Route path="statistics" element={<AdminStatistics />} />
           <Route path="newsletters" element={<AdminNewsLatters />} />
           <Route path="projects" element={<AdminProjects />} />
+          <Route path="users" element={<AdminUsers />} />
           <Route path="projects/edit/:id" element={<EditProject />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="orders/:id" element={<AdminOrder />} />

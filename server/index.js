@@ -26,6 +26,7 @@ import projectRoute from "./routes/project.route.js";
 import promotionalOfferRoute from "./routes/promotionalOffer.route.js";
 import reviewRoute from "./routes/review.route.js";
 import serviceRoute from "./routes/service.route.js";
+import statisticRoute from "./routes/statistic.route.js";
 import stripeRoute from "./routes/stripe.route.js";
 import userRoute from "./routes/user.route.js";
 dotenv.config();
@@ -78,6 +79,7 @@ app.use("/api/stripe", stripeRoute);
 app.use("/api/paypal", paypalRoute);
 app.use("/api/coupon", couponRoute);
 app.use("/api/contact", contactRoute);
+app.use("/api/statistic", statisticRoute);
 
 // Error handler
 app.use((err, req, res, next) => {

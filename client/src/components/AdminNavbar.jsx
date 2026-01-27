@@ -67,6 +67,17 @@ const AdminNavbar = () => {
       ],
     },
     {
+      category: "Users Management",
+      items: [
+        {
+          path: "/admin/users",
+          label: "Users",
+          icon: <User className="w-5 h-5" />,
+          count: null,
+        },
+      ],
+    },
+    {
       category: "Content Management",
       items: [
         {
@@ -91,6 +102,12 @@ const AdminNavbar = () => {
           path: "/admin/blogs",
           label: "Blogs",
           icon: <FileText className="w-5 h-5" />,
+          count: null,
+        },
+        {
+          path: "/admin/statistics",
+          label: "Statistics",
+          icon: <BarChart3 className="w-5 h-5" />,
           count: null,
         },
       ],
