@@ -267,7 +267,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-5 bg-slate-50 dark:bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center p-5 bg-slate-50 dark:bg-black">
       <div className="containers bg-white shadow-lg dark:shadow-gray-700/50">
         {/* Login Form */}
         <div className="form-box login">

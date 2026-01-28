@@ -11,7 +11,7 @@ const Navbar = () => {
   }
 
   return (
-    <div className="w-full max-w-[1422px] mx-auto flex h-[80px]  justify-between items-center  dark:border-b dark:border-primaryRgb ">
+    <div className="w-full max-w-[1422px] mx-auto flex h-[80px]  justify-between items-center  dark:border-b  ">
       {isAuthenticated ? <UserNavbar /> : <GuestNavbar />}
     </div>
   );

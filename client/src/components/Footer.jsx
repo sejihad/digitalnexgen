@@ -10,8 +10,8 @@ const Footer = () => {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
-    <footer className="mt-8 text-white py-10 border-t border-primaryRgb pb-20">
-      <div className="container mx-auto px-2 lg:px-0">
+    <footer className="mt-8 text-white py-10  pb-20">
+      <div className="container mx-auto px-2 lg:px-0 border-t border-primaryRgb">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 text-center lg:text-left">
           {/* === About Section === */}
           <div>
