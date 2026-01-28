@@ -9,6 +9,7 @@ import countryCodes from "../../data/countryCodes.json";
 import {
   loginUser,
   registerUser,
+  resetError,
   resetOtp,
   verifyOtp,
 } from "../../redux/authSlice";
