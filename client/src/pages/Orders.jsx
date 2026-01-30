@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);

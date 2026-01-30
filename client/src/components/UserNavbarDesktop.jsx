@@ -11,6 +11,7 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+import DarkLogo from "../assets/DarkLogo.png";
 import Logo from "../assets/logo.png";
 import placeholder from "../assets/user.png";
 import { ThemeContext } from "../context/ThemeContext";
@@ -79,11 +80,30 @@ const UserNavbar = () => {
   return (
     <div className="w-full bg-transparent   py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center  relative z-50">
       <Link to="/">
-        <img src={Logo} alt="Logo" className="h-15 w-60 cursor-pointer z-50" />
+        <img
+          src={Logo}
+          alt="Logo"
+          className="h-15 w-60 cursor-pointer z-50 dark:hidden"
+        />
+        <img
+          src={DarkLogo}
+          alt="Logo Of Digital NexGen"
+          className="h-15 w-60 cursor-pointer z-50 dark:block hidden"
+        />
       </Link>
       {/* Mobile */}
       <div className="lg:hidden flex items-center gap-3">
-        <button onClick={toggleMobileSearch} className="text-white">
+        <button
+          onClick={toggleTheme}
+          className="text-primaryText dark:text-white"
+        >
+          {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+
+        <button
+          onClick={toggleMobileSearch}
+          className="text-black dark:text-white"
+        >
           <Search size={20} />
         </button>
         <img
@@ -93,9 +113,9 @@ const UserNavbar = () => {
         />
       </div>
       {/* Desktop */}
-      <div className="hidden lg:grid w-full grid-cols-3 items-center gap-4 ml-8">
+      <div className="hidden lg:flex justify-between w-full grid-cols-[1fr_2fr_1fr] items-center gap-8 px-6">
         {/* Left spacer */}
-        <div className="col-start-1 col-end-2">
+        <div className="flex flex-1 justify-center">
           <div className="relative flex  items-center max-w-[300px] flex-shrink-0 ">
             <span className="pointer-events-none  absolute left-3 text-gray-500 dark:text-gray-400">
               <Search size={16} />
@@ -111,7 +131,7 @@ const UserNavbar = () => {
             <button
               onClick={handleSearch}
               aria-label="Search"
-              className="absolute right-1 h-8 px-2 rounded-full bg-[rgb(12,187,20)] text-white text-sm font-medium hover:opacity-90 active:opacity-100 transition flex items-center justify-center"
+              className="absolute right-1 h-8 px-2 rounded-full bg-[rgb(12,187,20)] dark:bg-black text-white text-sm font-medium hover:opacity-90 active:opacity-100 transition flex items-center justify-center"
             >
               <Search size={16} />
             </button>
@@ -119,10 +139,7 @@ const UserNavbar = () => {
         </div>
         {/* Center group: links + search */}
 
-        <div
-          style={{ marginLeft: "90px" }}
-          className="col-start-2 col-end-3 flex items-center gap-4 justify-center text-center min-w-0 "
-        >
+        <div className="flex-1 flex justify-center gap-6">
           <Link
             to="/"
             className={`hover:text-primaryRgb dark:text-white ${
@@ -155,6 +172,7 @@ const UserNavbar = () => {
           >
             Offers
           </Link>
+
           <div className="group relative cursor-pointer">
             <span
               className={`flex items-center gap-1 dark:text-white ${
@@ -200,7 +218,7 @@ const UserNavbar = () => {
           </div>
         </div>
         {/* Right controls */}
-        <div className="col-start-3 col-end-4 flex items-center justify-end gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => handleNavigation("/chat")}
             className="text-primaryText dark:text-white hover:text-primaryRgb"
@@ -232,7 +250,7 @@ const UserNavbar = () => {
 
       {/* Mobile Search */}
       {isMobileSearchOpen && (
-        <div className="absolute top-16 left-0 w-full dark:bg-[#222222] p-4 z-40 flex flex-col gap-2">
+        <div className="absolute top-16 left-0 w-full dark:bg-[#222222] p-4 z-40 flex flex-col gap-2 ">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -240,7 +258,7 @@ const UserNavbar = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearch}
-              className="flex-grow px-4 py-2 rounded-md bg-[#333333] text-primaryText focus:outline-none focus:bg-[#444444]"
+              className="flex-grow px-4 py-2 rounded-md bg-[#333333] text-white focus:outline-none focus:bg-[#444444] "
             />
             <button
               onClick={handleSearch}

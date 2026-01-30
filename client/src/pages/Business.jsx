@@ -1,6 +1,5 @@
-import React from "react";
-import Hero from "../components/Hero";
 import CategoryCard from "../components/CategoryCard";
+import Hero from "../components/Hero";
 // import noise from "../assets/noise.svg";
 import BusinessFormation from "../assets/Business/BusinessFormation.jpg";
 import GeneralAdminstrative from "../assets/Business/GeneralAdminstrative.jpg";
@@ -74,7 +73,7 @@ const Business = () => {
         heroHeight="300px"
         bloomSize="500px"
         title="Business"
-        paragraph="Take your business to the next level."
+        paragraph="Move your business forward"
       />
       <div>
         <h2 className="dark:text-white text-primaryText font-roboto text-center text-2xl lg:text-3xl font-bold mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1">

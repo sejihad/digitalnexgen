@@ -10,7 +10,6 @@ import {
   LogOut,
   Mail,
   MessageCircle,
-  MessageSquare,
   Moon,
   Package,
   Settings,
@@ -217,11 +216,6 @@ const AdminNavbar = () => {
       label: "Profile",
       icon: <User className="w-5 h-5" />,
     },
-    {
-      path: "/messages",
-      label: "Messages",
-      icon: <MessageSquare className="w-5 h-5" />,
-    },
   ];
   const { theme, toggleTheme } = useContext(ThemeContext);
   return (
@@ -229,7 +223,8 @@ const AdminNavbar = () => {
       {/* Single Toggle Button - Always Visible */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 p-2.5 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
+        className="fixed top-4 left-4 z-50 p-2.5 bg-white dark:bg-gray-800 
+  rounded-lg shadow-lg border md:hidden"
       >
         {isSidebarHidden ? (
           <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -240,9 +235,21 @@ const AdminNavbar = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 z-40 flex flex-col transform ${
-          isSidebarHidden ? "-translate-x-full" : "translate-x-0"
-        } w-64 shadow-xl`}
+        className={`
+    fixed md:static
+    left-0 top-0
+    max-h-screen md:h-auto
+    w-64
+    bg-white dark:bg-gray-900
+    border-r border-gray-200 dark:border-gray-800
+    shadow-xl md:shadow-none
+    z-40
+    flex flex-col
+    transition-transform duration-300
+    transform
+    ${isSidebarHidden ? "-translate-x-full" : "translate-x-0"}
+    md:translate-x-0
+  `}
       >
         {/* Logo Section */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
@@ -290,7 +297,7 @@ const AdminNavbar = () => {
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-4 scrollbar-thin">
           {navItems.map((category, idx) => (
             <div key={idx} className="mb-6">
               <h3 className="px-4 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -374,15 +381,6 @@ const AdminNavbar = () => {
           </button>
         </div>
       </aside>
-
-      {/* Main Content Area with padding */}
-      <div
-        className={`transition-all duration-300 ${
-          isSidebarHidden ? "pl-4" : "pl-64"
-        }`}
-      >
-        {/* Content will be rendered here */}
-      </div>
     </>
   );
 };

@@ -1,11 +1,10 @@
-import React from "react";
-import Hero from "../components/Hero";
 import CategoryCard from "../components/CategoryCard";
+import Hero from "../components/Hero";
 // import noise from "../assets/noise.svg";
-import WebDev from "../assets/ProgrammingTech/WebSiteDev.jpg";
 import ApplicationDev from "../assets/ProgrammingTech/ApplicationDev.jpg";
-import WebsitePlatform from "../assets/ProgrammingTech/WebsitePlatform.jpg";
 import SupportSecurity from "../assets/ProgrammingTech/SupportSecurity.jpg";
+import WebDev from "../assets/ProgrammingTech/WebSiteDev.jpg";
+import WebsitePlatform from "../assets/ProgrammingTech/WebsitePlatform.jpg";
 
 const ProgrammingTech = () => {
   const categories = [
@@ -114,7 +113,7 @@ const ProgrammingTech = () => {
         heroHeight="300px"
         bloomSize="500px"
         title="Programming & Tech"
-        paragraph="You think it. A programmer develops it."
+        paragraph="Your vision, my development — ideas become products."
       />
       <div>
         <h2 className="font-roboto text-center text-2xl lg:text-3xl font-bold mt-4 border-b-2 text-[#333333] dark:text-white dark:border-[#333333] w-[max-content] mx-auto pb-1">

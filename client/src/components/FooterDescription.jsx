@@ -18,7 +18,7 @@ const FooterDescription = () => {
       </p>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="text-primaryRgb hover:underline mt-2 block font-medium"
+        className="text-primaryRgb hover:underline mt-2 block font-medium dark:text-white"
       >
         {isExpanded ? "Read Less" : "Read More"}
       </button>

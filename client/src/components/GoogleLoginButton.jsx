@@ -1,19 +1,22 @@
-import { useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
-import { googleLogin } from '../redux/authSlice';
+import { useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { toast } from "sonner";
+import { googleLogin } from "../redux/authSlice";
 
 const GoogleLoginButton = ({ className = "" }) => {
   const dispatch = useDispatch();
 
-  const handleCredentialResponse = useCallback(async (response) => {
-    try {
-      await dispatch(googleLogin(response.credential)).unwrap();
-      toast.success("Successfully signed in with Google!");
-    } catch (error) {
-      toast.error(error || "Google sign-in failed. Please try again.");
-    }
-  }, [dispatch]);
+  const handleCredentialResponse = useCallback(
+    async (response) => {
+      try {
+        await dispatch(googleLogin(response.credential)).unwrap();
+        toast.success("Successfully signed in with Google!");
+      } catch (error) {
+        toast.error(error || "Google sign-in failed. Please try again.");
+      }
+    },
+    [dispatch],
+  );
 
   const handleGoogleLogin = () => {
     if (window.google) {

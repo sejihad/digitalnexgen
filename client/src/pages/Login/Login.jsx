@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { FaGoogle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import Turnstile from "react-turnstile";
+import { toast } from "sonner";
 import countryCodes from "../../data/countryCodes.json";
 import {
   loginUser,
@@ -227,6 +227,9 @@ const Login = () => {
         toast.info(
           "Registration successful! Please verify OTP sent to your email.",
         );
+        const container = document.querySelector(".containers");
+        if (container) container.classList.remove("active");
+
         // Auto-fill login for OTP verification
         setLoginCredentials({
           email: registerCredentials.email,

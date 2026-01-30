@@ -20,7 +20,7 @@ export const createMessage = async (req, res, next) => {
           readByBuyer: !req.isAdmin,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     res.status(200).json(savedMessage);
@@ -35,7 +35,7 @@ export const createMessage = async (req, res, next) => {
 export const getMessages = async (req, res, next) => {
   try {
     const messages = await Message.find({ conversationId: req.params.id })
-      .populate("userId", "username isAdmin")
+      .populate("userId", "name isAdmin img")
       .sort("createdAt");
     res.status(200).json(messages);
   } catch (error) {

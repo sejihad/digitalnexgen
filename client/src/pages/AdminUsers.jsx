@@ -2,7 +2,7 @@ import axios from "axios";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);

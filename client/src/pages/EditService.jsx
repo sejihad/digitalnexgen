@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const EditService = () => {
@@ -155,7 +155,7 @@ const EditService = () => {
           `${
             import.meta.env.VITE_API_BASE_URL
           }/api/services/single-service/${id}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         const service = response.data;
 
@@ -212,7 +212,7 @@ const EditService = () => {
         {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
-        }
+        },
       );
 
       toast.success("Service updated successfully!");

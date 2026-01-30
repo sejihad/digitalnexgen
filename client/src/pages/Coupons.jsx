@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([]);
@@ -21,7 +21,7 @@ const Coupons = () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/coupon`,
         {
           withCredentials: true,
-        }
+        },
       );
       setCoupons(res.data);
     } catch (error) {
@@ -41,14 +41,14 @@ const Coupons = () => {
             editingCoupon._id
           }`,
           data,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         toast.success("Coupon updated successfully");
       } else {
         await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/coupon/add`,
           data,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         toast.success("Coupon added successfully");
       }
@@ -71,7 +71,7 @@ const Coupons = () => {
     try {
       await axios.delete(
         `${import.meta.env.VITE_API_BASE_URL}/api/coupon/${id}`,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       toast.success("Coupon deleted");
       fetchCoupons();

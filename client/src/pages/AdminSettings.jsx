@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { setUser } from "../redux/authSlice.js";
 
 const AdminSettings = () => {

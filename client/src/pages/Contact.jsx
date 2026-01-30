@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const Contact = () => {
   const [form, setForm] = useState({
@@ -36,7 +36,7 @@ const Contact = () => {
       await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/contact`,
         form,
-        { withCredentials: false }
+        { withCredentials: false },
       );
       setSuccess("Message sent successfully.");
       toast.success("Message sent successfully.");

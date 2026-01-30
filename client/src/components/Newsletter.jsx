@@ -1,8 +1,7 @@
 import axios from "axios";
 import { Send } from "lucide-react";
 import { useState } from "react";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "sonner";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
@@ -48,7 +47,7 @@ const Newsletter = () => {
           />
           <button
             type="submit"
-            className="p-2 rounded-md bg-green-500 hover:bg-green-600 text-white transition shadow-sm hover:shadow-md flex items-center justify-center"
+            className="p-2 rounded-md bg-green-500 hover:bg-green-600 text-white transition shadow-sm hover:shadow-md flex items-center justify-center dark:bg-black dark:border dark:border-green-400"
             aria-label="Send Newsletter"
           >
             <Send size={18} />

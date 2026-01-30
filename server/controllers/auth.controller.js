@@ -114,7 +114,7 @@ Regards,
 Digital Nexgen Team
 `;
 
-    await sendEmail({
+    sendEmail({
       email: newUser.email,
       subject: "Verify your Digital Nexgen account",
       message,
@@ -180,7 +180,7 @@ export const login = async (req, res, next) => {
         user.twoFactorExpire = Date.now() + 5 * 60 * 1000;
         await user.save();
 
-        await sendEmail({
+        sendEmail({
           email: user.email,
           subject: "Digital Nexgen Login OTP",
           message: `Your OTP is ${otp}. It will expire in 5 minutes.`,
@@ -317,7 +317,7 @@ export const googleLoginCallback = async (req, res, next) => {
     `;
 
       try {
-        await sendEmail({
+        sendEmail({
           email: user.email,
           subject: "Account Created🎉",
           message,
@@ -401,13 +401,13 @@ export const forgotPassword = async (req, res, next) => {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
+        user: process.env.SMTP_MAIL,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
 
     const mailOptions = {
-      from: `"Support Team" <${process.env.EMAIL_USERNAME}>`,
+      from: `"Support Team" <${process.env.SMTP_MAIL}>`,
       to: user.email,
       subject: "Password Reset Request",
       text: `You have requested a password reset. Click on the link below to reset your password: \n\n ${resetURL} \n\n If you did not request this, please ignore this email.`,

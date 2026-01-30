@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const subCategoryOptions = {

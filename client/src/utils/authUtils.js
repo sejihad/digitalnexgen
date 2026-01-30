@@ -1,4 +1,4 @@
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { logoutUser } from "../redux/authSlice";
 
 export const handleLogout = async (dispatch, navigate) => {

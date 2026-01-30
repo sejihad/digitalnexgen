@@ -1,8 +1,7 @@
 import { useSelector } from "react-redux";
 // import FloatingMessageButton from "./components/FloatingMessageButton";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "sonner";
 import OfferModal from "./components/OfferModal";
 import Spinner from "./components/Spinner";
 import AppRoutes from "./routes/AppRoutes";
@@ -25,18 +24,25 @@ function App() {
       <Spinner />
       <AppRoutes />
       <OfferModal />
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
+      <Toaster
+        position="top-center" // top-middle equivalent
+        richColors // colorful success/error/info
+        toastOptions={{
+          duration: 2000, // auto dismiss 2s
+          style: {
+            borderRadius: "0.5rem", // rounded corners
+            padding: "0.75rem 1rem",
+            fontSize: "0.95rem",
+            fontWeight: 500,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            backdropFilter: "blur(4px)",
+          },
+          success: { icon: "✅" },
+          error: { icon: "❌" },
+          warning: { icon: "⚠️" },
+          info: { icon: "ℹ️" },
+        }}
       />
-      {/* <FloatingMessageButton handleContactClick={handleContactClick}></FloatingMessageButton> */}
     </div>
   );
 }

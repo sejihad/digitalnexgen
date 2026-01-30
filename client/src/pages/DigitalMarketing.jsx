@@ -1,11 +1,10 @@
-import React from "react";
 import Hero from "../components/Hero";
 // import noise from "../assets/noise.svg";
-import CategoryCard from "../components/CategoryCard";
+import MethodTechnique from "../assets/DigitalMarketing/MethodTechnique.jpg";
 import Search from "../assets/DigitalMarketing/Search.jpg";
 import Social from "../assets/DigitalMarketing/Social.jpg";
-import MethodTechnique from "../assets/DigitalMarketing/MethodTechnique.jpg";
 import Strategy from "../assets/DigitalMarketing/Strategy.jpg";
+import CategoryCard from "../components/CategoryCard";
 
 const DigitalMarketing = () => {
   const categories = [
@@ -100,7 +99,7 @@ const DigitalMarketing = () => {
         heroHeight="300px"
         bloomSize="500px"
         title="Digital Marketing"
-        paragraph="Build your brand, grow your business."
+        paragraph="Build your brand. Scale your business."
       />
       <div>
         <h2 className="dark:text-white text-primaryText font-roboto text-center text-2xl lg:text-3xl font-bold mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1">

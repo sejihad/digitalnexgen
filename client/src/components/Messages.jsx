@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const Messages = () => {
@@ -20,7 +20,7 @@ const Messages = () => {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/conversations`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         setConversations(response.data);
       } catch (error) {
@@ -51,7 +51,7 @@ const Messages = () => {
         try {
           const res = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/users/${conv.buyerId}`,
-            { withCredentials: true }
+            { withCredentials: true },
           );
           namesMap[conv._id] = res.data.username;
         } catch (error) {
@@ -76,7 +76,7 @@ const Messages = () => {
         try {
           const res = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/users/${targetId}`,
-            { withCredentials: true }
+            { withCredentials: true },
           );
           const u = res?.data || {};
           namesMap[conv._id] = u.fullName || u.name || u.username || "Admin";
@@ -104,12 +104,12 @@ const Messages = () => {
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/conversations/${convId}`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       setConversations((prev) =>
         prev.map((conv) =>
-          conv._id === convId ? { ...conv, ...response.data } : conv
-        )
+          conv._id === convId ? { ...conv, ...response.data } : conv,
+        ),
       );
       toast.success("Conversation marked as read.");
     } catch (error) {
@@ -156,7 +156,7 @@ const Messages = () => {
                 Time
               </th>
               {conversations.some((conv) =>
-                isAdmin ? !conv.readByAdmin : !conv.readByBuyer
+                isAdmin ? !conv.readByAdmin : !conv.readByBuyer,
               ) && (
                 <th className="p-3 border-b border-gray-200 dark:border-gray-700">
                   Actions

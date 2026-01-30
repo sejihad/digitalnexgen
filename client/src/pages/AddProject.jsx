@@ -2,7 +2,7 @@ import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AddProject = () => {

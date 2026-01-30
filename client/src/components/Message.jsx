@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Gift, Send, X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -49,6 +50,19 @@ const Message = ({ conversationId }) => {
       : adminId && adminId !== meId
         ? adminId
         : sellerId || adminId || buyerId || "";
+  const getDisplayName = (msg) => {
+    // তুমি যদি Admin হও → সবাইকে real username দেখাবে
+    if (currentUser?.isAdmin) {
+      return msg.userId?.name || msg.userId?.username || "User";
+    }
+
+    // তুমি যদি Normal user হও
+    if (msg.userId?.isAdmin) {
+      return msg.userId?.name || msg.userId?.username || "Admin";
+    }
+
+    return msg.userId?.name || "User";
+  };
 
   // derive isAdmin once from stored user to avoid effect dependency churn
   useEffect(() => {
@@ -209,10 +223,10 @@ const Message = ({ conversationId }) => {
         const u = res?.data || {};
 
         if (u) {
-          if (isAdmin) {
-            setHeaderName(u.username);
+          if (currentUser?.isAdmin) {
+            setHeaderName(u.name || u.username || "User");
           } else {
-            setHeaderName("Admin");
+            setHeaderName(u.isAdmin ? "Admin" : u.name || u.username || "User");
           }
         }
 
@@ -397,7 +411,7 @@ const Message = ({ conversationId }) => {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden">
+    <div className="h-[100vh] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden container mx-auto">
       <div
         className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm"
         ref={containerRef}
@@ -510,45 +524,48 @@ const Message = ({ conversationId }) => {
                 {conversation.messages.map((msg, index) => {
                   const isSender =
                     String(msg.userId?._id || msg.userId) === meId;
-                  let displayName = "";
-                  if (isAdmin) {
-                    // Admin dekhe sob username
-                    displayName =
-                      msg.userId?.username || msg.userId?.name || "User";
-                  } else {
-                    // Normal user dekhe admin messages as "Admin"
-                    displayName = msg.userId?.isAdmin
-                      ? "Admin"
-                      : msg.userId?.username || "User";
-                  }
+                  const displayName = getDisplayName(msg);
+                  const avatar = msg.userId?.img?.url;
+
                   return (
                     <div
                       key={index}
-                      className={`flex items-end gap-2 md:gap-3 ${
-                        isSender ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex gap-3 ${isSender ? "justify-end" : "justify-start"}`}
                     >
+                      {/* Avatar (left side for receiver) */}
                       {!isSender && (
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-black dark:text-white font-semibold text-xs md:text-sm flex-shrink-0">
-                          {displayName}
+                        <div className="flex flex-col items-center">
+                          <img
+                            src={avatar || "/avatar.png"}
+                            alt={displayName}
+                            className="w-9 h-9 rounded-full object-cover border"
+                          />
                         </div>
                       )}
 
-                      <div
-                        className={`${getMessageWidthClass()} px-3 md:px-4 py-2 rounded-2xl shadow ${
-                          isSender
-                            ? "bg-pink-500 text-white rounded-br-none"
-                            : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-bl-none"
-                        }`}
-                      >
-                        <div className="text-sm md:text-base leading-relaxed break-words">
+                      {/* Message bubble */}
+                      <div className="max-w-[70%]">
+                        {!isSender && (
+                          <div className="text-xs text-gray-500 mb-1">
+                            {displayName}
+                          </div>
+                        )}
+
+                        <div
+                          className={`px-4 py-2 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                            isSender
+                              ? "bg-pink-500 text-white rounded-br-none"
+                              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none"
+                          }`}
+                        >
                           {msg.message}
                         </div>
+
                         <div
-                          className={`text-xs mt-1 ${
+                          className={`text-[10px] mt-1 ${
                             isSender
-                              ? "text-pink-100 text-right"
-                              : "text-gray-500 dark:text-gray-400"
+                              ? "text-right text-pink-200"
+                              : "text-gray-400"
                           }`}
                         >
                           {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -558,10 +575,13 @@ const Message = ({ conversationId }) => {
                         </div>
                       </div>
 
+                      {/* Avatar (right side for sender) */}
                       {isSender && (
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold text-xs md:text-sm flex-shrink-0">
-                          ME
-                        </div>
+                        <img
+                          src={avatar || "/avatar.png"}
+                          alt="Me"
+                          className="w-9 h-9 rounded-full object-cover border"
+                        />
                       )}
                     </div>
                   );
@@ -713,24 +733,37 @@ const Message = ({ conversationId }) => {
                 </div>
 
                 <div className="flex gap-2">
+                  {/* Send Button */}
                   <button
                     onClick={handleSendMessage}
                     disabled={isSending || !newMessage.trim()}
-                    className="bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 md:py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+                    className="bg-pink-500 hover:bg-colorNeonPink text-white
+    px-4 py-2 md:py-3 rounded-lg
+    disabled:opacity-50 disabled:cursor-not-allowed
+    transition-colors flex items-center justify-center"
+                    title="Send message"
                   >
-                    {isSending ? "Sending..." : "Send"}
+                    {isSending ? (
+                      <span className="text-xs md:text-sm">...</span>
+                    ) : (
+                      <Send size={18} />
+                    )}
                   </button>
 
+                  {/* Offer Button (Admin only) */}
                   {isAdmin && (
                     <button
                       onClick={() => setShowOfferForm((p) => !p)}
-                      className={`px-3 py-2 md:py-3 rounded-lg text-sm md:text-base ${
-                        showOfferForm
-                          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
-                          : "bg-pink-500 hover:bg-colorNeonPink text-white"
-                      }`}
+                      className={`px-4 py-2 md:py-3 rounded-lg
+      transition-colors flex items-center justify-center
+      ${
+        showOfferForm
+          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
+          : "bg-pink-500 hover:bg-colorNeonPink text-white"
+      }`}
+                      title={showOfferForm ? "Close offer" : "Send offer"}
                     >
-                      {showOfferForm ? "✕" : "Offer"}
+                      {showOfferForm ? <X size={18} /> : <Gift size={18} />}
                     </button>
                   )}
                 </div>

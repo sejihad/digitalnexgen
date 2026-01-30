@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "sonner";
+
 import Spinner from "../components/Spinner";
 import { setUser } from "../redux/authSlice";
 

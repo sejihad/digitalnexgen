@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useSocket } from "../context/SocketContext.jsx";
 import Message from "./Message";
 
@@ -37,7 +37,7 @@ const Chat = () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/conversations`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         setConversations(res.data);
         if (res.data?.length && !selectedId) {
@@ -107,7 +107,7 @@ const Chat = () => {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-80px)] bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex overflow-hidden">
+    <div className="h-[calc(100vh-80px)] bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex overflow-hidden container mx-auto">
       {/* Mobile Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}

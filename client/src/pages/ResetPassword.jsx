@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
+
 import axios from "axios";
-import Logo from "../assets/logo.png";
-import DarkLogo from "../assets/DarkLogo.png"
+import DarkLogo from "../assets/DarkLogo.png";
 import element1 from "../assets/elements/element-1.png";
 import element2 from "../assets/elements/element-2.png";
+import Logo from "../assets/logo.png";
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -31,11 +31,11 @@ const ResetPassword = () => {
       dispatch(showLoading());
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/auth/reset-password/${token}`,
-        { password }
+        { password },
       );
       toast.success(res.data.message || "Password reset successful!");
       dispatch(hideLoading());
-      navigate("/auth/sign-in");
+      navigate("/auth/login");
     } catch (err) {
       dispatch(hideLoading());
       toast.error(err.response?.data.message || "An error occurred!");
@@ -51,16 +51,16 @@ const ResetPassword = () => {
             <div className="text-primaryText flex flex-col gap-5">
               <div className="flex justify-center lg:justify-start">
                 {/* <img src={Logo} alt="Logo" className="max-w-[150px]" /> */}
-                 <img
-              src={Logo}
-              alt="Logo"
-              className="dark:hidden ml-[-15px] mb-2"
-            />
-            <img
-              src={DarkLogo}
-              alt="Logo Of Digital NexGen"
-              className=" hidden dark:block ml-[-15px] mb-2"
-            />
+                <img
+                  src={Logo}
+                  alt="Logo"
+                  className="dark:hidden ml-[-15px] mb-2"
+                />
+                <img
+                  src={DarkLogo}
+                  alt="Logo Of Digital NexGen"
+                  className=" hidden dark:block ml-[-15px] mb-2"
+                />
               </div>
               <div>
                 <h3 className="text-2xl font-openSans font-medium text-center lg:text-left text-white">

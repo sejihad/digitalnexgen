@@ -1,15 +1,14 @@
-import React from "react";
-import Hero from "../components/Hero";
 import CategoryCard from "../components/CategoryCard";
+import Hero from "../components/Hero";
 // import noise from "../assets/noise.svg";
-import LogoBrand from "../assets/GraphicsDesign/LogoBrand.jpg";
-import WebAppDesign from "../assets/GraphicsDesign/WebAppDesign.jpg";
 import ArtIllustration from "../assets/GraphicsDesign/ArtIllustration.jpg";
-import VisualDesign from "../assets/GraphicsDesign/VisualDesign.jpg";
 import CoverPackageDesign from "../assets/GraphicsDesign/CoverPackageDesign.jpg";
-import MarketingDesign from "../assets/GraphicsDesign/MarketingDesign.jpg";
-import FashionDesign from "../assets/GraphicsDesign/FashionDesign.jpg";
 import Design3d from "../assets/GraphicsDesign/Design3d.jpg";
+import FashionDesign from "../assets/GraphicsDesign/FashionDesign.jpg";
+import LogoBrand from "../assets/GraphicsDesign/LogoBrand.jpg";
+import MarketingDesign from "../assets/GraphicsDesign/MarketingDesign.jpg";
+import VisualDesign from "../assets/GraphicsDesign/VisualDesign.jpg";
+import WebAppDesign from "../assets/GraphicsDesign/WebAppDesign.jpg";
 
 const GraphicsDesign = () => {
   const categories = [
@@ -210,7 +209,7 @@ const GraphicsDesign = () => {
         heroHeight="300px"
         bloomSize="500px"
         title="Graphics & Design"
-        paragraph="Design to make you stand out."
+        paragraph="Designs that make your brand impossible to ignore."
       />
       <div>
         <h2 className="text-primaryText dark:text-white font-roboto text-center text-2xl lg:text-3xl font-bold mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1">

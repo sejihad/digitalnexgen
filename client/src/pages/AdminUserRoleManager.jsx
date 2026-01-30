@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const AdminUserDetailPage = () => {
   const { id } = useParams();

@@ -2,7 +2,7 @@ import axios from "axios";
 import { Calendar, Edit, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const AdminPromotionalOffers = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const AdminPromotionalOffers = () => {
         `${
           import.meta.env.VITE_API_BASE_URL
         }/api/promotional-offers?admin=true`,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setOffers(response.data);
@@ -39,7 +39,7 @@ const AdminPromotionalOffers = () => {
           import.meta.env.VITE_API_BASE_URL
         }/api/promotional-offers/${id}/toggle`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       toast.success("Offer status updated");
       fetchOffers();
@@ -55,7 +55,7 @@ const AdminPromotionalOffers = () => {
     try {
       await axios.delete(
         `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}`,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       toast.success("Offer deleted successfully");
       fetchOffers();
@@ -131,19 +131,19 @@ const AdminPromotionalOffers = () => {
                             offer.isActive && !isExpired && !isUpcoming
                               ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
                               : isExpired
-                              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                              : isUpcoming
-                              ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                : isUpcoming
+                                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
                           }`}
                         >
                           {isExpired
                             ? "Expired"
                             : isUpcoming
-                            ? "Upcoming"
-                            : offer.isActive
-                            ? "Active"
-                            : "Inactive"}
+                              ? "Upcoming"
+                              : offer.isActive
+                                ? "Active"
+                                : "Inactive"}
                         </span>
                         <span className="px-3 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-full text-xs font-semibold">
                           {offer.discount}
@@ -204,7 +204,7 @@ const AdminPromotionalOffers = () => {
                           if (offer.isActive) {
                             if (
                               !window.confirm(
-                                "Are you sure you want to deactivate this offer?"
+                                "Are you sure you want to deactivate this offer?",
                               )
                             )
                               return;
@@ -234,7 +234,7 @@ const AdminPromotionalOffers = () => {
                       <button
                         onClick={() =>
                           navigate(
-                            `/admin/promotional-offers/edit/${offer._id}`
+                            `/admin/promotional-offers/edit/${offer._id}`,
                           )
                         }
                         className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded-lg font-semibold hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 transition-colors"

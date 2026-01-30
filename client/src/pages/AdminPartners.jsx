@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminPartners = () => {

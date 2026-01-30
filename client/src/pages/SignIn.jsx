@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import Auth from "../components/Auth";
 import { loginUser } from "../redux/authSlice";
 
@@ -15,7 +15,7 @@ const Signin = () => {
   const dispatch = useDispatch();
 
   const { loading, error, isAuthenticated, user } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
   const handleSignIn = (event) => {
@@ -48,8 +48,7 @@ const Signin = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    
-    <Auth 
+    <Auth
       mode="sign-in"
       onSubmit={handleSignIn}
       credentials={credentials}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AddPromotionalOffer = () => {
@@ -88,7 +88,7 @@ const AddPromotionalOffer = () => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers`,
         offerData,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       toast.success("Promotional offer created successfully!");

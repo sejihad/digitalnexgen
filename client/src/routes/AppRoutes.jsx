@@ -91,7 +91,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           }
         >
           <Route index element={<Home />} />
-          <Route path="messages/:id" element={<Message />} />
+
           <Route path="/chat" element={<Chat />} />
           <Route path="messages" element={<Messages />} />
           <Route path="services" element={<Services />} />
@@ -215,6 +215,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route index element={<Dashboard />} />
           <Route path="add-service" element={<AddService />} />
           <Route path="services" element={<AdminServices />} />
+          <Route path="messages/:id" element={<Message />} />
           <Route path="services/edit/:id" element={<EditService />} />
           <Route path="/admin/conversations" element={<AdminConvesation />} />
           <Route path="add-project" element={<AddProject />} />

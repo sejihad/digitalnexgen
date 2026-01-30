@@ -1,9 +1,8 @@
-import React from "react";
 import CategoryCard from "../components/CategoryCard";
 import Hero from "../components/Hero";
 // import noise from "../assets/noise.svg";
-import ContentWriting from "../assets/WritingTranslation/ContentWriting.jpg";
 import BookPublishing from "../assets/WritingTranslation/BookPublishing.jpg";
+import ContentWriting from "../assets/WritingTranslation/ContentWriting.jpg";
 import Translation from "../assets/WritingTranslation/Translation.jpg";
 
 const WritingTranslation = () => {
@@ -33,7 +32,7 @@ const WritingTranslation = () => {
           url: "/writing-translation/speech-writing",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: BookPublishing,
@@ -56,7 +55,7 @@ const WritingTranslation = () => {
           url: "/writing-translation/proofreading-editing",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Translation,
@@ -75,7 +74,7 @@ const WritingTranslation = () => {
           url: "/writing-translation/localization",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ];
 
@@ -87,7 +86,7 @@ const WritingTranslation = () => {
         heroHeight="300px"
         bloomSize="500px"
         title="Writing & Translation"
-        paragraph="Get your words across—in any language."
+        paragraph="Get your message across in any language."
       />
       <div>
         <h2 className="text-primaryText dark:text-white font-roboto text-center text-2xl lg:text-3xl font-bold mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1">

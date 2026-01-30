@@ -11,7 +11,7 @@ const Footer = () => {
 
   return (
     <footer className="mt-8 text-white py-10  pb-20">
-      <div className="container mx-auto px-2 lg:px-0 border-t border-primaryRgb">
+      <div className="container mx-auto px-2 lg:px-0 border-t border-primaryRgb dark:border-white">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 text-center lg:text-left">
           {/* === About Section === */}
           <div>
@@ -33,7 +33,7 @@ const Footer = () => {
 
           {/* === Quick Links === */}
           <div>
-            <h2 className="text-lg font-semibold text-primaryRgb mb-3">
+            <h2 className="text-lg font-semibold text-primaryRgb dark:text-white mb-3">
               Quick Links
             </h2>
             <ul className="space-y-2">
@@ -98,7 +98,7 @@ const Footer = () => {
 
           {/* === Services === */}
           <div>
-            <h2 className="text-lg font-semibold text-primaryRgb mb-3">
+            <h2 className="text-lg font-semibold text-primaryRgb mb-3 dark:text-white">
               Services
             </h2>
             <ul className="space-y-2">
@@ -155,7 +155,7 @@ const Footer = () => {
 
           {/* === Contact Section === */}
           <div>
-            <h2 className="text-lg font-semibold text-primaryRgb mb-3">
+            <h2 className="text-lg font-semibold text-primaryRgb mb-3 dark:text-white">
               Contact Us
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-1 font-medium">

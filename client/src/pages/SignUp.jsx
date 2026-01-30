@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import Auth from "../components/Auth";
 import { loginUser, registerUser } from "../redux/authSlice";
 import uploadImage from "../utils/uploadImage";
@@ -45,7 +45,7 @@ const Signup = () => {
         loginUser({
           username: credentials.username,
           password: credentials.password,
-        })
+        }),
       ).unwrap();
       navigate("/services");
     } catch (err) {

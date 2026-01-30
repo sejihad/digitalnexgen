@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { setUser } from "../redux/authSlice";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import Spinner from "../components/Spinner";
+import { setUser } from "../redux/authSlice";
 
 const GoogleCallbackHandler = () => {
   const navigate = useNavigate();

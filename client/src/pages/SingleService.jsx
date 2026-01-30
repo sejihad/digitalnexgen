@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import placeholderImg from "../assets/user.png";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 const SingleService = () => {

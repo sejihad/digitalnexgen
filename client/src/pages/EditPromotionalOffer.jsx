@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const EditPromotionalOffer = () => {
@@ -57,7 +57,7 @@ const EditPromotionalOffer = () => {
     const loadOffer = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}`
+          `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}`,
         );
         const data = res.data;
         // populate form
@@ -86,7 +86,7 @@ const EditPromotionalOffer = () => {
           serviceId: data.serviceId?._id || data.serviceId || null,
         });
         setFeatures(
-          data.features && data.features.length ? data.features : [""]
+          data.features && data.features.length ? data.features : [""],
         );
       } catch (err) {
         console.error("Failed to load promotional offer:", err);
@@ -145,7 +145,7 @@ const EditPromotionalOffer = () => {
       await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}`,
         offerData,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       toast.success("Promotional offer updated successfully");
