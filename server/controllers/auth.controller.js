@@ -407,7 +407,7 @@ export const forgotPassword = async (req, res, next) => {
     });
 
     const mailOptions = {
-      from: `"Support Team" <${process.env.SMTP_MAIL}>`,
+      from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
       to: user.email,
       subject: "Password Reset Request",
       text: `You have requested a password reset. Click on the link below to reset your password: \n\n ${resetURL} \n\n If you did not request this, please ignore this email.`,
