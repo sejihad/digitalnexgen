@@ -54,7 +54,7 @@ export const sendContactMessage = async (req, res) => {
 
       try {
         const result = await transporter.sendMail({
-          from: `"Digita NexGen" <${process.env.SMTP_MAIL}>`,
+          from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
 
           to: recipient,
           subject,

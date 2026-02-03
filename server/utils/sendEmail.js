@@ -12,7 +12,7 @@ const sendEmail = async (options) => {
   });
 
   const mailOptions = {
-    from: `"Digita NexGen" <${process.env.SMTP_MAIL}>`,
+    from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
