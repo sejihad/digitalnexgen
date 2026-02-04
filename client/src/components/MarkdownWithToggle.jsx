@@ -2,7 +2,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const MarkdownWithToggle = ({ content, limit = 300 }) => {
+const MarkDownWithToggle = ({ content, limit = 300 }) => {
   const [expanded, setExpanded] = useState(false);
 
   // Truncated version
