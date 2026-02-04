@@ -133,4 +133,4 @@ const MarkdownWithToggle = ({ content, limit = 300 }) => {
   );
 };
 
-export default MarkdownWithToggle;
+export default MarkDownWithToggle;

@@ -4,7 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import placeholderImg from "../assets/user.png";
-import MarkdownWithToggle from "../components/MarkDownWithToggle.jsx";
+
+import MarkDownWithToggle from "../components/MarkDownWithToggle";
 import ServiceMediaSlider from "../components/ServiceMediaSlider";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 const SingleService = () => {
@@ -519,7 +520,7 @@ const SingleService = () => {
             About This Service
           </h2>
 
-          <MarkdownWithToggle content={service.desc} limit={500} />
+          <MarkDownWithToggle content={service.desc} limit={500} />
           <div className="flex flex-wrap gap-2 mt-4 mb-3">
             <span className="px-2 py-1 bg-red-600 text-white rounded-md text-xs">
               Category: {service.category}
@@ -530,7 +531,7 @@ const SingleService = () => {
           </div>
           {service.shortDesc && (
             <div>
-              <MarkdownWithToggle content={service.shortDesc} limit={1000} />
+              <MarkDownWithToggle content={service.shortDesc} limit={1000} />
             </div>
           )}
 
@@ -543,7 +544,7 @@ const SingleService = () => {
                 {service.features.map((feature, index) => (
                   <li key={index}>
                     <div>
-                      <MarkdownWithToggle content={feature} limit={500} />
+                      <MarkDownWithToggle content={feature} limit={500} />
                     </div>
                   </li>
                 ))}
@@ -711,7 +712,7 @@ const SingleService = () => {
                       {selectedPackageDetails.name} Package
                     </h3>
                     <div>
-                      <MarkdownWithToggle
+                      <MarkDownWithToggle
                         content={selectedPackageDetails.desc}
                         limit={500}
                       />
