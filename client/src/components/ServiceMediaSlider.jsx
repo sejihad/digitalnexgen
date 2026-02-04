@@ -64,7 +64,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
         <img
           src={media.url}
           alt="Service media"
-          className="w-full h-[400px] object-cover rounded-lg"
+          className="w-full h-[400px]  rounded-lg"
         />
       );
     }
@@ -119,7 +119,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
                 <img
                   src={media.url}
                   alt={`Thumbnail ${index + 1}`}
-                  className="w-20 h-20 object-cover rounded"
+                  className="w-20 h-20  rounded"
                 />
               )}
             </div>
