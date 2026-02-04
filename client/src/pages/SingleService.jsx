@@ -5,7 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import placeholderImg from "../assets/user.png";
 
-import MarkDownWithToggle from "../components/MarkDownWithToggle.jsx";
+import MarkDownWithToggle from "../components/MarkdownWithToggle.jsx";
 import ServiceMediaSlider from "../components/ServiceMediaSlider";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 const SingleService = () => {
