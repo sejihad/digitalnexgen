@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class',
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
@@ -11,12 +11,12 @@ export default {
         colorNeonLight: "rgb(12, 187, 20)",
         colorNeonSionLight: "rgb(12, 187, 20)",
         primaryText: "#333333",
-         "primaryTextForDark": "#ededed",
-         "tea-Green": "rgb(181, 228, 194)",
-          // "light-bg": "rgb(255, 255, 255)",
-          "light-bg": "rgb(255, 255, 255)",
+        primaryTextForDark: "#ededed",
+        "tea-Green": "rgb(181, 228, 194)",
+        // "light-bg": "rgb(255, 255, 255)",
+        "light-bg": "rgb(255, 255, 255)",
 
-        // primaryRgb: "rgb(12, 187, 20)", colorNeonSion: "rgba(0, 220, 238, 0.8)", colorNeonPink: "rgba(232, 0, 151, 0.8)", colorNeonLight: "rgb(242, 102, 179)", colorNeonSionLight: "rgb(153, 235, 242)", primaryText: "#ededed", 
+        // primaryRgb: "rgb(12, 187, 20)", colorNeonSion: "rgba(0, 220, 238, 0.8)", colorNeonPink: "rgba(232, 0, 151, 0.8)", colorNeonLight: "rgb(242, 102, 179)", colorNeonSionLight: "rgb(153, 235, 242)", primaryText: "#ededed",
 
         pink: {
           500: "#0CBB14",
@@ -60,5 +60,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 };

@@ -183,7 +183,7 @@ const Footer = () => {
               Phone: +44 7482 799 921
             </p>
 
-            <div className="flex relative z-50  justify-center lg:justify-start space-x-5 mb-10">
+            <div className="flex relative  justify-center lg:justify-start space-x-5 mb-10">
               <a
                 href="https://www.facebook.com/profile.php?id=61558536931762&amp;mibextid=ZbWKwL"
                 target="_blank"

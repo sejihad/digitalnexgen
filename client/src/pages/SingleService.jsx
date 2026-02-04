@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import placeholderImg from "../assets/user.png";
+import MarkdownWithToggle from "../components/MarkDownWithToggle";
+import ServiceMediaSlider from "../components/ServiceMediaSlider";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 const SingleService = () => {
   const [couponCode, setCouponCode] = useState("");
@@ -502,42 +504,22 @@ const SingleService = () => {
             </span>
           </h1>
 
+          {/* ✅ Replace old media section with slider */}
           <div className="mb-6">
-            {renderMedia(mediaList[selectedImageIndex])}
+            <ServiceMediaSlider
+              mediaList={[
+                ...(service.coverImage ? [service.coverImage] : []),
+                ...(service.otherImages || []),
+              ]}
+              videoUrl={service.videoUrl}
+            />
           </div>
-
-          {mediaList.length > 1 && (
-            <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-600">
-              {mediaList.map((item, index) => (
-                <div
-                  key={index}
-                  className={`cursor-pointer border ${
-                    selectedImageIndex === index
-                      ? "border-red-500"
-                      : "border-gray-600"
-                  }`}
-                  onClick={() => handleThumbnailClick(index)}
-                >
-                  <img
-                    src={item.url}
-                    alt="Service thumbnail"
-                    className="w-20 h-20 object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
 
           <h2 className="text-xl font-semibold dark:text-gray-300 mt-6 mb-4">
             About This Service
           </h2>
-          <p
-            style={{ whiteSpace: "pre-wrap" }}
-            className="dark:text-gray-300 leading-relaxed"
-          >
-            {service.desc}
-          </p>
 
+          <MarkdownWithToggle content={service.desc} limit={500} />
           <div className="flex flex-wrap gap-2 mt-4 mb-3">
             <span className="px-2 py-1 bg-red-600 text-white rounded-md text-xs">
               Category: {service.category}
@@ -547,12 +529,9 @@ const SingleService = () => {
             </span>
           </div>
           {service.shortDesc && (
-            <p
-              style={{ whiteSpace: "pre-wrap" }}
-              className="dark:text-gray-400 mb-4 italic"
-            >
-              {service.shortDesc}
-            </p>
+            <div>
+              <MarkdownWithToggle content={service.shortDesc} limit={1000} />
+            </div>
           )}
 
           {service.features?.length > 0 && (
@@ -562,27 +541,16 @@ const SingleService = () => {
               </h3>
               <ul className="list-disc ml-6 dark:text-gray-300 space-y-1">
                 {service.features.map((feature, index) => (
-                  <li key={index}>{feature}</li>
+                  <li key={index}>
+                    <div>
+                      <MarkdownWithToggle content={feature} limit={500} />
+                    </div>
+                  </li>
                 ))}
               </ul>
             </div>
           )}
-          {/* Product Video */}
-          {service.videoUrl && (
-            <div className="mt-8 bg-white dark:bg-black rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700  ">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-200 mb-4">
-                Service Video
-              </h2>
-              <div className="aspect-w-16 aspect-h-9">
-                <iframe
-                  src={service.videoUrl}
-                  title="Service Video"
-                  allowFullScreen
-                  className="w-full h-96 rounded-md"
-                ></iframe>
-              </div>
-            </div>
-          )}
+
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
               Reviews:
@@ -742,9 +710,12 @@ const SingleService = () => {
                     <h3 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                       {selectedPackageDetails.name} Package
                     </h3>
-                    <p style={{ whiteSpace: "pre-wrap" }} className="mb-4">
-                      {selectedPackageDetails.desc}
-                    </p>
+                    <div>
+                      <MarkdownWithToggle
+                        content={selectedPackageDetails.desc}
+                        limit={500}
+                      />
+                    </div>
 
                     <p className="text-xl md:text-2xl font-bold text-primaryRgb mb-2">
                       {(offerPriceMap?.[selectedPackage] ??

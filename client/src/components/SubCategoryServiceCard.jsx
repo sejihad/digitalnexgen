@@ -26,7 +26,7 @@ const SubCategoryServiceCard = ({ service }) => {
         <img
           src={service.coverImage?.url}
           alt={service.shortTitle}
-          className="w-full h-48 object-cover rounded-md group-hover:opacity-90 transition-opacity duration-300"
+          className="w-full h-48  rounded-md group-hover:opacity-90 transition-opacity duration-300"
         />
       </div>
 

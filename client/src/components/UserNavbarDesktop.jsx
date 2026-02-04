@@ -275,7 +275,7 @@ const UserNavbar = () => {
       <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-[#222222] border-t border-black/10 dark:border-white/10 p-2 flex items-center justify-evenly gap-6 lg:hidden z-40 shadow-lg">
         <Link
           to="/chat"
-          className="text-primaryText hover:text-primaryRgb flex flex-col items-center"
+          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
         >
           <MessageSquare size={30} />
           <span className="text-xs">Messages</span>
@@ -283,7 +283,7 @@ const UserNavbar = () => {
 
         <Link
           to={`/profile/${userId}`}
-          className="flex flex-col items-center dark:text-white text-primaryText hover:text-primaryRgb dark:hover:text-primaryRgb"
+          className="flex flex-col items-center text-black dark:text-white hover:text-primaryRgb dark:hover:text-primaryRgb"
         >
           <User size={20} />
           <span className="text-xs">Profile</span>
@@ -291,7 +291,7 @@ const UserNavbar = () => {
 
         <Link
           to="/settings"
-          className="text-primaryText hover:text-primaryRgb flex flex-col items-center"
+          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
         >
           <Settings size={20} />
           <span className="text-xs">Setting</span>
@@ -307,7 +307,7 @@ const UserNavbar = () => {
 
         <Link
           to="/orders"
-          className="text-primaryText hover:text-primaryRgb flex flex-col items-center"
+          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
         >
           <ShoppingBag size={20} />
           <span className="text-xs">Orders</span>
@@ -315,7 +315,7 @@ const UserNavbar = () => {
 
         <button
           onClick={logout}
-          className="text-primaryText hover:text-primaryRgb mt-auto flex flex-col items-center"
+          className="text-black dark:text-white hover:text-primaryRgb  flex flex-col items-center"
         >
           <LogOut size={20} />
           <span className="text-xs">Logout</span>

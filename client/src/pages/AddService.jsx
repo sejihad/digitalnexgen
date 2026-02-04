@@ -1,9 +1,11 @@
 import axios from "axios";
+import "easymde/dist/easymde.min.css";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import SimpleMDE from "react-simplemde-editor";
 import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
-
 const AddService = () => {
   const dispatch = useDispatch();
 
@@ -54,7 +56,37 @@ const AddService = () => {
       ],
     },
   });
-
+  const simpleMdeOptions = useMemo(
+    () => ({
+      placeholder: "Write your description in Markdown...",
+      spellChecker: false,
+      status: false,
+      autosave: {
+        enabled: true,
+        uniqueId: "service-desc",
+        delay: 1000,
+      },
+      toolbar: [
+        "bold",
+        "italic",
+        "heading",
+        "|",
+        "quote",
+        "unordered-list",
+        "ordered-list",
+        "|",
+        "link",
+        "image",
+        "|",
+        "preview",
+        "guide",
+      ],
+      minHeight: "200px",
+      // ✅ Auto focus ঠিক রাখার জন্য
+      autofocus: false,
+    }),
+    [],
+  );
   const subCategoryOptions = {
     "programming-tech": [
       "website-development",
@@ -306,13 +338,22 @@ const AddService = () => {
           className="w-full p-2 rounded bg-gray-700"
         />
 
-        <textarea
-          {...register("desc", { required: "Description is required" })}
-          placeholder="Service Description"
-          className="w-full p-2 rounded bg-gray-700"
-        />
-        {errors.desc && <p className="text-red-500">{errors.desc.message}</p>}
-
+        {["desc", "shortDesc"].map((field) => (
+          <div key={field} className="mb-4">
+            <label className="block font-bold mb-2">
+              {field === "desc" ? "Service Description" : "Short Description"}{" "}
+              (Markdown)
+            </label>
+            <SimpleMDE
+              value={watch(field) || ""}
+              onChange={(value) => setValue(field, value)}
+              options={simpleMdeOptions}
+            />
+            {errors[field] && (
+              <p className="text-red-500">{errors[field].message}</p>
+            )}
+          </div>
+        ))}
         <input
           {...register("shortTitle", { required: "Short Title is required" })}
           placeholder="Short Title"
@@ -322,26 +363,17 @@ const AddService = () => {
           <p className="text-red-500">{errors.shortTitle.message}</p>
         )}
 
-        <textarea
-          {...register("shortDesc", {
-            required: "Short Description is required",
-          })}
-          placeholder="Short Description"
-          className="w-full p-2 rounded bg-gray-700"
-        />
-        {errors.shortDesc && (
-          <p className="text-red-500">{errors.shortDesc.message}</p>
-        )}
-
         <div>
           <label className="block font-bold mb-2">Features</label>
           {watch("features")?.map((feature, index) => (
-            <input
-              key={index}
-              {...register(`features.${index}`)}
-              placeholder={`Feature ${index + 1}`}
-              className="w-full p-2 mb-2 rounded bg-gray-700"
-            />
+            <div key={index} className="mb-4">
+              <label className="block mb-1">Feature {index + 1}</label>
+              <SimpleMDE
+                value={watch(`features.${index}`) || ""}
+                onChange={(value) => setValue(`features.${index}`, value)}
+                options={simpleMdeOptions}
+              />
+            </div>
           ))}
         </div>
 
@@ -351,12 +383,11 @@ const AddService = () => {
             <div key={index} className="space-y-4">
               <h3 className="text-xl font-semibold mb-2">{pkg.name}</h3>
 
-              <textarea
-                {...register(`packages.${index}.desc`, {
-                  required: "Description is required",
-                })}
-                placeholder={`${pkg.name} Description`}
-                className="w-full p-2 mt-4 rounded bg-gray-700"
+              {/* Package description Markdown */}
+              <SimpleMDE
+                value={watch(`packages.${index}.desc`) || ""}
+                onChange={(value) => setValue(`packages.${index}.desc`, value)}
+                options={simpleMdeOptions}
               />
 
               <div>
@@ -421,9 +452,9 @@ const AddService = () => {
                   placeholder={`${pkg.name} Sale Price`}
                   className="w-full p-2 rounded bg-gray-700"
                 />
-                {errors.packages?.[index]?.selePrice && (
+                {errors.packages?.[index]?.salePrice && (
                   <p className="text-red-500">
-                    {errors.packages[index].selePrice.message}
+                    {errors.packages[index].salePrice.message}
                   </p>
                 )}
               </div>

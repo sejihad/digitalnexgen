@@ -1,11 +1,12 @@
 import axios from "axios";
-import { useEffect } from "react";
+import "easymde/dist/easymde.min.css";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import SimpleMDE from "react-simplemde-editor";
 import { toast } from "sonner";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
-
 const EditService = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -146,6 +147,37 @@ const EditService = () => {
     ],
   };
 
+  const simpleMdeOptions = useMemo(
+    () => ({
+      placeholder: "Write your description in Markdown...",
+      spellChecker: false,
+      status: false,
+      autosave: {
+        enabled: true,
+        uniqueId: "service-desc",
+        delay: 1000,
+      },
+      toolbar: [
+        "bold",
+        "italic",
+        "heading",
+        "|",
+        "quote",
+        "unordered-list",
+        "ordered-list",
+        "|",
+        "link",
+        "image",
+        "|",
+        "preview",
+        "guide",
+      ],
+      minHeight: "200px",
+      // ✅ Auto focus ঠিক রাখার জন্য
+      autofocus: false,
+    }),
+    [],
+  );
   // Fetch existing data
   useEffect(() => {
     const fetchServiceDetails = async () => {
@@ -276,31 +308,39 @@ const EditService = () => {
           className="w-full p-2 rounded bg-gray-700"
         />
 
-        <textarea
-          {...register("desc")}
-          placeholder="Description"
-          className="w-full p-2 rounded bg-gray-700"
-        />
         <input
           {...register("shortTitle")}
           placeholder="Short Title"
           className="w-full p-2 rounded bg-gray-700"
         />
-        <textarea
-          {...register("shortDesc")}
-          placeholder="Short Description"
-          className="w-full p-2 rounded bg-gray-700"
-        />
+        {["desc", "shortDesc"].map((field) => (
+          <div key={field} className="mb-4">
+            <label className="block font-bold mb-2">
+              {field === "desc" ? "Service Description" : "Short Description"}{" "}
+              (Markdown)
+            </label>
+            <SimpleMDE
+              value={watch(field) || ""}
+              onChange={(value) => setValue(field, value)}
+              options={simpleMdeOptions}
+            />
+            {errors[field] && (
+              <p className="text-red-500">{errors[field].message}</p>
+            )}
+          </div>
+        ))}
 
         <div>
           <label className="block font-bold mb-2">Features</label>
           {watch("features")?.map((feature, index) => (
-            <input
-              key={index}
-              {...register(`features.${index}`)}
-              placeholder={`Feature ${index + 1}`}
-              className="w-full p-2 mb-2 rounded bg-gray-700"
-            />
+            <div key={index} className="mb-4">
+              <label className="block mb-1">Feature {index + 1}</label>
+              <SimpleMDE
+                value={watch(`features.${index}`) || ""}
+                onChange={(value) => setValue(`features.${index}`, value)}
+                options={simpleMdeOptions}
+              />
+            </div>
           ))}
         </div>
 
@@ -312,11 +352,14 @@ const EditService = () => {
               className="space-y-2 border p-4 rounded bg-gray-800 mb-4"
             >
               <h3 className="text-lg font-semibold">{pkg.name}</h3>
-              <textarea
-                {...register(`packages.${index}.desc`)}
-                placeholder="Description"
-                className="w-full p-2 rounded bg-gray-700"
+
+              {/* Package description Markdown */}
+              <SimpleMDE
+                value={watch(`packages.${index}.desc`) || ""}
+                onChange={(value) => setValue(`packages.${index}.desc`, value)}
+                options={simpleMdeOptions}
               />
+
               <input
                 {...register(`packages.${index}.deliveryTime`)}
                 type="number"
@@ -333,6 +376,12 @@ const EditService = () => {
                 {...register(`packages.${index}.regularPrice`)}
                 type="number"
                 placeholder="Regular Price"
+                className="w-full p-2 rounded bg-gray-700"
+              />
+              <input
+                {...register(`packages.${index}.salePrice`)}
+                type="number"
+                placeholder="Sale Price"
                 className="w-full p-2 rounded bg-gray-700"
               />
             </div>

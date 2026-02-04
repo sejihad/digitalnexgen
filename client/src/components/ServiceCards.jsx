@@ -103,42 +103,42 @@ const ServiceCards = ({
         <ServiceCard
           icon={CodeXml}
           heading="Programming & Tech"
-          content="Get expert help with coding and tech solutions."
+          content="Expert support to solve your coding challenges and tech needs."
           iconColor="text-primaryRgb"
           url="/programming-tech"
         />
         <ServiceCard
           icon={Brush}
           heading="Graphics Design"
-          content="Create stunning designs for your brand."
+          content="Design experiences that make your brand stand out."
           iconColor="text-primaryRgb"
           url="/graphics-design"
         />
         <ServiceCard
           icon={TrendingUp}
           heading="Digital Marketing"
-          content="Promote your business with targeted strategies."
+          content="Scale your business using precision-focused marketing strategies."
           iconColor="text-primaryRgb"
           url="/digital-marketing"
         />
         <ServiceCard
           icon={Clapperboard}
           heading="Video & Animation"
-          content="Create engaging videos and animations."
+          content="Videos and animations that grab attention."
           iconColor="text-primaryRgb"
           url="/video-animation"
         />
         <ServiceCard
           icon={Handshake}
           heading="Business"
-          content="Grow your business with professional consulting."
+          content="Expert consulting to help your business grow with confidence."
           iconColor="text-primaryRgb"
           url="/business"
         />
         <ServiceCard
           icon={SquarePen}
           heading="Writing & Translation"
-          content="Get top-quality writing and translation services."
+          content="Premium writing and translation services you can rely on."
           iconColor="text-primaryRgb"
           url="/writing-translation"
         />
