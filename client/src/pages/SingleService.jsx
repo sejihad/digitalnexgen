@@ -360,9 +360,10 @@ const SingleService = () => {
         } catch (err) {
           void err;
         }
-        navigate(`/messages/${response.data._id}`, {
-          state: { serviceId: service._id, serviceTitle: service.title },
-        });
+        // navigate(`/messages/${response.data._id}`, {
+        //   state: { serviceId: service._id, serviceTitle: service.title },
+        // });
+        navigate("/chat");
       } else {
         // fallback: sometimes controller returns the conversation without _id structure
         toast.success("Conversation ready");
@@ -404,9 +405,10 @@ const SingleService = () => {
         } catch (err) {
           void err;
         }
-        navigate(`/messages/${id}`, {
-          state: { serviceId: service._id, serviceTitle: service.title },
-        });
+        // navigate(`/messages/${id}`, {
+        //   state: { serviceId: service._id, serviceTitle: service.title },
+        // });
+        navigate("/chat");
       }
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -540,7 +542,7 @@ const SingleService = () => {
               <h3 className="text-lg font-semibold dark:text-gray-300 mb-2">
                 Features:
               </h3>
-              <ul className="list-disc ml-6 dark:text-gray-300 space-y-1">
+              <ul className="list-none ml-6 dark:text-gray-300 space-y-1">
                 {service.features.map((feature, index) => (
                   <li key={index}>
                     <div>

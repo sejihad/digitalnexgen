@@ -116,7 +116,7 @@ const UserNavbar = () => {
       <div className="hidden lg:flex justify-between w-full grid-cols-[1fr_2fr_1fr] items-center gap-8 px-6">
         {/* Left spacer */}
         <div className="flex flex-1 justify-center">
-          <div className="relative flex  items-center max-w-[300px] flex-shrink-0 ">
+          <div className="relative flex  items-center w-full flex-shrink-0 ">
             <span className="pointer-events-none  absolute left-3 text-gray-500 dark:text-gray-400">
               <Search size={16} />
             </span>
@@ -223,16 +223,16 @@ const UserNavbar = () => {
             onClick={() => handleNavigation("/chat")}
             className="text-primaryText dark:text-white hover:text-primaryRgb"
           >
-            <MessageSquare size={20} />
+            <MessageSquare className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9" />
           </button>
           <button
             className="text-green-800 dark:text-white dark:hover:text-white hover:text-green-700 "
             onClick={toggleTheme}
           >
             {theme === "light" ? (
-              <Moon className="hover:text-black"></Moon>
+              <Moon className="hover:text-black" size={28} />
             ) : (
-              <Sun></Sun>
+              <Sun size={28} />
             )}
           </button>
           <div className="relative">
@@ -277,7 +277,7 @@ const UserNavbar = () => {
           to="/chat"
           className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
         >
-          <MessageSquare size={30} />
+          <MessageSquare size={20} />
           <span className="text-xs">Messages</span>
         </Link>
 

@@ -37,7 +37,7 @@ const MarkDownWithToggle = ({ content, limit = 300 }) => {
           // ✅ Paragraphs
           p: ({ node, ...props }) => (
             <p
-              className="mb-4 leading-relaxed text-black dark:text-white"
+              className="mb-4 leading-relaxed text-black dark:text-white whitespace-pre-wrap"
               {...props}
             />
           ),

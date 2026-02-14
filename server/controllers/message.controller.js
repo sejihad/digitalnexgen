@@ -22,8 +22,11 @@ export const createMessage = async (req, res, next) => {
       },
       { new: true },
     );
-
-    res.status(200).json(savedMessage);
+    const populatedMessage = await Message.findById(savedMessage._id).populate(
+      "userId",
+      "username isAdmin img",
+    );
+    res.status(200).json(populatedMessage);
   } catch (error) {
     console.error("Error creating message:", error.message);
     res

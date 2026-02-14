@@ -50,19 +50,19 @@ const SubCategoryServiceCard = ({ service }) => {
             </span>
           </div>
 
-          <p className="text-base font-semibold text-red-600">
+          <p className="text-base font-semibold text-green-600">
             Starting from{" "}
             {service.packages[0]?.salePrice > 0 ? (
               <>
-                <span className="text-sm text-red-500 line-through">
+                <span className="text-sm text-green-500 line-through decoration-red-600 decoration-2">
                   ${service.packages[0]?.regularPrice || "N/A"}
                 </span>{" "}
-                <span className="text-red-600 font-semibold">
+                <span className="text-green-600 font-semibold">
                   ${service.packages[0]?.salePrice || "N/A"}
                 </span>
               </>
             ) : (
-              <span className="text-red-500 font-medium">
+              <span className="text-green-500 font-medium">
                 ${service.packages[0]?.regularPrice || "N/A"}
               </span>
             )}
@@ -71,7 +71,7 @@ const SubCategoryServiceCard = ({ service }) => {
       </div>
 
       {service.packages[0]?.salePrice > 0 && (
-        <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-md">
+        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-md">
           {getDiscountPercentage(
             service.packages[0]?.regularPrice,
             service.packages[0]?.salePrice,

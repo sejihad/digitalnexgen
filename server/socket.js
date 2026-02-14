@@ -58,7 +58,7 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
         try {
           // message._id ধরি REST API থেকে response.data আসছে
           const populatedMessage = await Message.findById(message._id)
-            .populate("userId", "username isAdmin")
+            .populate("userId", "username isAdmin img")
             .lean();
           io.to(`user:${receiverId}`).emit("message:receive", {
             conversationId,
@@ -72,7 +72,7 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
             message: populatedMessage,
           });
         } catch (err) {}
-      }
+      },
     );
 
     /* =========================
