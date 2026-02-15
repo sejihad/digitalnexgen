@@ -22,6 +22,14 @@ const ServiceList = () => {
 
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const shuffleArray = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
 
   // ✅ URL -> STATE
   useEffect(() => {
@@ -70,7 +78,8 @@ const ServiceList = () => {
           `${import.meta.env.VITE_API_BASE_URL}/api/services/list?${params.toString()}`,
         );
 
-        setServices(res.data || []);
+        const list = res.data || [];
+        setServices(shuffleArray(list));
       } catch (err) {
         setServices([]);
         setError("Failed to fetch services. Please try again later.");
