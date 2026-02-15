@@ -20,9 +20,10 @@ const ProgrammingTech = () => {
           label: "Website Maintenance",
           url: "/programming-tech/website-maintenance",
         },
-        { label: "Wordpress", url: "/programming-tech/wordpress" },
-        { label: "Shopify", url: "/programming-tech/shopify" },
+
         { label: "Custom Websites", url: "/programming-tech/custom-websites" },
+        { label: "AI ChatBot", url: "/programming-tech/ai-chatbot" },
+        { label: "AI Development", url: "/programming-tech/ai-devlopment" },
       ],
       // backgroundImage: noise,
     },
@@ -65,14 +66,8 @@ const ProgrammingTech = () => {
           label: "Webflow",
           url: "/programming-tech/webflow",
         },
-        {
-          label: "GoDaddy",
-          url: "/programming-tech/godaddy",
-        },
-        {
-          label: "Squarespace",
-          url: "/programming-tech/squarespace",
-        },
+        { label: "Wordpress", url: "/programming-tech/wordpress" },
+        { label: "Shopify", url: "/programming-tech/shopify" },
         {
           label: "WooCommerce",
           url: "/programming-tech/woocommerce",

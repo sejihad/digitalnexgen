@@ -451,67 +451,66 @@ const Message = ({ conversationId }) => {
           </div>
 
           {/* Gig info in header for mobile */}
-          {/* {(stateServiceTitle || conversation?.service?.title) && (
+          {(stateServiceTitle || conversation?.service?.title) && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
               {stateServiceTitle || conversation?.service?.title}
             </div>
-          )} */}
+          )}
         </div>
 
         {/* Main Content Area with Scroll */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Saved gigs carousel */}
-          {/* {savedGigs.length > 0 && (
-            <div className="flex-shrink-0 px-4 md:px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Saved Gigs
-              </div>
-              <div className="flex overflow-x-auto gap-3 pb-2 -mx-2 px-2 scrollbar-hide">
-                {savedGigs.map((g) => (
-                  <div
-                    key={String(g.serviceId)}
-                    className="flex-shrink-0 w-48 md:w-56 bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700"
-                  >
-                    <div className="flex gap-3">
-                      <div className="w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
-                        {g.coverImage ? (
-                          <img
-                            src={g.coverImage}
-                            alt={g.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                          {g.subCategory}
-                        </div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {g.title}
-                        </div>
-                        <Link
-                          to={`/${g.subCategory}/${g.serviceId}`}
-                          className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
-                        >
-                          View
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )} */}
-
           {/* Messages Container */}
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gradient-to-t from-transparent via-black/5 to-transparent"
           >
+            {/* Saved gigs carousel */}
+            {savedGigs.length > 0 && (
+              <div className="flex-shrink-0 px-4 md:px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Saved Gigs
+                </div>
+                <div className="flex overflow-x-auto gap-3 pb-2 -mx-2 px-2 scrollbar-hide">
+                  {savedGigs.map((g) => (
+                    <div
+                      key={String(g.serviceId)}
+                      className="flex-shrink-0 w-48 md:w-56 bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      <div className="flex gap-3">
+                        <div className="w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
+                          {g.coverImage ? (
+                            <img
+                              src={g.coverImage}
+                              alt={g.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                            {g.subCategory}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {g.title}
+                          </div>
+                          <Link
+                            to={`/${g.subCategory}/${g.serviceId}`}
+                            className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
+                          >
+                            View
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {conversation.messages.length === 0 && offers.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
                 <div className="text-center">

@@ -4,6 +4,7 @@ import {
   createService,
   deleteService,
   getService,
+  getServiceList,
   getServices,
   updateService,
 } from "../controllers/service.controller.js";
@@ -20,5 +21,6 @@ router.delete("/:id", verifyToken, deleteService);
 router.get("/count", countServices);
 router.get("/single-service/:id", getService);
 router.get("/", getServices);
+router.get("/list", getServiceList);
 
 export default router;

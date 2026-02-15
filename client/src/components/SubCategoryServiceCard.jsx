@@ -54,9 +54,9 @@ const SubCategoryServiceCard = ({ service }) => {
             Starting from{" "}
             {service.packages[0]?.salePrice > 0 ? (
               <>
-                <span className="text-sm text-green-500 line-through decoration-red-600 decoration-2">
+                {/* <span className="text-sm text-green-500 line-through decoration-red-600 decoration-2">
                   ${service.packages[0]?.regularPrice || "N/A"}
-                </span>{" "}
+                </span>{" "} */}
                 <span className="text-green-600 font-semibold">
                   ${service.packages[0]?.salePrice || "N/A"}
                 </span>

@@ -43,11 +43,12 @@ const categoriesData = {
           label: "Website Maintenance",
           url: "/programming-tech/website-maintenance",
         },
-        { label: "Wordpress", url: "/programming-tech/wordpress" },
-        { label: "Shopify", url: "/programming-tech/shopify" },
+
         { label: "Custom Websites", url: "/programming-tech/custom-websites" },
+        { label: "AI ChatBot", url: "/programming-tech/ai-chatbot" },
+        { label: "AI Development", url: "/programming-tech/ai-devlopment" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: ApplicationDev,
@@ -74,7 +75,7 @@ const categoriesData = {
           url: "/programming-tech/mobile-app-maintenance",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: WebsitePlatform,
@@ -82,11 +83,11 @@ const categoriesData = {
       links: [
         { label: "Wix", url: "/programming-tech/wix" },
         { label: "Webflow", url: "/programming-tech/webflow" },
-        { label: "GoDaddy", url: "/programming-tech/godaddy" },
-        { label: "Squarespace", url: "/programming-tech/squarespace" },
+        { label: "Wordpress", url: "/programming-tech/wordpress" },
+        { label: "Shopify", url: "/programming-tech/shopify" },
         { label: "WooCommerce", url: "/programming-tech/woocommerce" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: SupportSecurity,
@@ -97,7 +98,7 @@ const categoriesData = {
         { label: "Cyber Security", url: "/programming-tech/cyber-security" },
         { label: "Convert Files", url: "/programming-tech/convert-files" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
   "graphics-design": [
@@ -122,7 +123,7 @@ const categoriesData = {
           url: "/graphics-design/fonts-typography",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: WebAppDesign,
@@ -149,7 +150,7 @@ const categoriesData = {
           url: "/graphics-design/icon-design",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: ArtIllustration,
@@ -172,7 +173,7 @@ const categoriesData = {
           url: "/graphics-design/cartoon-comics",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: VisualDesign,
@@ -195,7 +196,7 @@ const categoriesData = {
           url: "/graphics-design/resume-design",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: CoverPackageDesign,
@@ -218,7 +219,7 @@ const categoriesData = {
           url: "/graphics-design/album-cover-design",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: MarketingDesign,
@@ -241,7 +242,7 @@ const categoriesData = {
           url: "/graphics-design/web-banners",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: FashionDesign,
@@ -260,7 +261,7 @@ const categoriesData = {
           url: "/graphics-design/jewelry-design",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Design3d,
@@ -287,7 +288,7 @@ const categoriesData = {
           url: "/graphics-design/3d-jewelry-design",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
   "digital-marketing": [
@@ -307,7 +308,7 @@ const categoriesData = {
         { label: "Ecommerce SEO", url: "/digital-marketing/ecommerce-seo" },
         { label: "Video SEO", url: "/digital-marketing/video-seo" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Social,
@@ -331,7 +332,7 @@ const categoriesData = {
           url: "/digital-marketing/community-management",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: MethodTechnique,
@@ -354,7 +355,7 @@ const categoriesData = {
           url: "/digital-marketing/display-advertising",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Strategy,
@@ -370,7 +371,7 @@ const categoriesData = {
         },
         { label: "Web Analytics", url: "/digital-marketing/web-analytics" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
   "video-animation": [
@@ -399,7 +400,7 @@ const categoriesData = {
           url: "/video-animation/subtitle-captions",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Animation,
@@ -426,7 +427,7 @@ const categoriesData = {
           url: "/digital-marketing/explainer-videos",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: MotionGraphics,
@@ -453,7 +454,7 @@ const categoriesData = {
           url: "/video-animation/transition-effects",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: SocialMarketingVideo,
@@ -473,7 +474,7 @@ const categoriesData = {
           url: "/video-animation/explainer-video-production",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
   business: [
@@ -492,7 +493,7 @@ const categoriesData = {
         { label: "Business Consulting", url: "/business/business-consulting" },
         { label: "Software Management", url: "/business/software-management" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: GeneralAdminstrative,
@@ -508,7 +509,7 @@ const categoriesData = {
         },
         { label: "Project Management", url: "/business/project-management" },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: SalesCustomerCare,
@@ -531,7 +532,7 @@ const categoriesData = {
           url: "/business/customer-care",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
   "writing-translation": [
@@ -560,7 +561,7 @@ const categoriesData = {
           url: "/writing-translation/speech-writing",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: BookPublishing,
@@ -583,7 +584,7 @@ const categoriesData = {
           url: "/writing-translation/proofreading-editing",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
     {
       image: Translation,
@@ -602,7 +603,7 @@ const categoriesData = {
           url: "/writing-translation/localization",
         },
       ],
-        //  backgroundImage: noise,
+      //  backgroundImage: noise,
     },
   ],
 };
@@ -629,34 +630,26 @@ const Services = () => {
 
   return (
     <div className="relative flex flex-col md:flex-row max-w-[1440px] mx-auto h-screen ">
-
-   <div className="md:w-64 flex-shrink-0">
-       <Sidebar
-        setSelectedCategory={setSelectedCategory}
-        selectedCategory={selectedCategory}
-        isOpen={isOpen}
-      />
-   </div>
-
-      
+      <div className="md:w-64 flex-shrink-0">
+        <Sidebar
+          setSelectedCategory={setSelectedCategory}
+          selectedCategory={selectedCategory}
+          isOpen={isOpen}
+        />
+      </div>
 
       <main className="flex-1 overflow-y-auto ml-2 md:ml-4">
         <div className="p-0">
-
-
-
-
           <h2 className="dark:text-white text-primaryText font-roboto text-center text-2xl lg:text-3xl font-bold mt-12 md:mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1">
             Featured {selectedCategory.replace("-", " & ")}
           </h2>
 
-
-<button
-        className="absolute top-2 left-8 z-40 bg-pink-500 text-white text-xs p-2 rounded-md md:hidden"
-        onClick={toggleSidebar}
-      >
-        {isOpen ? "Close Sidebar" : "Open Sidebar"}
-      </button>
+          <button
+            className="absolute top-2 left-8 z-40 bg-pink-500 text-white text-xs p-2 rounded-md md:hidden"
+            onClick={toggleSidebar}
+          >
+            {isOpen ? "Close Sidebar" : "Open Sidebar"}
+          </button>
           <div className="w-11/12 mx-auto max-w-[1440px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             {filteredCategories.map((category, index) => (
               <CategoryCard
@@ -672,6 +665,5 @@ const Services = () => {
       </main>
     </div>
   );
-}; 
+};
 export default Services;
-

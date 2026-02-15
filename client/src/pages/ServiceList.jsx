@@ -13,9 +13,9 @@ const ServiceList = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // state
   const [selectedCategory, setSelectedCategory] = useState("programming-tech");
-  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null); // ✅ NEW (breadcrumb)
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]); // ✅ array for backend
 
   const [services, setServices] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -23,39 +23,39 @@ const ServiceList = () => {
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
-  /* =====================================
-     1️⃣ URL → STATE (supports refresh + back/forward)
-  ===================================== */
+  // ✅ URL -> STATE
   useEffect(() => {
     const cat = searchParams.get("category");
-    const sub = searchParams.get("subcategory");
+    const group = searchParams.get("group"); // ✅ NEW
+    const subs = searchParams.getAll("subcategory"); // ✅ array
 
     if (cat && cat !== selectedCategory) setSelectedCategory(cat);
 
-    // subcategory can be null
-    const nextSub = sub || null;
-    if (nextSub !== selectedSubCategory) setSelectedSubCategory(nextSub);
+    const nextGroup = group || null;
+    if (nextGroup !== selectedGroup) setSelectedGroup(nextGroup);
+
+    const nextSubs = subs || [];
+    if (JSON.stringify(nextSubs) !== JSON.stringify(selectedSubCategories)) {
+      setSelectedSubCategories(nextSubs);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  /* =====================================
-     2️⃣ STATE → URL (sync + loop-safe)
-  ===================================== */
+  // ✅ STATE -> URL
   useEffect(() => {
     const next = new URLSearchParams();
     next.set("category", selectedCategory);
-    if (selectedSubCategory) next.set("subcategory", selectedSubCategory);
 
-    // prevent unnecessary updates
+    if (selectedGroup) next.set("group", selectedGroup); // ✅ NEW
+    selectedSubCategories.forEach((s) => next.append("subcategory", s));
+
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedSubCategory]);
+  }, [selectedCategory, selectedGroup, selectedSubCategories]);
 
-  /* =====================================
-     3️⃣ FETCH SERVICES
-  ===================================== */
+  // ✅ FETCH SERVICES
   useEffect(() => {
     const fetchServices = async () => {
       dispatch(showLoading());
@@ -64,10 +64,10 @@ const ServiceList = () => {
       try {
         const params = new URLSearchParams();
         params.set("category", selectedCategory);
-        if (selectedSubCategory) params.set("subcategory", selectedSubCategory);
+        selectedSubCategories.forEach((s) => params.append("subcategory", s));
 
         const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/services?${params.toString()}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/services/list?${params.toString()}`,
         );
 
         setServices(res.data || []);
@@ -80,11 +80,9 @@ const ServiceList = () => {
     };
 
     fetchServices();
-  }, [selectedCategory, selectedSubCategory, dispatch]);
+  }, [selectedCategory, selectedSubCategories, dispatch]);
 
-  /* =====================================
-     4️⃣ FETCH RELATED PROJECTS (filtered client-side)
-  ===================================== */
+  // ✅ FETCH PROJECTS (optional)
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -96,11 +94,11 @@ const ServiceList = () => {
           (p) => p.category?.toLowerCase() === selectedCategory?.toLowerCase(),
         );
 
-        if (selectedSubCategory) {
-          const sub = selectedSubCategory.toLowerCase();
+        if (selectedSubCategories.length > 0) {
+          const subs = selectedSubCategories.map((s) => s.toLowerCase());
           filtered = filtered.filter((p) => {
             const ps = (p.subCategory || p.subcategory || "").toLowerCase();
-            return ps.includes(sub);
+            return subs.some((s) => ps.includes(s));
           });
         }
 
@@ -111,25 +109,25 @@ const ServiceList = () => {
     };
 
     fetchProjects();
-  }, [selectedCategory, selectedSubCategory]);
+  }, [selectedCategory, selectedSubCategories]);
 
   const toggleSidebar = () => setIsOpen((p) => !p);
 
   return (
     <div className="relative flex flex-col md:flex-row max-w-[1440px] mx-auto">
-      {/* Sidebar */}
       <ServiceListSidebar
         setSelectedCategory={(cat) => {
           setSelectedCategory(cat);
-          setSelectedSubCategory(null); // reset when category changes
+          setSelectedGroup(null);
+          setSelectedSubCategories([]);
         }}
         selectedCategory={selectedCategory}
-        selectedSubCategory={selectedSubCategory}
-        setSelectedSubCategory={setSelectedSubCategory}
+        selectedGroup={selectedGroup}
+        setSelectedGroup={setSelectedGroup}
+        setSelectedSubCategories={setSelectedSubCategories}
         isOpen={isOpen}
       />
 
-      {/* Mobile toggle */}
       <button
         className="absolute top-2 left-8 z-40 bg-pink-500 text-white text-xs p-2 rounded-md md:hidden"
         onClick={toggleSidebar}
@@ -137,13 +135,11 @@ const ServiceList = () => {
         {isOpen ? "Close Sidebar" : "Open Sidebar"}
       </button>
 
-      {/* Content */}
       <main className="flex-1 h-screen overflow-y-auto">
+        {/* ✅ breadcrumb only group */}
         <h2 className="text-center text-2xl lg:text-3xl font-bold mt-12 md:mt-4 border-b-2 border-[#333333] w-max mx-auto pb-1 dark:text-white">
           Featured {selectedCategory.replaceAll("-", " ")}
-          {selectedSubCategory
-            ? ` → ${selectedSubCategory.replaceAll("-", " ")}`
-            : ""}
+          {selectedGroup ? ` → ${selectedGroup}` : ""}
         </h2>
 
         {isLoading && <p className="text-center">Loading...</p>}
@@ -155,13 +151,13 @@ const ServiceList = () => {
           </p>
         )}
 
-        {/* Services */}
         <div className="w-11/12 mx-auto max-w-[1440px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
           {services.map((service) => (
             <SubCategoryServiceCard key={service._id} service={service} />
           ))}
         </div>
 
+        {/* Related Projects... unchanged */}
         {/* Related Projects */}
         <div className="mt-12 w-11/12 mx-auto max-w-[1440px]">
           <h3 className="text-2xl font-semibold mb-4 text-center dark:text-gray-200 text-primaryText">

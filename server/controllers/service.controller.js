@@ -101,6 +101,33 @@ export const getServices = async (req, res, next) => {
     next(error);
   }
 };
+export const getServiceList = async (req, res, next) => {
+  const { category, subcategory } = req.query;
+
+  const filters = {};
+  if (category) filters.category = category;
+
+  // ✅ normalize subcategory to array
+  const subs = Array.isArray(subcategory)
+    ? subcategory
+    : subcategory
+      ? [subcategory]
+      : [];
+
+  // ✅ if subs exists, match ANY (OR)
+  if (subs.length > 0) {
+    filters.$or = subs.map((s) => ({
+      subCategory: { $regex: s, $options: "i" },
+    }));
+  }
+
+  try {
+    const services = await Service.find(filters);
+    res.status(200).send(services);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const updateService = async (req, res, next) => {
   try {
@@ -110,7 +137,7 @@ export const updateService = async (req, res, next) => {
 
     if (service.userId !== req.userId && !req.isAdmin) {
       return next(
-        createError(403, "You are not allowed to update this service")
+        createError(403, "You are not allowed to update this service"),
       );
     }
     let coverImage = service.coverImage;
@@ -123,7 +150,7 @@ export const updateService = async (req, res, next) => {
 
       const uploadedCover = await uploadToS3(
         req.files.coverImage,
-        "services/cover"
+        "services/cover",
       );
       coverImage = {
         public_id: uploadedCover.key,
@@ -165,7 +192,7 @@ export const updateService = async (req, res, next) => {
       },
       {
         new: true,
-      }
+      },
     );
 
     res.status(200).json(updatedService);
@@ -183,7 +210,7 @@ export const deleteService = async (req, res, next) => {
 
     if (service.userId !== req.userId && !req.isAdmin) {
       return next(
-        createError(403, "You are not allowed to delete this service")
+        createError(403, "You are not allowed to delete this service"),
       );
     }
     if (service.coverImage) {

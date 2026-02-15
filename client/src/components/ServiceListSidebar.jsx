@@ -1,10 +1,12 @@
 import { useState } from "react";
 import "./ServiceListSidebar.css";
+
 const ServiceListSidebar = ({
   setSelectedCategory,
   selectedCategory,
-  selectedSubCategory,
-  setSelectedSubCategory,
+  selectedGroup, // ✅ NEW
+  setSelectedGroup, // ✅ NEW
+  setSelectedSubCategories, // ✅ array for backend
   isOpen,
 }) => {
   const [openCategory, setOpenCategory] = useState(null);
@@ -14,70 +16,126 @@ const ServiceListSidebar = ({
       name: "Programming & Tech",
       value: "programming-tech",
       subcategories: [
-        { name: "Website Development", value: "website-development" },
-        { name: "Website Maintenance", value: "website-maintenance" },
-        { name: "WordPress", value: "wordpress" },
-        { name: "Shopify", value: "shopify" },
-        { name: "Custom Websites", value: "custom-websites" },
-        { name: "Mobile App Development", value: "mobile-app-development" },
-        { name: "Cross Platform Apps", value: "cross-platform-apps" },
-        { name: "Android App Development", value: "android-app-development" },
-        { name: "iOS App Development", value: "ios-app-development" },
-        { name: "Mobile App Maintenance", value: "mobile-app-maintenance" },
-        { name: "Wix", value: "wix" },
-        { name: "Webflow", value: "webflow" },
-        { name: "GoDaddy", value: "godaddy" },
-        { name: "Squarespace", value: "squarespace" },
-        { name: "WooCommerce", value: "woocommerce" },
-        { name: "Support & IT", value: "support-it" },
-        { name: "Cloud Computing", value: "cloud-computing" },
-        { name: "Cyber Security", value: "cyber-security" },
-        { name: "Convert Files", value: "convert-files" },
+        {
+          name: "Website Development",
+          value: "grp-website-development",
+          children: [
+            "website-development",
+            "website-maintenance",
+            "custom-websites",
+            "ai-chatbot",
+            "ai-development",
+          ],
+        },
+        {
+          name: "Mobile Apps",
+          value: "grp-mobile-apps",
+          children: [
+            "mobile-app-development",
+            "cross-platform-apps",
+            "android-app-development",
+            "ios-app-development",
+            "mobile-app-maintenance",
+          ],
+        },
+        {
+          name: "Website Platform",
+          value: "grp-website-platform",
+          children: ["wix", "webflow", "wordpress", "shopify", "woocommerce"],
+        },
+        {
+          name: "Support & Security",
+          value: "grp-support-security",
+          children: [
+            "support-it",
+            "cloud-computing",
+            "cyber-security",
+            "convert-files",
+          ],
+        },
       ],
     },
     {
-      name: "Graphics & Design",
+      name: "Graphics  Design",
       value: "graphics-design",
       subcategories: [
-        { name: "Logo Design", value: "logo-design" },
-        { name: "Brand Style Guides", value: "brand-style-guides" },
         {
-          name: "Business Cards & Stationary",
-          value: "business-cards-stationary",
+          name: "Logo & Brand Identity",
+          value: "grp-logo-brand-identity",
+          children: [
+            "logo-design",
+            "brand-style-guides",
+            "business-cards-stationary",
+            "fonts-typography",
+          ],
         },
-        { name: "Fonts & Typography", value: "fonts-typography" },
-        { name: "Web Design", value: "web-design" },
-        { name: "App Design", value: "app-design" },
-        { name: "UX Design", value: "ux-design" },
-        { name: "Landing Page Design", value: "landing-page-design" },
-        { name: "Icon Design", value: "icon-design" },
-        { name: "Illustration", value: "illustration" },
         {
-          name: "Children Book Illustration",
-          value: "children-book-illustration",
+          name: "Web & App Design",
+          value: "grp-web-app-design",
+          children: [
+            "web-design",
+            "app-design",
+            "ux-design",
+            "landing-page-design",
+            "icon-design",
+          ],
         },
-        { name: "Pattern Design", value: "pattern-design" },
-        { name: "Cartoon & Comics", value: "cartoon-comics" },
-        { name: "Image Editing", value: "image-editing" },
-        { name: "Presentation Design", value: "presentation-design" },
-        { name: "Infographic Design", value: "infographic-design" },
-        { name: "Resume Design", value: "resume-design" },
-        { name: "Packaging & Label Design", value: "packaging-label-design" },
-        { name: "Book Design", value: "book-design" },
-        { name: "Book Covers", value: "book-covers" },
-        { name: "Album Cover Design", value: "album-cover-design" },
-        { name: "Social Media Design", value: "social-media-design" },
-        { name: "Thumbnail Design", value: "thumbnail-design" },
-        { name: "Email Design", value: "email-design" },
-        { name: "Web Banners", value: "web-banners" },
-        { name: "T-Shirt & Marchandise", value: "t-shirt-marchandise" },
-        { name: "Fashion Design", value: "fashion-design" },
-        { name: "Jewelry Design", value: "jewelry-design" },
-        { name: "3D Architecture", value: "3d-architecture" },
-        { name: "3D Industrial Design", value: "3d-industrial-design" },
-        { name: "3D Fashion & Garment", value: "3d-fashion-garment" },
-        { name: "3D Landscape Design", value: "3d-landscape-design" },
-        { name: "3D Jewelry Design", value: "3d-jewelry-design" },
+        {
+          name: "Art & Illustration",
+          value: "grp-art-illustration",
+          children: [
+            "illustration",
+            "children-book-illustration",
+            "pattern-design",
+            "cartoon-comics",
+          ],
+        },
+        {
+          name: "Visual Design",
+          value: "grp-visual-design",
+          children: [
+            "image-editing",
+            "presentation-design",
+            "infographic-design",
+            "resume-design",
+          ],
+        },
+        {
+          name: "Cover & Package Design",
+          value: "grp-cover-package-design",
+          children: [
+            "packaging-label-design",
+            "book-design",
+            "book-covers",
+            "album-cover-design",
+          ],
+        },
+        {
+          name: "Marketing Design",
+          value: "grp-marketing-design",
+          children: [
+            "social-media-design",
+            "thumbnail-design",
+            "email-design",
+            "web-banners",
+          ],
+        },
+        {
+          name: "Fashion & Marchandise",
+          value: "grp-fashion-marchandise",
+          children: ["t-shirt-marchandise", "fashion-design", "jewelry-design"],
+        },
+        {
+          name: "3D Design",
+          value: "grp-3d-design",
+          children: [
+            "3d-architecture",
+            "3d-industrial-design",
+            "3d-fashion-garment",
+            "3d-landscape-design",
+            "3d-jewelry-design",
+          ],
+        },
       ],
     },
     {
@@ -85,52 +143,90 @@ const ServiceListSidebar = ({
       value: "digital-marketing",
       subcategories: [
         {
-          name: "Search Engine Optimization",
-          value: "search-engine-optimization",
+          name: "Search",
+          value: "grp-search",
+          children: [
+            "search-engine-optimization",
+            "search-engine-marketing",
+            "local-seo",
+            "ecommerce-seo",
+            "video-seo",
+          ],
         },
-        { name: "Search Engine Marketing", value: "search-engine-marketing" },
-        { name: "Local SEO", value: "local-seo" },
-        { name: "Ecommerce SEO", value: "ecommerce-seo" },
-        { name: "Video SEO", value: "video-seo" },
-        { name: "Social Media Marketing", value: "social-media-marketing" },
-        { name: "Paid Social Media", value: "paid-social-media" },
-        { name: "Social Commerce", value: "social-commerce" },
-        { name: "Influencer Marketing", value: "influencer-marketing" },
-        { name: "Community Management", value: "community-management" },
-        { name: "Video Marketing", value: "video-marketing" },
-        { name: "Ecommerce Marketing", value: "ecommerce-marketing" },
-        { name: "Affiliate Marketing", value: "affiliate-marketing" },
-        { name: "Display Advertising", value: "display-advertising" },
-        { name: "Marketing Strategy", value: "marketing-strategy" },
-        { name: "Marketing Advice", value: "marketing-advice" },
-        { name: "Web Analytics", value: "web-analytics" },
+        {
+          name: "Social",
+          value: "grp-social",
+          children: [
+            "social-media-marketing",
+            "paid-social-media",
+            "social-commerce",
+            "influencer-marketing",
+            "community-management",
+          ],
+        },
+        {
+          name: "Methods & Technique",
+          value: "grp-methods-technique",
+          children: [
+            "video-marketing",
+            "ecommerce-marketing",
+            "affiliate-marketing",
+            "display-advertising",
+          ],
+        },
+        {
+          name: "Analytics & Strategy",
+          value: "grp-analytics-strategy",
+          children: ["marketing-strategy", "marketing-advice", "web-analytics"],
+        },
       ],
     },
     {
       name: "Video & Animation",
       value: "video-animation",
       subcategories: [
-        { name: "Video Editing", value: "video-editing" },
-        { name: "Visual Effect", value: "visual-effect" },
-        { name: "Intro & Outro Videos", value: "intro-outro-videos" },
-        { name: "Video Templates Editing", value: "video-templates-editing" },
-        { name: "Subtitles & Captions", value: "subtitle-captions" },
-        { name: "2D Animation", value: "2d-animation" },
-        { name: "3D Animation", value: "3d-animation" },
-        { name: "Character Animation", value: "character-animation" },
-        { name: "Whiteboard Animation", value: "whiteboard-animation" },
-        { name: "Explainer Videos", value: "explainer-videos" },
-        { name: "Animated Logos", value: "animated-logos" },
-        { name: "Lottie Web Animation", value: "lottie-web-animation" },
-        { name: "Text Animation", value: "text-animation" },
-        { name: "Motion Tracking", value: "motion-tracking" },
-        { name: "Transition Effects", value: "transition-effects" },
-        { name: "Video Commercials", value: "video-commercials" },
-        { name: "Social Media Videos", value: "social-media-videos" },
-        { name: "Slideshow Videos", value: "slideshow-videos" },
         {
-          name: "Explainer Video Production",
-          value: "explainer-video-production",
+          name: "Editing & Post Production",
+          value: "grp-editing-post-production",
+          children: [
+            "video-editing",
+            "visual-effect",
+            "intro-outro-videos",
+            "video-templates-editing",
+            "subtitle-captions",
+          ],
+        },
+        {
+          name: "Animation",
+          value: "grp-animation",
+          children: [
+            "2d-animation",
+            "3d-animation",
+            "character-animation",
+            "whiteboard-animation",
+            "explainer-videos",
+          ],
+        },
+        {
+          name: "Motion Graphics",
+          value: "grp-motion-graphics",
+          children: [
+            "animated-logos",
+            "lottie-web-animation",
+            "text-animation",
+            "motion-tracking",
+            "transition-effects",
+          ],
+        },
+        {
+          name: "Social & Marketing Videos",
+          value: "grp-social-marketing-videos",
+          children: [
+            "video-commercials",
+            "social-media-videos",
+            "slideshow-videos",
+            "explainer-video-production",
+          ],
         },
       ],
     },
@@ -138,35 +234,67 @@ const ServiceListSidebar = ({
       name: "Business",
       value: "business",
       subcategories: [
-        { name: "Market Research", value: "market-research" },
-        { name: "Business Plan", value: "business-plan" },
-        { name: "Business Consulting", value: "business-consulting" },
-        { name: "Software Management", value: "software-management" },
-        { name: "Virtual Assistant", value: "virtual-assistant" },
-        { name: "Ecommerce Management", value: "ecommerce-management" },
-        { name: "Project Management", value: "project-management" },
-        { name: "Sales", value: "sales" },
-        { name: "Lead Generation", value: "lead-generation" },
-        { name: "Call Center & Calling", value: "call-center-calling" },
-        { name: "Customer Care", value: "customer-care" },
+        {
+          name: "Business Formation & Growth",
+          value: "grp-business-formation-growth",
+          children: [
+            "market-research",
+            "business-plan",
+            "business-consulting",
+            "software-management",
+          ],
+        },
+        {
+          name: "General Administrative",
+          value: "grp-general-administrative",
+          children: [
+            "virtual-assistant",
+            "ecommerce-management",
+            "project-management",
+          ],
+        },
+        {
+          name: "Sales & Customer Support",
+          value: "grp-sales-customer-support",
+          children: [
+            "sales",
+            "lead-generation",
+            "call-center-calling",
+            "customer-care",
+          ],
+        },
       ],
     },
     {
       name: "Writing & Translation",
       value: "writing-translation",
       subcategories: [
-        { name: "Blog Writing", value: "blog-writing" },
-        { name: "Copywriting", value: "copywriting" },
-        { name: "Website Content", value: "website-content" },
-        { name: "Creative Writing", value: "creative-writing" },
-        { name: "Speech Writing", value: "speech-writing" },
-        { name: "Book Formatting", value: "book-formatting" },
-        { name: "Book & Ebook Writing", value: "book-ebook-writing" },
-        { name: "Beta Reading", value: "beta-reading" },
-        { name: "Proofreading & Editing", value: "proofreading-editing" },
-        { name: "Translation", value: "translation" },
-        { name: "Transcription", value: "transcription" },
-        { name: "Localization", value: "localization" },
+        {
+          name: "Content Writing",
+          value: "grp-content-writing",
+          children: [
+            "blog-writing",
+            "copywriting",
+            "website-content",
+            "creative-writing",
+            "speech-writing",
+          ],
+        },
+        {
+          name: "Book & Ebook Publishing",
+          value: "grp-book-ebook-publishing",
+          children: [
+            "book-formatting",
+            "book-ebook-writing",
+            "beta-reading",
+            "proofreading-editing",
+          ],
+        },
+        {
+          name: "Translation & Transcription",
+          value: "grp-translation-transcription",
+          children: ["translation", "transcription", "localization"],
+        },
       ],
     },
   ];
@@ -174,12 +302,16 @@ const ServiceListSidebar = ({
   const handleCategoryToggle = (categoryValue) => {
     setOpenCategory(openCategory === categoryValue ? null : categoryValue);
     setSelectedCategory(categoryValue);
-    setSelectedSubCategory(null); // category change হলে sub reset
+
+    // ✅ reset when category changes
+    setSelectedGroup(null);
+    setSelectedSubCategories([]);
   };
 
-  const handleSubSelect = (subcategoryValue) => {
-    setSelectedSubCategory(subcategoryValue);
-    // setOpenCategory(null); // চাইলে close করবেন, না চাইলে comment রাখুন
+  // ✅ click group => set group name + set children array for backend
+  const handleGroupSelect = (group) => {
+    setSelectedGroup(group.name); // breadcrumb text
+    setSelectedSubCategories(group.children); // backend filter
   };
 
   return (
@@ -209,19 +341,20 @@ const ServiceListSidebar = ({
               </span>
             </div>
 
+            {/* ✅ Show GROUP names for ALL categories */}
             {openCategory === category.value && category.subcategories && (
               <ul className="ml-4 mt-2 space-y-2">
-                {category.subcategories.map((sub) => (
+                {category.subcategories.map((group) => (
                   <li
-                    key={sub.value}
-                    onClick={() => handleSubSelect(sub.value)}
+                    key={group.value}
+                    onClick={() => handleGroupSelect(group)}
                     className={`cursor-pointer text-sm p-2 rounded-md font-openSans transition-all duration-300 ${
-                      selectedSubCategory === sub.value
+                      selectedGroup === group.name
                         ? "bg-pink-500/40"
                         : "hover:bg-white/30"
                     }`}
                   >
-                    {sub.name}
+                    {group.name}
                   </li>
                 ))}
               </ul>
