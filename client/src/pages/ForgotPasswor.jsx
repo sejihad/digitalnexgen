@@ -22,13 +22,12 @@ const ForgotPassword = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/auth/forgot-password`,
-        { email }
+        { email },
       );
 
       setMessage(res.data.message || "Password reset email sent!");
       setError("");
     } catch (err) {
-      console.error("Error Response:", err.response);
       setError(err.response?.data.message || "An error occurred!");
       setMessage("");
     } finally {

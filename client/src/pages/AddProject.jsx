@@ -107,7 +107,6 @@ const AddProject = () => {
       reset();
       setSelectedCategory(""); // reset category
     } catch (error) {
-      console.log(error);
       toast.error(
         error?.response?.data?.message ||
           "Failed to create project. Please try again.",

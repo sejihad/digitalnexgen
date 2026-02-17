@@ -51,7 +51,6 @@ const AdminStatistics = () => {
       setStatistic(res.data.statistic);
       setEditedStats(res.data.statistic);
     } catch (error) {
-      console.error(error);
       toast.error("Failed to load statistics");
     } finally {
       setLoading(false);

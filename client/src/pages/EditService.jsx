@@ -195,7 +195,6 @@ const EditService = () => {
           setValue(key, value);
         });
       } catch (error) {
-        console.error("Error loading service:", error);
         toast.error("Failed to load service");
       } finally {
         dispatch(hideLoading());
@@ -250,7 +249,6 @@ const EditService = () => {
       toast.success("Service updated successfully!");
       navigate("/admin/services");
     } catch (error) {
-      console.error("Update failed:", error);
       toast.error("Failed to update service");
     } finally {
       dispatch(hideLoading());

@@ -13,13 +13,11 @@ const PaypalSuccess = () => {
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/paypal/capture`,
           { orderID },
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         navigate("/orders"); // show success message
-      } catch (err) {
-        console.error("❌ Payment capture failed:", err);
-      }
+      } catch (err) {}
     };
 
     if (orderID) {

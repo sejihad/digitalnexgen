@@ -37,7 +37,6 @@ export const createBlog = async (req, res, next) => {
     const savedBlog = await newBlog.save();
     res.status(201).json(savedBlog);
   } catch (error) {
-    console.error(error);
     next(createError(500, "Server error"));
   }
 };
@@ -112,7 +111,6 @@ export const updateBlog = async (req, res, next) => {
     const updatedBlog = await blog.save();
     res.status(200).json(updatedBlog);
   } catch (error) {
-    console.error(error);
     next(createError(500, "Internal Server Error!"));
   }
 };
@@ -142,7 +140,6 @@ export const deleteBlog = async (req, res, next) => {
 
     res.status(200).json({ message: "Blog deleted successfully" });
   } catch (error) {
-    console.error(error);
     next(createError(500, "Internal Server Error!"));
   }
 };

@@ -47,8 +47,7 @@ const EditPromotionalOffer = () => {
       .then((res) => {
         if (mounted) setServicesList(res.data || []);
       })
-      .catch((err) => console.error("Failed to load services for edit", err));
-
+      .catch((err) => 
     return () => (mounted = false);
   }, []);
 
@@ -89,8 +88,7 @@ const EditPromotionalOffer = () => {
           data.features && data.features.length ? data.features : [""],
         );
       } catch (err) {
-        console.error("Failed to load promotional offer:", err);
-        toast.error("Failed to load offer");
+                toast.error("Failed to load offer");
       } finally {
         setLoadingOffer(false);
       }
@@ -151,8 +149,7 @@ const EditPromotionalOffer = () => {
       toast.success("Promotional offer updated successfully");
       navigate("/admin/promotional-offers");
     } catch (error) {
-      console.error("Error updating promotional offer:", error);
-      toast.error(error.response?.data?.message || "Failed to update offer");
+            toast.error(error.response?.data?.message || "Failed to update offer");
     } finally {
       dispatch(hideLoading());
     }

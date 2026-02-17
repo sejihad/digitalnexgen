@@ -22,7 +22,6 @@ export const getStatistic = async (req, res) => {
       statistic,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch statistics",
@@ -78,7 +77,6 @@ export const updateStatistic = async (req, res) => {
       statistic,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: "Failed to update statistics",

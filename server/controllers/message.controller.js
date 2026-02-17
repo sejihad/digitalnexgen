@@ -28,7 +28,6 @@ export const createMessage = async (req, res, next) => {
     );
     res.status(200).json(populatedMessage);
   } catch (error) {
-    console.error("Error creating message:", error.message);
     res
       .status(500)
       .json({ message: "Error saving message", error: error.message });

@@ -65,7 +65,6 @@ const SingleService = () => {
         setDiscountAmount(0);
       }
     } catch (error) {
-      console.error(error);
       setCouponError("❌ Something went wrong.");
     }
   };
@@ -103,7 +102,6 @@ const SingleService = () => {
 
       window.location.href = res.data.url;
     } catch (error) {
-      console.error(error);
       toast("❌ Failed to create Stripe session.");
     } finally {
       dispatch(hideLoading());
@@ -137,7 +135,6 @@ const SingleService = () => {
 
       window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${orderID}`;
     } catch (err) {
-      console.error(err);
       toast("❌ Failed to create PayPal order.");
     } finally {
       dispatch(hideLoading());
@@ -229,7 +226,6 @@ const SingleService = () => {
 
         setReviews(reviewsResponse.data.reverse());
       } catch (error) {
-        console.error("Error fetching service details or reviews:", error);
       } finally {
         dispatch(hideLoading());
       }
@@ -245,9 +241,7 @@ const SingleService = () => {
         .then((res) => {
           SetIsEligibility(res.data.eligible);
         })
-        .catch((err) => {
-          console.error("Eligibility check failed:", err);
-        });
+        .catch((err) => {});
     }
     fetchServiceDetails();
   }, [subCategory, id, user, isAuthenticated, dispatch]);
@@ -411,7 +405,6 @@ const SingleService = () => {
         navigate("/chat");
       }
     } catch (error) {
-      console.error("Error creating conversation:", error);
       const serverMsg = error?.response?.data?.message || error?.message;
       toast.error(serverMsg || "Failed to open conversation. Try again later.");
     } finally {
@@ -469,7 +462,6 @@ const SingleService = () => {
       // Do not prepend pending review; it will appear after admin approval
       toast.success("Review submitted and awaiting approval.");
     } catch (error) {
-      console.error("Error submitting review:", error);
       toast.error(
         "An error occurred while submitting your review. Please try again.",
       );
@@ -487,7 +479,6 @@ const SingleService = () => {
       );
       toast.success("Review deleted successfully!");
     } catch (error) {
-      console.error("Error deleting review:", error);
       toast.error("Failed to delete review. Please try again.");
     }
   };

@@ -22,7 +22,6 @@ const ProjectPage = () => {
         );
         setProjects(response.data);
       } catch (error) {
-        console.error("Error fetching projects:", error);
       } finally {
         dispatch(hideLoading());
       }

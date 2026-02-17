@@ -76,7 +76,7 @@ export const attachServiceToConversation = async (req, res, next) => {
     if (!isParticipant) return res.status(403).json({ message: "Forbidden" });
 
     const existingIndex = (conv.linkedServices || []).findIndex(
-      (s) => String(s.serviceId) === String(serviceId)
+      (s) => String(s.serviceId) === String(serviceId),
     );
     const newItem = {
       serviceId: String(serviceId),
@@ -110,10 +110,10 @@ export const getConversations = async (req, res, next) => {
     const filter = buyerId
       ? { buyerId }
       : adminId
-      ? { adminId }
-      : req.isAdmin
-      ? { adminId: req.userId }
-      : { buyerId: req.userId };
+        ? { adminId }
+        : req.isAdmin
+          ? { adminId: req.userId }
+          : { buyerId: req.userId };
 
     const conversations = await Conversation.find(filter);
     return res.status(200).json(conversations);
@@ -135,7 +135,6 @@ export const getSingleConversation = async (req, res, next) => {
       return res.status(404).json({ message: "Conversation not found" });
     return res.status(200).json(conversation);
   } catch (error) {
-    console.error("Error fetching conversation:", error);
     next(error);
   }
 };
@@ -149,14 +148,13 @@ export const updateConversation = async (req, res, next) => {
     const updatedConversation = await Conversation.findOneAndUpdate(
       { _id: req.params.id },
       { $set: update },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedConversation)
       return res.status(404).json({ message: "Conversation not found" });
     return res.status(200).json(updatedConversation);
   } catch (error) {
-    console.error("Error updating conversation:", error);
     next(error);
   }
 };
@@ -164,12 +162,11 @@ export const updateConversation = async (req, res, next) => {
 export const getConversationCount = async (req, res, next) => {
   try {
     const conversationCount = await Conversation.countDocuments(
-      req.isAdmin ? { adminId: req.userId } : { buyerId: req.userId }
+      req.isAdmin ? { adminId: req.userId } : { buyerId: req.userId },
     );
 
     res.status(200).json({ count: conversationCount });
   } catch (error) {
-    console.error("Error counting conversations:", error);
     next(error);
   }
 };
@@ -185,7 +182,6 @@ export const getAllConversationsAdmin = async (req, res, next) => {
 
     return res.status(200).json(conversations);
   } catch (error) {
-    console.error("Error fetching all conversations:", error);
     next(error);
   }
 };
@@ -226,7 +222,7 @@ export const sendSmsToConversation = async (req, res, next) => {
     const Twilio = await import("twilio");
     const client = Twilio.default(
       process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN
+      process.env.TWILIO_AUTH_TOKEN,
     );
 
     const { body } = req.body;
@@ -246,7 +242,6 @@ export const sendSmsToConversation = async (req, res, next) => {
 
     return res.status(200).json({ message: "SMS sent", sid: msg.sid });
   } catch (error) {
-    console.error("Error sending SMS:", error);
     next(error);
   }
 };

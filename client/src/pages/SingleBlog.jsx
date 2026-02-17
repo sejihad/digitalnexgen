@@ -15,9 +15,7 @@ const SingleBlog = () => {
         );
 
         setBlog(response.data);
-      } catch (error) {
-        console.error("Error fetching blog:", error);
-      }
+      } catch (error) {}
     };
 
     fetchBlog();

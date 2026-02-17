@@ -68,7 +68,6 @@ export const createCheckoutSession = async (req, res, next) => {
 
     res.status(200).json({ id: order.result.id });
   } catch (err) {
-    console.error("❌ PayPal order creation failed:", err);
     next(err);
   }
 };
@@ -150,7 +149,6 @@ export const capturePaypalOrder = async (req, res) => {
     await newOrder.save();
     res.status(200).json({ message: "✅ Order saved successfully." });
   } catch (err) {
-    console.error("❌ PayPal capture error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

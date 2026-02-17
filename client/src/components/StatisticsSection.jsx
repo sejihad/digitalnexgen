@@ -37,9 +37,7 @@ const StatisticsSection = () => {
 
         setStatsData(formattedStats);
         setCounts(formattedStats.map(() => 0));
-      } catch (err) {
-        console.error("Failed to load statistics", err);
-      }
+      } catch (err) {}
     };
 
     fetchStats();

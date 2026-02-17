@@ -127,7 +127,6 @@ Digital Nexgen Team
       userId: newUser._id,
     });
   } catch (err) {
-    console.error("Registration error:", err);
     return res.status(500).json({
       success: false,
       message: "Registration failed. Please try again.",
@@ -219,7 +218,6 @@ export const login = async (req, res, next) => {
       .status(200)
       .json(info);
   } catch (err) {
-    console.error("Login error:", err);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -282,7 +280,6 @@ export const verifyOtp = async (req, res, next) => {
       .status(200)
       .json(info);
   } catch (err) {
-    console.error("Verify OTP error:", err);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -344,7 +341,6 @@ export const googleLoginCallback = async (req, res, next) => {
   }
 };
 export const enableTwoFactor = async (req, res, next) => {
-  console.log("Toggling Two Factor Authentication for user:", req.userId);
   try {
     const user = await User.findById(req.userId);
 

@@ -7,7 +7,6 @@ export const getOrders = async (req, res, next) => {
     });
     res.status(200).json(orders);
   } catch (error) {
-    console.error("Get Orders Error:", error);
     next(error);
   }
 };
@@ -20,7 +19,6 @@ export const getOrderById = async (req, res, next) => {
 
     res.json(order);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -57,7 +55,6 @@ export const adminCancelOrder = async (req, res) => {
 
     res.json({ message: "Order cancelled by admin", order });
   } catch (error) {
-    console.error("Admin Cancel Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -84,7 +81,6 @@ export const requestCancelOrder = async (req, res) => {
 
     res.json({ message: "Cancel request sent. Awaiting admin approval." });
   } catch (error) {
-    console.error("Cancel Request Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -114,7 +110,6 @@ export const AdmingetOrderById = async (req, res) => {
 
     res.status(200).json(order);
   } catch (err) {
-    console.error("Error getting order:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -144,7 +139,6 @@ export const updateOrderStatusByAdmin = async (req, res) => {
       order,
     });
   } catch (err) {
-    console.error("Status update error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -159,7 +153,6 @@ export const deleteOrderByAdmin = async (req, res) => {
 
     res.json({ message: "Order deleted successfully" });
   } catch (err) {
-    console.error("Error deleting order:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -178,18 +171,17 @@ export const checkReviewEligibility = async (req, res) => {
     });
 
     const completeOrders = allOrders.filter(
-      (order) => order.order_status === "completed"
+      (order) => order.order_status === "completed",
     );
-    
+
     const hasService = completeOrders.some(
-      (order) => order.service.id === serviceId
+      (order) => order.service.id === serviceId,
     );
 
     res.status(200).json({
       eligible: hasService,
     });
   } catch (err) {
-    console.error("Eligibility check error:", err);
     res.status(500).json({ message: "Server error", eligible: false });
   }
 };

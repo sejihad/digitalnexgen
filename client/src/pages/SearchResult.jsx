@@ -1,9 +1,9 @@
- import axios from "axios";
- import { useEffect, useState } from "react";
- import { useDispatch } from "react-redux";
- import { useLocation } from "react-router-dom";
- import SubCategoryServiceCard from "../components/SubCategoryServiceCard";
- import { hideLoading, showLoading } from "../redux/loadingSlice";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { useLocation } from "react-router-dom";
+import SubCategoryServiceCard from "../components/SubCategoryServiceCard";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const SearchResult = () => {
   const [services, setServices] = useState([]);
@@ -20,11 +20,10 @@ const SearchResult = () => {
         const res = await axios.get(
           `${
             import.meta.env.VITE_API_BASE_URL
-          }/api/services?search=${encodeURIComponent(searchQuery)}`
+          }/api/services?search=${encodeURIComponent(searchQuery)}`,
         );
         setServices(res.data);
       } catch (error) {
-        console.error("Error fetching services:", error);
       } finally {
         dispatch(hideLoading());
       }

@@ -23,7 +23,6 @@ const Order = () => {
         });
         setOrder(res.data);
       } catch (err) {
-        console.error("Fetch order error:", err.response || err.message);
         setError("Failed to load order details.");
       }
     };

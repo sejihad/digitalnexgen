@@ -12,7 +12,6 @@ export function initFirebaseAdmin() {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (!projectId || !clientEmail || !privateKey) {
-      console.warn("[firebase-admin] Missing service account env vars. Firebase login will be disabled.");
       return null;
     }
 
@@ -48,4 +47,3 @@ export const auth = () => {
   if (!a) return null;
   return a.auth();
 };
-

@@ -24,8 +24,6 @@ const AdminPromotionalOffers = () => {
 
       setOffers(response.data);
     } catch (error) {
-      console.error("Error fetching offers:", error);
-      console.error("Error details:", error.response?.data);
       toast.error("Failed to load offers");
     } finally {
       setLoading(false);
@@ -44,7 +42,6 @@ const AdminPromotionalOffers = () => {
       toast.success("Offer status updated");
       fetchOffers();
     } catch (error) {
-      console.error("Error toggling status:", error);
       toast.error("Failed to update status");
     }
   };
@@ -60,7 +57,6 @@ const AdminPromotionalOffers = () => {
       toast.success("Offer deleted successfully");
       fetchOffers();
     } catch (error) {
-      console.error("Error deleting offer:", error);
       toast.error("Failed to delete offer");
     }
   };

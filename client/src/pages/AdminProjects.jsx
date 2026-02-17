@@ -21,7 +21,6 @@ const AdminProjects = () => {
       );
       setProjects(response.data);
     } catch (error) {
-      console.error("Error fetching projects:", error);
       toast.error("Failed to load projects");
     } finally {
       setLoading(false);
@@ -39,7 +38,6 @@ const AdminProjects = () => {
       toast.success("Project deleted successfully");
       fetchProjects();
     } catch (error) {
-      console.error("Error deleting project:", error);
       toast.error("Failed to delete project");
     }
   };

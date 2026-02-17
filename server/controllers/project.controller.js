@@ -4,9 +4,6 @@ import Project from "../models/project.model.js";
 import createError from "../utils/createError.js";
 
 export const createProject = async (req, res, next) => {
-  console.log("BODY:", req.body);
-  console.log("FILES:", req.files);
-
   if (!req.isAdmin) {
     return next(createError(403, "Only Admin can create projects"));
   }
@@ -58,7 +55,6 @@ export const createProject = async (req, res, next) => {
     const savedProject = await newProject.save();
     res.status(201).json(savedProject);
   } catch (error) {
-    console.error(error);
     next(createError(500, "Server error while creating project"));
   }
 };
@@ -153,7 +149,6 @@ export const updateProject = async (req, res, next) => {
 
     res.status(200).json(updatedProject);
   } catch (error) {
-    console.error(error);
     next(createError(500, "Server error while updating project"));
   }
 };
@@ -189,7 +184,6 @@ export const deleteProject = async (req, res, next) => {
       message: "Project deleted successfully",
     });
   } catch (error) {
-    console.error("Delete project error:", error);
     next(createError(500, "Server error while deleting project"));
   }
 };

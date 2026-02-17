@@ -27,7 +27,6 @@ export const addCoupon = async (req, res) => {
     await newCoupon.save();
     res.status(201).json(newCoupon);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
@@ -52,7 +51,6 @@ export const updateCoupon = async (req, res) => {
 
     res.json(updatedCoupon);
   } catch (err) {
-    console.error(err);
     res.status(400).json({ message: "Update failed", error: err.message });
   }
 };
@@ -66,7 +64,6 @@ export const deleteCoupon = async (req, res) => {
     }
     res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error(err);
     res.status(400).json({ message: "Delete failed", error: err.message });
   }
 };
@@ -77,7 +74,6 @@ export const allCoupon = async (req, res) => {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
     res.json(coupons);
   } catch (err) {
-    console.error(err);
     res
       .status(500)
       .json({ message: "Failed to fetch coupons", error: err.message });

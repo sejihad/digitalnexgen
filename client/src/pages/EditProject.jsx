@@ -114,7 +114,6 @@ export default function EditProject() {
 
         setExistingImages(Array.isArray(project.images) ? project.images : []);
       } catch (err) {
-        console.error(err);
         toast.error("Failed to fetch project details.");
       } finally {
         dispatch(hideLoading());
@@ -187,7 +186,6 @@ export default function EditProject() {
       toast.success("Project updated successfully!");
       navigate("/admin/projects");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to update project.");
     } finally {
       dispatch(hideLoading());

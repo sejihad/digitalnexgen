@@ -74,7 +74,6 @@ const Settings = () => {
         toast.success(response.data.message || "2FA updated successfully");
       } else {
         toast.error("Failed to fetch updated 2FA status");
-        console.error("2FA toggle response invalid:", response.data);
       }
     } catch (error) {
       const errorMessage =
@@ -82,7 +81,6 @@ const Settings = () => {
         error.message ||
         "Failed to update 2FA";
       toast.error(errorMessage);
-      console.error("2FA toggle error:", error);
     } finally {
       setTwoFactorLoading(false);
     }
@@ -157,7 +155,6 @@ const Settings = () => {
         error.message ||
         "Failed to update profile";
       toast.error(errorMessage);
-      console.error("Profile update error:", error);
     } finally {
       setIsUploading(false);
     }

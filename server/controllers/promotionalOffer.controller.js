@@ -14,7 +14,6 @@ export const createPromotionalOffer = async (req, res, next) => {
 
     res.status(201).json(savedOffer);
   } catch (error) {
-    console.error("Error creating promotional offer:", error);
     next(error);
   }
 };
@@ -39,7 +38,6 @@ export const getPromotionalOffers = async (req, res, next) => {
 
     res.status(200).json(offers);
   } catch (error) {
-    console.error("Error fetching promotional offers:", error);
     next(error);
   }
 };
@@ -62,7 +60,6 @@ export const getLatestPromotionalOffer = async (req, res, next) => {
 
     res.status(200).json(latestOffer);
   } catch (error) {
-    console.error("Error fetching latest promotional offer:", error);
     next(error);
   }
 };
@@ -79,7 +76,6 @@ export const getPromotionalOfferById = async (req, res, next) => {
 
     res.status(200).json(offer);
   } catch (error) {
-    console.error("Error fetching promotional offer:", error);
     next(error);
   }
 };
@@ -97,7 +93,7 @@ export const updatePromotionalOffer = async (req, res, next) => {
     const updatedOffer = await PromotionalOffer.findByIdAndUpdate(
       id,
       { $set: req.body },
-      { new: true }
+      { new: true },
     ).populate("serviceId");
 
     if (!updatedOffer) {
@@ -106,7 +102,6 @@ export const updatePromotionalOffer = async (req, res, next) => {
 
     res.status(200).json(updatedOffer);
   } catch (error) {
-    console.error("Error updating promotional offer:", error);
     next(error);
   }
 };
@@ -131,7 +126,6 @@ export const deletePromotionalOffer = async (req, res, next) => {
       .status(200)
       .json({ message: "Promotional offer deleted successfully." });
   } catch (error) {
-    console.error("Error deleting promotional offer:", error);
     next(error);
   }
 };
@@ -157,7 +151,6 @@ export const toggleOfferStatus = async (req, res, next) => {
 
     res.status(200).json(offer);
   } catch (error) {
-    console.error("Error toggling offer status:", error);
     next(error);
   }
 };

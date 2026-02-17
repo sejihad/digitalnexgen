@@ -7,7 +7,6 @@ export const handleLogout = async (dispatch, navigate) => {
     toast.success("Logged out successfully!");
     setTimeout(() => navigate("/"), 200);
   } catch (error) {
-    console.error("Logout failed:", error);
     toast.error("Logout failed. Please try again.");
   }
 };

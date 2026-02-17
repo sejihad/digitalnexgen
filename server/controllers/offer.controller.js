@@ -20,7 +20,6 @@ export const createOffer = async (req, res, next) => {
     const savedOffer = await newOffer.save();
     res.status(201).json(savedOffer);
   } catch (error) {
-    console.error("Error creating offer:", error);
     next(error);
   }
 };
@@ -39,7 +38,6 @@ export const getOffers = async (req, res, next) => {
 
     res.status(200).json(offers);
   } catch (error) {
-    console.error("Error fetching offers:", error);
     next(error);
   }
 };
@@ -62,7 +60,7 @@ export const respondToOffer = async (req, res, next) => {
     const updatedOffer = await Offer.findOneAndUpdate(
       { _id: offerId, buyerId: req.userId },
       { $set: { status } },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedOffer) {
@@ -71,7 +69,6 @@ export const respondToOffer = async (req, res, next) => {
 
     res.status(200).json(updatedOffer);
   } catch (error) {
-    console.error("Error responding to offer:", error);
     next(error);
   }
 };

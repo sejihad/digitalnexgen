@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { showLoading, hideLoading } from "../redux/loadingSlice";
+import { useNavigate } from "react-router-dom";
+import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminServices = () => {
   const [services, setServices] = useState([]);
@@ -30,12 +30,11 @@ const AdminServices = () => {
             params: {
               category: filter,
             },
-          }
+          },
         );
         setServices(response.data);
         setFilteredServices(response.data);
       } catch (error) {
-        console.error("Error fetching services:", error);
         setError("Failed to fetch services. Please try again later.");
       } finally {
         dispatch(hideLoading());
@@ -51,7 +50,7 @@ const AdminServices = () => {
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this service?"
+      "Are you sure you want to delete this service?",
     );
     if (!confirmDelete) return;
 
@@ -61,12 +60,11 @@ const AdminServices = () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/services/${id}`,
         {
           withCredentials: true,
-        }
+        },
       );
       setServices(services.filter((service) => service._id !== id));
       alert("Service deleted successfully.");
     } catch (error) {
-      console.error("Error deleting service:", error);
       alert("Failed to delete the service. Please try again.");
     } finally {
       dispatch(hideLoading());

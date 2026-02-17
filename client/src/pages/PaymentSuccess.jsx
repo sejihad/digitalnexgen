@@ -13,11 +13,10 @@ const PaymentSuccess = () => {
     const fetchSessionDetails = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/stripe/session/${sessionId}`
+          `${import.meta.env.VITE_API_BASE_URL}/api/stripe/session/${sessionId}`,
         );
         setSessionData(res.data);
       } catch (err) {
-        console.error("Failed to fetch session data", err);
       } finally {
         setLoading(false);
       }

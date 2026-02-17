@@ -24,7 +24,6 @@ const AdminOrder = () => {
         });
         setOrder(res.data);
       } catch (err) {
-        console.error("Order fetch error", err);
         setError(err.response?.data?.message || "Failed to load order.");
       }
     };
@@ -59,7 +58,6 @@ const AdminOrder = () => {
         throw new Error("Invalid response from server");
       }
     } catch (err) {
-      console.error("Status update failed:", err);
       setError(err.response?.data?.message || "Failed to update status");
     } finally {
       setIsUpdating(false);

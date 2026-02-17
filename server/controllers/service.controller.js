@@ -63,7 +63,6 @@ export const createService = async (req, res, next) => {
       service: savedService,
     });
   } catch (error) {
-    console.error("Error creating service:", error);
     next(createError(500, "Internal server error"));
   }
 };
@@ -96,6 +95,7 @@ export const getServices = async (req, res, next) => {
 
   try {
     const services = await Service.find(filters);
+
     res.status(200).send(services);
   } catch (error) {
     next(error);
@@ -197,7 +197,6 @@ export const updateService = async (req, res, next) => {
 
     res.status(200).json(updatedService);
   } catch (error) {
-    console.error("Error updating service:", error);
     next(createError(500, "Internal server error"));
   }
 };
@@ -230,7 +229,6 @@ export const deleteService = async (req, res, next) => {
     await Service.findByIdAndDelete(req.params.id);
     res.status(200).send("Service has been deleted.");
   } catch (error) {
-    console.error("Error deleting service:", error);
     next(createError(500, "Internal server error"));
   }
 };
@@ -240,7 +238,6 @@ export const countServices = async (req, res, next) => {
     const totalServices = await Service.countDocuments();
     res.status(200).json({ totalServices });
   } catch (error) {
-    console.error("Error fetching service count:", error);
     next(createError(500, "Internal server error"));
   }
 };

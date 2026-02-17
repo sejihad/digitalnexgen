@@ -43,7 +43,6 @@ const AdminUserDetailPage = () => {
       setUser(res.data);
       setEditedUser(res.data);
     } catch (error) {
-      console.error(error);
       toast.error(
         error.response?.data?.message || "Failed to load user details",
       );
@@ -74,7 +73,6 @@ const AdminUserDetailPage = () => {
       setUser((prev) => ({ ...prev, isAdmin: !prev.isAdmin }));
       setEditedUser((prev) => ({ ...prev, isAdmin: !prev.isAdmin }));
     } catch (error) {
-      console.error(error);
       toast.error(
         error.response?.data?.message || "Failed to update user role",
       );
@@ -99,7 +97,6 @@ const AdminUserDetailPage = () => {
       toast.success("User deleted successfully");
       navigate("/admin/users");
     } catch (error) {
-      console.error(error);
       toast.error(error.response?.data?.message || "Failed to delete user");
     }
   };
@@ -125,7 +122,6 @@ const AdminUserDetailPage = () => {
       setEditedUser(res.data);
       setIsEditing(false);
     } catch (error) {
-      console.error(error);
       toast.error(error.response?.data?.message || "Failed to update user");
     }
   };

@@ -20,7 +20,6 @@ const AdminReviews = () => {
       });
       setRows(res.data || []);
     } catch (err) {
-      console.error(err);
       toast.error("Failed to load reviews");
     } finally {
       setLoading(false);
@@ -42,7 +41,6 @@ const AdminReviews = () => {
       toast.success("Approved");
       fetchData();
     } catch (err) {
-      console.error(err);
       toast.error("Approve failed");
     }
   };
@@ -56,7 +54,6 @@ const AdminReviews = () => {
       toast.success("Deleted");
       setRows((r) => r.filter((x) => x._id !== id));
     } catch (err) {
-      console.error(err);
       toast.error("Delete failed");
     }
   };
@@ -81,7 +78,6 @@ const AdminReviews = () => {
       );
       setEditing(null);
     } catch (err) {
-      console.error(err);
       toast.error("Update failed");
     }
   };

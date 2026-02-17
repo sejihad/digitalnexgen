@@ -20,9 +20,7 @@ const SubCategory = () => {
           `${import.meta.env.VITE_API_BASE_URL}/api/services?subcategory=${subCategory}`,
         );
         setServices(response.data);
-      } catch (error) {
-        console.error("Error fetching services:", error);
-      }
+      } catch (error) {}
     };
     fetchServices();
   }, [subCategory]);
@@ -64,7 +62,6 @@ const SubCategory = () => {
           setProjects([]);
         }
       } catch (error) {
-        console.error("Error fetching related projects:", error);
       } finally {
         dispatch(hideLoading());
       }

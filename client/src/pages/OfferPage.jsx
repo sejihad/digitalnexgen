@@ -48,9 +48,7 @@ const OfferPage = () => {
             } catch {
               // ignore if dispatch fails
             }
-          } catch {
-            console.warn("Could not write offerEndTime to sessionStorage");
-          }
+          } catch {}
         } else {
           // No offers - ensure any persisted end time is removed and notify listeners
           try {
@@ -69,7 +67,6 @@ const OfferPage = () => {
           }
         }
       } catch (error) {
-        console.error("Error fetching promotional offers:", error);
       } finally {
         setLoading(false);
       }

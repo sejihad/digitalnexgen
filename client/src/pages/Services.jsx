@@ -46,7 +46,7 @@ const categoriesData = {
 
         { label: "Custom Websites", url: "/programming-tech/custom-websites" },
         { label: "AI ChatBot", url: "/programming-tech/ai-chatbot" },
-        { label: "AI Development", url: "/programming-tech/ai-devlopment" },
+        { label: "AI Development", url: "/programming-tech/ai-development" },
       ],
       //  backgroundImage: noise,
     },

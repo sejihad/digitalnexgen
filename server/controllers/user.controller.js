@@ -38,7 +38,6 @@ export const deleteUser = async (req, res) => {
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: "Something went wrong!",
@@ -89,7 +88,6 @@ export const updateUserRole = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: "Something went wrong!",
@@ -154,7 +152,6 @@ export const updateUser = async (req, res, next) => {
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.error("Update user error:", error);
     res.status(500).json({ success: false, message: "Something went wrong!" });
   }
 };
@@ -267,7 +264,6 @@ export const getUsers = async (req, res) => {
       users,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: "Something went wrong!",

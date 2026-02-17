@@ -56,7 +56,6 @@ const Login = () => {
   useEffect(() => {
     // Only show toast if error exists and is different from previous
     if (error && error !== prevErrorRef.current) {
-      console.log("Showing error toast:", error); // Debug log
       toast.error(error, {
         toastId: error, // Prevent duplicate toasts
         position: "top-right",
@@ -82,9 +81,7 @@ const Login = () => {
         navigate(redirect, { replace: true });
         return;
       }
-    } catch (err) {
-      console.error("Error parsing redirect URL:", err);
-    }
+    } catch (err) {}
 
     const loggedUser = userData || JSON.parse(localStorage.getItem("user"));
     if (loggedUser?.isAdmin) {
@@ -156,7 +153,6 @@ const Login = () => {
       })
       .catch((err) => {
         // Error is handled by reducer and shown via useEffect
-        console.error("Login error:", err);
       });
   };
 

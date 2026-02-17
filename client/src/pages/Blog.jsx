@@ -20,7 +20,6 @@ const Blog = () => {
 
         setBlogs(response.data);
       } catch (error) {
-        console.error("Error fetching blogs:", error);
       } finally {
         dispatch(hideLoading());
       }
