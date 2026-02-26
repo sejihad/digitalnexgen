@@ -29,6 +29,10 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
   };
 
   const renderMedia = (media) => {
+    // Mobile height ~ h-37 (Tailwind has no h-37 by default, so using arbitrary value)
+    // Desktop stays 400px
+    const mediaHeightClass = "h-[148px] md:h-[400px]";
+
     if (media.type === "video") {
       // Extract YouTube video ID
       const getYouTubeId = (url) => {
@@ -42,7 +46,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
 
       if (videoId) {
         return (
-          <div className="relative w-full h-[400px]">
+          <div className={`relative w-full ${mediaHeightClass}`}>
             <iframe
               src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`}
               title="Service Video"
@@ -52,46 +56,52 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
             />
           </div>
         );
-      } else {
-        return (
-          <div className="w-full h-[400px] flex items-center justify-center bg-gray-800 rounded-lg">
-            <p className="text-gray-400">Invalid video URL</p>
-          </div>
-        );
       }
-    } else {
+
       return (
-        <img
-          src={media.url}
-          alt="Service media"
-          className="w-full h-[400px]  rounded-lg"
-        />
+        <div
+          className={`w-full ${mediaHeightClass} flex items-center justify-center bg-gray-800 rounded-lg`}
+        >
+          <p className="text-gray-400">Invalid video URL</p>
+        </div>
       );
     }
+
+    return (
+      <img
+        src={media.url}
+        alt="Service media"
+        className={`w-full ${mediaHeightClass} rounded-lg object-cover`}
+      />
+    );
   };
 
   return (
-    <div className="relative">
+    <div>
       {/* Main Media Display */}
-      <div className="mb-4">{renderMedia(allMedia[currentIndex])}</div>
+      <div className="relative mb-4">
+        {renderMedia(allMedia[currentIndex])}
 
-      {/* Navigation Buttons */}
-      {allMedia.length > 1 && (
-        <>
-          <button
-            onClick={goToPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
-          >
-            ❮
-          </button>
-          <button
-            onClick={goToNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
-          >
-            ❯
-          </button>
-        </>
-      )}
+        {/* Navigation Buttons (centered on the media box) */}
+        {allMedia.length > 1 && (
+          <>
+            <button
+              onClick={goToPrevious}
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
+              aria-label="Previous slide"
+            >
+              ❮
+            </button>
+            <button
+              onClick={goToNext}
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
+              aria-label="Next slide"
+            >
+              ❯
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Thumbnails */}
       {allMedia.length > 1 && (
@@ -105,6 +115,10 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
                   : "border-transparent hover:border-gray-400"
               }`}
               onClick={() => goToSlide(index)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && goToSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
             >
               {media.type === "video" ? (
                 <div className="relative w-20 h-20">
@@ -119,7 +133,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
                 <img
                   src={media.url}
                   alt={`Thumbnail ${index + 1}`}
-                  className="w-20 h-20  rounded"
+                  className="w-20 h-20 rounded object-cover"
                 />
               )}
             </div>

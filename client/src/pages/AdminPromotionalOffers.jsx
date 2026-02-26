@@ -11,14 +11,13 @@ const AdminPromotionalOffers = () => {
 
   useEffect(() => {
     fetchOffers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchOffers = async () => {
     try {
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/api/promotional-offers?admin=true`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers?admin=true`,
         { withCredentials: true },
       );
 
@@ -33,9 +32,7 @@ const AdminPromotionalOffers = () => {
   const handleToggleStatus = async (id) => {
     try {
       await axios.patch(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/api/promotional-offers/${id}/toggle`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}/toggle`,
         {},
         { withCredentials: true },
       );
@@ -86,7 +83,7 @@ const AdminPromotionalOffers = () => {
           </h1>
           <button
             onClick={() => navigate("/admin/add-promotional-offer")}
-            className="flex items-center gap-2  px-6 py-3 rounded-lg font-semibold bg-white transition-all duration-300"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-white transition-all duration-300"
           >
             <Plus className="w-5 h-5" />
             Add New Offer
@@ -100,7 +97,7 @@ const AdminPromotionalOffers = () => {
             </p>
             <button
               onClick={() => navigate("/admin/add-promotional-offer")}
-              className=" text-black px-6 py-3 rounded-lg font-semibold bg-white"
+              className="text-black px-6 py-3 rounded-lg font-semibold bg-white"
             >
               Create First Offer
             </button>
@@ -117,6 +114,18 @@ const AdminPromotionalOffers = () => {
                   className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* ✅ Offer Image (Optional) */}
+                    {offer.image?.url && (
+                      <div className="w-full md:w-44 shrink-0">
+                        <img
+                          src={offer.image.url}
+                          alt={offer.title}
+                          className="w-full h-40 md:h-28 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -196,7 +205,6 @@ const AdminPromotionalOffers = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          // Ask for confirmation before deactivating an active offer
                           if (offer.isActive) {
                             if (
                               !window.confirm(

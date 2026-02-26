@@ -29,6 +29,7 @@ const EditPromotionalOffer = () => {
       offerPrice: "",
       offerPrices: { basic: "", standard: "", premium: "" },
       badge: "Special Offer",
+      image: null,
       imageUrl: "",
       isActive: true,
       startDate: new Date().toISOString().split("T")[0],
@@ -117,33 +118,57 @@ const EditPromotionalOffer = () => {
         return;
       }
 
-      const offerData = {
-        ...data,
-        serviceId: data.serviceId || null,
-        features: cleanedFeatures,
-        originalPrice: Number(data.originalPrice),
-        offerPrice: Number(data.offerPrice),
-        offerPrices: {
-          basic:
-            data.offerPrices?.basic !== ""
-              ? Number(data.offerPrices.basic)
-              : undefined,
-          standard:
-            data.offerPrices?.standard !== ""
-              ? Number(data.offerPrices.standard)
-              : undefined,
-          premium:
-            data.offerPrices?.premium !== ""
-              ? Number(data.offerPrices.premium)
-              : undefined,
-        },
-        order: Number(data.order),
-      };
+      const formData = new FormData();
 
+      // text fields
+      formData.append("title", data.title || "");
+      formData.append("description", data.description || "");
+      formData.append("discount", data.discount || "");
+      formData.append("badge", data.badge || "Special Offer");
+      formData.append("category", data.category || "General");
+      formData.append("isActive", String(!!data.isActive));
+      formData.append("startDate", data.startDate || "");
+      formData.append("endDate", data.endDate || "");
+      formData.append("serviceId", data.serviceId || "");
+      formData.append("order", String(Number(data.order || 0)));
+
+      // numbers
+      formData.append("originalPrice", String(Number(data.originalPrice || 0)));
+      formData.append("offerPrice", String(Number(data.offerPrice || 0)));
+
+      // offerPrices object
+      const offerPrices = {
+        basic:
+          data.offerPrices?.basic !== ""
+            ? Number(data.offerPrices.basic)
+            : undefined,
+        standard:
+          data.offerPrices?.standard !== ""
+            ? Number(data.offerPrices.standard)
+            : undefined,
+        premium:
+          data.offerPrices?.premium !== ""
+            ? Number(data.offerPrices.premium)
+            : undefined,
+      };
+      formData.append("offerPrices", JSON.stringify(offerPrices));
+
+      // features array
+      formData.append("features", JSON.stringify(cleanedFeatures));
+
+      // ✅ image optional (new image selected হলে)
+      if (data.image && data.image.length > 0) {
+        formData.append("image", data.image[0]);
+      }
+
+      // ✅ PUT as multipart
       await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/promotional-offers/${id}`,
-        offerData,
-        { withCredentials: true },
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        },
       );
 
       toast.success("Promotional offer updated successfully");
@@ -470,13 +495,13 @@ const EditPromotionalOffer = () => {
             {/* Image URL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Image URL (Optional)
+                New Image (Optional)
               </label>
               <input
-                {...register("imageUrl")}
-                type="url"
+                {...register("image")}
+                type="file"
+                accept="image/*"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
-                placeholder="https://example.com/image.jpg"
               />
             </div>
 

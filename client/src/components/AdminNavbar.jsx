@@ -203,6 +203,17 @@ const AdminNavbar = () => {
         },
       ],
     },
+    {
+      category: "Popular Services",
+      items: [
+        {
+          path: "/admin/add-popular-service",
+          label: "Add Popular Service",
+          icon: <Star className="w-5 h-5" />,
+          count: null,
+        },
+      ],
+    },
   ];
 
   const quickActions = [

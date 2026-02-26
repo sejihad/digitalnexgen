@@ -226,7 +226,8 @@ const Footer = () => {
         </div>
         <hr className="dark:border-gray-700 my-10" />
         <p className="text-center text-gray-600 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} Digital NexGen. All rights reserved.
+          &copy; 2022 - {new Date().getFullYear()} Digital NexGen. All rights
+          reserved.
         </p>
       </div>
     </footer>

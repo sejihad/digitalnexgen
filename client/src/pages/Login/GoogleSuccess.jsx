@@ -16,7 +16,6 @@ const GoogleSuccess = () => {
         withCredentials: true,
       })
       .then((res) => {
-        console.log("Google login successful:", res.data);
         dispatch(setUser(res.data.user));
         navigate("/");
       })

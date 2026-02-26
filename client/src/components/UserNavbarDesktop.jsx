@@ -8,14 +8,15 @@ import {
   Sun,
   User,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DarkLogo from "../assets/DarkLogo.png";
 import Logo from "../assets/logo.png";
 import placeholder from "../assets/user.png";
 import { ThemeContext } from "../context/ThemeContext";
 import { handleLogout } from "../utils/authUtils";
+
 const UserNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
@@ -29,27 +30,46 @@ const UserNavbar = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ dropdown wrapper ref (outside click close)
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
     if (userData?.img?.url) setProfileImage(userData.img.url);
   }, [userId]);
 
-  const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
+  // ✅ outside click => close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
 
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
   const toggleMobileSearch = () => setIsMobileSearchOpen((prev) => !prev);
+
   const logout = () => handleLogout(dispatch, navigate);
   const handleNavigation = (path) => navigate(path);
 
   const handleSearch = (event) => {
     if ((event.key === "Enter" || event.type === "click") && searchQuery) {
       navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
+      setIsMobileSearchOpen(false); // optional: mobile search close
     }
   };
+
   const isActive = (path) => location.pathname === path;
 
-  const DropdownMenu = () => (
-    <div className="absolute right-0 mt-5 w-48  bg-light-bg dark:bg-[#333333] rounded-md shadow-lg z-50">
+  // ✅ DropdownMenu (click on item => close)
+  const DropdownMenu = ({ closeDropdown }) => (
+    <div className="absolute right-0 mt-5 w-48 bg-light-bg dark:bg-[#333333] rounded-md shadow-lg z-50">
       <ul className="py-1">
         {["profile", "settings", "billing", "orders"]
           .filter((item) => item !== "billing")
@@ -57,7 +77,8 @@ const UserNavbar = () => {
             <li key={item}>
               <Link
                 to={`/${item === "profile" ? `profile/${userId}` : item}`}
-                className="block px-4 py-2 dark:text-primaryTextForDark  text-primaryText     dark:hover:text-primaryRgb  hover:text-primaryRgb transition-colors duration-200 border-b border-[#444444]"
+                onClick={closeDropdown}
+                className="block px-4 py-2 dark:text-primaryTextForDark text-primaryText dark:hover:text-primaryRgb hover:text-primaryRgb transition-colors duration-200 border-b border-[#444444]"
               >
                 {item.charAt(0).toUpperCase() + item.slice(1)}
               </Link>
@@ -65,8 +86,11 @@ const UserNavbar = () => {
           ))}
         <li>
           <button
-            onClick={logout}
-            className="block w-full text-left px-4 py-2 dark:text-primaryTextForDark   text-primaryText hover:text-primaryRgb dark:hover:text-primaryRgb transition-colors duration-200"
+            onClick={() => {
+              closeDropdown();
+              logout();
+            }}
+            className="block w-full text-left px-4 py-2 dark:text-primaryTextForDark text-primaryText hover:text-primaryRgb dark:hover:text-primaryRgb transition-colors duration-200"
           >
             Logout
           </button>
@@ -78,7 +102,7 @@ const UserNavbar = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <div className="w-full bg-transparent   py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center  relative z-50">
+    <div className="w-full bg-transparent py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center relative z-50">
       <Link to="/">
         <img
           src={Logo}
@@ -91,6 +115,7 @@ const UserNavbar = () => {
           className="h-15 w-60 cursor-pointer z-50 dark:block hidden"
         />
       </Link>
+
       {/* Mobile */}
       <div className="lg:hidden flex items-center gap-3">
         <button
@@ -106,18 +131,20 @@ const UserNavbar = () => {
         >
           <Search size={20} />
         </button>
+
         <img
           src={profileImage}
           alt="Profile"
           className="w-10 h-10 rounded-full"
         />
       </div>
+
       {/* Desktop */}
       <div className="hidden lg:flex justify-between w-full grid-cols-[1fr_2fr_1fr] items-center gap-8 px-6">
         {/* Left spacer */}
         <div className="flex flex-1 justify-center">
-          <div className="relative flex  items-center w-full flex-shrink-0 ">
-            <span className="pointer-events-none  absolute left-3 text-gray-500 dark:text-gray-400">
+          <div className="relative flex items-center w-full flex-shrink-0">
+            <span className="pointer-events-none absolute left-3 text-gray-500 dark:text-gray-400">
               <Search size={16} />
             </span>
             <input
@@ -137,8 +164,8 @@ const UserNavbar = () => {
             </button>
           </div>
         </div>
-        {/* Center group: links + search */}
 
+        {/* Center group: links */}
         <div className="flex-1 flex justify-center gap-6">
           <Link
             to="/"
@@ -186,7 +213,7 @@ const UserNavbar = () => {
             <div className="absolute top-6 left-0 hidden group-hover:block bg-light-bg dark:bg-[#333333] shadow-lg rounded-md py-2 w-40">
               <Link
                 to="/blog"
-                className={`block px-4 py-2  dark:hover:bg-[#444444] dark:text-white ${
+                className={`block px-4 py-2 dark:hover:bg-[#444444] dark:text-white ${
                   isActive("/blog")
                     ? "text-primaryRgb"
                     : "hover:text-primaryRgb"
@@ -196,7 +223,7 @@ const UserNavbar = () => {
               </Link>
               <Link
                 to="/about"
-                className={`block px-4 py-2  dark:hover:bg-[#444444] dark:text-white ${
+                className={`block px-4 py-2 dark:hover:bg-[#444444] dark:text-white ${
                   isActive("/about")
                     ? "text-primaryRgb"
                     : "hover:text-primaryRgb"
@@ -206,7 +233,7 @@ const UserNavbar = () => {
               </Link>
               <Link
                 to="/contact"
-                className={`block px-4 py-2  dark:hover:bg-[#444444] dark:text-white ${
+                className={`block px-4 py-2 dark:hover:bg-[#444444] dark:text-white ${
                   isActive("/contact")
                     ? "text-primaryRgb"
                     : "hover:text-primaryRgb"
@@ -217,6 +244,7 @@ const UserNavbar = () => {
             </div>
           </div>
         </div>
+
         {/* Right controls */}
         <div className="flex items-center gap-3">
           <button
@@ -225,8 +253,9 @@ const UserNavbar = () => {
           >
             <MessageSquare className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9" />
           </button>
+
           <button
-            className="text-green-800 dark:text-white dark:hover:text-white hover:text-green-700 "
+            className="text-green-800 dark:text-white dark:hover:text-white hover:text-green-700"
             onClick={toggleTheme}
           >
             {theme === "light" ? (
@@ -235,7 +264,9 @@ const UserNavbar = () => {
               <Sun size={28} />
             )}
           </button>
-          <div className="relative">
+
+          {/* ✅ Profile dropdown wrapper with ref */}
+          <div className="relative" ref={dropdownRef}>
             <button onClick={toggleDropdown} className="focus:outline-none">
               <img
                 src={profileImage}
@@ -243,14 +274,17 @@ const UserNavbar = () => {
                 className="w-12 h-12 rounded-full mr-2"
               />
             </button>
-            {isDropdownOpen && <DropdownMenu />}
+
+            {isDropdownOpen && (
+              <DropdownMenu closeDropdown={() => setIsDropdownOpen(false)} />
+            )}
           </div>
         </div>
       </div>
 
       {/* Mobile Search */}
       {isMobileSearchOpen && (
-        <div className="absolute top-16 left-0 w-full dark:bg-[#222222] p-4 z-40 flex flex-col gap-2 ">
+        <div className="absolute top-16 left-0 w-full dark:bg-[#222222] p-4 z-40 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -258,7 +292,7 @@ const UserNavbar = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearch}
-              className="flex-grow px-4 py-2 rounded-md bg-[#333333] text-white focus:outline-none focus:bg-[#444444] "
+              className="flex-grow px-4 py-2 rounded-md bg-[#333333] text-white focus:outline-none focus:bg-[#444444]"
             />
             <button
               onClick={handleSearch}
@@ -271,7 +305,6 @@ const UserNavbar = () => {
       )}
 
       {/* Mobile Menu */}
-
       <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-[#222222] border-t border-black/10 dark:border-white/10 p-2 flex items-center justify-evenly gap-6 lg:hidden z-40 shadow-lg">
         <Link
           to="/chat"
@@ -297,14 +330,6 @@ const UserNavbar = () => {
           <span className="text-xs">Setting</span>
         </Link>
 
-        {/* <Link
-          to="/billings"
-          className="text-primaryText hover:text-primaryRgb flex flex-col items-center"
-        >
-          <CreditCard size={20} />
-          <span className="text-xs">Billing</span>
-        </Link> */}
-
         <Link
           to="/orders"
           className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
@@ -315,7 +340,7 @@ const UserNavbar = () => {
 
         <button
           onClick={logout}
-          className="text-black dark:text-white hover:text-primaryRgb  flex flex-col items-center"
+          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
         >
           <LogOut size={20} />
           <span className="text-xs">Logout</span>

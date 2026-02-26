@@ -36,9 +36,9 @@ const PromotionalOfferSchema = new mongoose.Schema(
       type: String,
       default: "Special Offer",
     },
-    imageUrl: {
-      type: String,
-      default: "",
+    image: {
+      public_id: { type: String },
+      url: { type: String },
     },
     isActive: {
       type: Boolean,
@@ -66,7 +66,7 @@ const PromotionalOfferSchema = new mongoose.Schema(
       default: 0, // For sorting offers
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("PromotionalOffer", PromotionalOfferSchema);

@@ -828,7 +828,9 @@ const SingleService = () => {
                       disabled={contacting}
                       aria-busy={contacting}
                     >
-                      {contacting ? "Opening conversation..." : "Live Chat"}
+                      {contacting
+                        ? "Opening conversation..."
+                        : "Contact With Us"}
                     </button>
                   </>
                 ) : (

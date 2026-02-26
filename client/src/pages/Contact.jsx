@@ -34,7 +34,7 @@ const Contact = () => {
     setLoading(true);
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/contact`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/contact/send-email`,
         form,
         { withCredentials: false },
       );

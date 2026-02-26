@@ -69,6 +69,14 @@ const GuestNavbar = () => {
             Offers
           </Link>
 
+          <Link
+            to="/contact"
+            className={`hover:text-primaryRgb ${
+              isActive("/contact") ? "text-primaryRgb" : ""
+            }`}
+          >
+            Contact
+          </Link>
           <div className="group relative cursor-pointer">
             <span
               className={`flex items-center gap-1 ${
@@ -102,15 +110,6 @@ const GuestNavbar = () => {
               </Link>
             </div>
           </div>
-
-          <Link
-            to="/contact"
-            className={`hover:text-primaryRgb ${
-              isActive("/contact") ? "text-primaryRgb" : ""
-            }`}
-          >
-            Contact
-          </Link>
         </nav>
 
         {/* Join Button */}
@@ -122,7 +121,7 @@ const GuestNavbar = () => {
             }`}
             aria-label="Messages (login)"
           >
-            <MessageSquare size={25} />
+            <MessageSquare className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9" />
           </Link>
 
           <button

@@ -11,7 +11,7 @@ const Navbar = () => {
   }
 
   return (
-    <div className="container mx-auto flex h-[80px]  justify-between items-center  dark:border-b  ">
+    <div className="max-w-[1536px] mx-auto flex h-[80px]  justify-between items-center  dark:border-b  ">
       {isAuthenticated ? <UserNavbar /> : <GuestNavbar />}
     </div>
   );

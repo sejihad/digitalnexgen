@@ -3,6 +3,7 @@ import ServiceCards from "../components/ServiceCards";
 // import HomeVideo from "../components/HomeVideo";
 import Gallery from "../components/Gallery";
 import StatisticsSection from "../components/StatisticsSection";
+import PopularServices from "../components/PopularServices";
 
 const Home = () => {
   return (
@@ -28,6 +29,8 @@ const Home = () => {
       <div className="lg:mb-16">
         <StatisticsSection></StatisticsSection>
       </div>
+      {/* popular services */}
+      <PopularServices />
       {/* <HomeVideo /> */}
       <div className="lg:mb-16">
         <Gallery category="hero section" />
