@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 import FancyCursor from "./FancyCursor";
 import OfferModal from "./components/OfferModal";
 import Spinner from "./components/Spinner";
-import "./cursor.css";
+
 import AppRoutes from "./routes/AppRoutes";
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
