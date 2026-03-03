@@ -63,7 +63,14 @@ const AdminOrder = () => {
       setIsUpdating(false);
     }
   };
+  const features = order?.service?.offer?.features?.length
+    ? order.service.offer.features
+    : order?.service?.features?.length
+      ? order.service.features
+      : [];
 
+  const description =
+    order?.service?.offer?.description || order?.service?.description || "";
   const generatePDF = () => {
     if (!order) return;
 
@@ -268,6 +275,20 @@ const AdminOrder = () => {
               <p className="text-xs text-gray-400 break-all">
                 Offer ID: {order.service.offer.id}
               </p>
+              {order.service.offer?.description && (
+                <p className="text-xs text-gray-300 mt-2 whitespace-pre-line">
+                  {order.service.offer.description}
+                </p>
+              )}
+
+              {Array.isArray(order.service.offer?.features) &&
+                order.service.offer.features.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-gray-200 list-disc list-inside">
+                    {order.service.offer.features.map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                )}
             </div>
           )}
 

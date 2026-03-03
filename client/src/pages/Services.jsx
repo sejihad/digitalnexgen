@@ -28,6 +28,7 @@ import BookPublishing from "../assets/WritingTranslation/BookPublishing.jpg";
 import ContentWriting from "../assets/WritingTranslation/ContentWriting.jpg";
 import Translation from "../assets/WritingTranslation/Translation.jpg";
 
+import { FiMenu } from "react-icons/fi";
 import CategoryCard from "../components/CategoryCard";
 import Sidebar from "../components/Sidebar";
 
@@ -540,11 +541,12 @@ const Services = () => {
       <div className="md:hidden sticky top-0 z-40 bg-white/80 dark:bg-black/60 backdrop-blur border-b border-black/10 dark:border-white/10">
         <div className="flex items-center justify-between px-4 py-3">
           <button
-            className="bg-pink-500 hover:bg-pink-600 text-white text-sm px-3 py-2 rounded-md"
+            className="flex items-center gap-2  hover:bg-green-600 dark:text-white hover:text-white text-xs px-4 py-2 rounded-lg transition-all border-green-500 border-2 font-bold "
             onClick={toggleDrawer}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
           >
+            <FiMenu size={16} />
             {isOpen ? "Close" : "See Categories"}
           </button>
 

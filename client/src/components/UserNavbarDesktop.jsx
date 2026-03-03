@@ -1,12 +1,11 @@
 import {
-  LogOut,
+  Gift,
+  Home,
+  Layers,
   MessageSquare,
   Moon,
   Search,
-  Settings,
-  ShoppingBag,
   Sun,
-  User,
 } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,40 +17,62 @@ import { ThemeContext } from "../context/ThemeContext";
 import { handleLogout } from "../utils/authUtils";
 
 const UserNavbar = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // desktop dropdown
+  const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false); // ✅ mobile dropdown
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(placeholder);
+  const [searchQuery, setSearchQuery] = useState("");
+  const mobileSearchRef = useRef(null);
   const user = useSelector((state) => state.auth.user);
   const userId = useSelector(
     (state) => state.auth.user._id || state.auth.user.id,
   );
 
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(placeholder);
-  const [searchQuery, setSearchQuery] = useState("");
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ dropdown wrapper ref (outside click close)
-  const dropdownRef = useRef(null);
+  // ✅ refs (outside click close)
+  const dropdownRef = useRef(null); // desktop
+  const mobileDropdownRef = useRef(null); // mobile
+
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
     if (userData?.img?.url) setProfileImage(userData.img.url);
   }, [userId]);
 
-  // ✅ outside click => close dropdown
+  // ✅ outside click => close dropdowns (desktop + mobile)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
+      }
+      if (
+        mobileDropdownRef.current &&
+        !mobileDropdownRef.current.contains(e.target)
+      ) {
+        setIsMobileDropdownOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        mobileSearchRef.current &&
+        !mobileSearchRef.current.contains(e.target)
+      ) {
+        setIsMobileSearchOpen(false);
+      }
+    };
 
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
   const toggleMobileSearch = () => setIsMobileSearchOpen((prev) => !prev);
 
@@ -61,15 +82,17 @@ const UserNavbar = () => {
   const handleSearch = (event) => {
     if ((event.key === "Enter" || event.type === "click") && searchQuery) {
       navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
-      setIsMobileSearchOpen(false); // optional: mobile search close
+      setIsMobileSearchOpen(false);
     }
   };
 
   const isActive = (path) => location.pathname === path;
 
-  // ✅ DropdownMenu (click on item => close)
-  const DropdownMenu = ({ closeDropdown }) => (
-    <div className="absolute right-0 mt-5 w-48 bg-light-bg dark:bg-[#333333] rounded-md shadow-lg z-50">
+  // ✅ DropdownMenu (reuse for desktop + mobile)
+  const DropdownMenu = ({ closeDropdown, className = "" }) => (
+    <div
+      className={`absolute right-0 mt-5 w-48 bg-light-bg dark:bg-[#333333] rounded-md shadow-lg z-50 ${className}`}
+    >
       <ul className="py-1">
         {["profile", "settings", "billing", "orders"]
           .filter((item) => item !== "billing")
@@ -99,24 +122,22 @@ const UserNavbar = () => {
     </div>
   );
 
-  const { theme, toggleTheme } = useContext(ThemeContext);
-
   return (
-    <div className="w-full bg-transparent py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center relative z-50">
+    <div className="w-full bg-transparent py-2 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:shadow-none flex justify-between items-center relative z-50 px-2">
       <Link to="/">
         <img
           src={Logo}
           alt="Logo"
-          className="h-15 w-60 cursor-pointer z-50 dark:hidden"
+          className="w-[180px] cursor-pointer z-50 dark:hidden"
         />
         <img
           src={DarkLogo}
           alt="Logo Of Digital NexGen"
-          className="h-15 w-60 cursor-pointer z-50 dark:block hidden"
+          className="w-[180px] cursor-pointer z-50 dark:block hidden"
         />
       </Link>
 
-      {/* Mobile */}
+      {/* Mobile Top Controls */}
       <div className="lg:hidden flex items-center gap-3">
         <button
           onClick={toggleTheme}
@@ -132,11 +153,7 @@ const UserNavbar = () => {
           <Search size={20} />
         </button>
 
-        <img
-          src={profileImage}
-          alt="Profile"
-          className="w-10 h-10 rounded-full"
-        />
+        {/* ✅ remove top profile from mobile (profile now in bottom-right) */}
       </div>
 
       {/* Desktop */}
@@ -265,7 +282,7 @@ const UserNavbar = () => {
             )}
           </button>
 
-          {/* ✅ Profile dropdown wrapper with ref */}
+          {/* ✅ Desktop Profile dropdown wrapper */}
           <div className="relative" ref={dropdownRef}>
             <button onClick={toggleDropdown} className="focus:outline-none">
               <img
@@ -284,67 +301,116 @@ const UserNavbar = () => {
 
       {/* Mobile Search */}
       {isMobileSearchOpen && (
-        <div className="absolute top-16 left-0 w-full dark:bg-[#222222] p-4 z-40 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+        <div
+          ref={mobileSearchRef}
+          className="
+    absolute top-16 left-0 w-full z-40
+    bg-white dark:bg-[#222222]
+    px-3 py-3 sm:px-4 sm:py-4
+    shadow-md
+  "
+        >
+          <div
+            className="
+      flex items-center gap-2
+      rounded-full
+      bg-[#f5f5f5] dark:bg-[#333333]
+      border border-gray-200 dark:border-[#444444]
+      px-2 sm:px-3
+      py-2
+    "
+          >
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearch}
-              className="flex-grow px-4 py-2 rounded-md bg-[#333333] text-white focus:outline-none focus:bg-[#444444]"
+              className="
+        flex-grow
+        bg-transparent
+        px-2
+        text-sm sm:text-base
+        text-primaryText dark:text-white
+        placeholder:text-gray-500 dark:placeholder:text-gray-400
+        focus:outline-none
+      "
             />
+
             <button
               onClick={handleSearch}
-              className="text-primaryText hover:text-primaryRgb"
+              aria-label="Search"
+              className="
+        h-9 w-9 sm:h-10 sm:w-10
+        flex items-center justify-center
+        rounded-full
+        bg-[rgb(12,187,20)] text-white
+        hover:opacity-90 active:scale-95
+        transition
+      "
             >
-              <Search size={20} />
+              <Search size={18} className="sm:hidden" />
+              <Search size={20} className="hidden sm:block" />
             </button>
           </div>
         </div>
       )}
+      {/* ✅ Mobile Bottom Menu */}
+      <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-[#222222] border-t border-black/10 dark:border-white/10 p-2 flex items-center justify-between lg:hidden z-40 shadow-lg">
+        <div className="flex items-center justify-evenly gap-10 flex-1 mr-3">
+          <Link
+            to="/"
+            className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
+          >
+            <Home size={20} />
+            <span className="text-xs">Home</span>
+          </Link>
 
-      {/* Mobile Menu */}
-      <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-[#222222] border-t border-black/10 dark:border-white/10 p-2 flex items-center justify-evenly gap-6 lg:hidden z-40 shadow-lg">
-        <Link
-          to="/chat"
-          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
-        >
-          <MessageSquare size={20} />
-          <span className="text-xs">Messages</span>
-        </Link>
+          <Link
+            to="/services"
+            className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
+          >
+            <Layers size={20} />
+            <span className="text-xs">Services</span>
+          </Link>
+          <Link
+            to="/special-offers"
+            className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
+          >
+            <Gift size={20} />
+            <span className="text-xs">Offers</span>
+          </Link>
+          <Link
+            to="/chat"
+            className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
+          >
+            <MessageSquare size={20} />
+            <span className="text-xs">Chat</span>
+          </Link>
+        </div>
 
-        <Link
-          to={`/profile/${userId}`}
-          className="flex flex-col items-center text-black dark:text-white hover:text-primaryRgb dark:hover:text-primaryRgb"
-        >
-          <User size={20} />
-          <span className="text-xs">Profile</span>
-        </Link>
+        {/* ✅ Mobile Profile bottom-right + dropdown above */}
+        <div className="relative ml-3" ref={mobileDropdownRef}>
+          <button
+            onClick={() => setIsMobileDropdownOpen((prev) => !prev)}
+            className="focus:outline-none"
+            aria-label="Open profile menu"
+          >
+            <img
+              src={profileImage}
+              alt="Profile"
+              className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10"
+            />
+          </button>
 
-        <Link
-          to="/settings"
-          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
-        >
-          <Settings size={20} />
-          <span className="text-xs">Setting</span>
-        </Link>
-
-        <Link
-          to="/orders"
-          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
-        >
-          <ShoppingBag size={20} />
-          <span className="text-xs">Orders</span>
-        </Link>
-
-        <button
-          onClick={logout}
-          className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
-        >
-          <LogOut size={20} />
-          <span className="text-xs">Logout</span>
-        </button>
+          {isMobileDropdownOpen && (
+            <DropdownMenu
+              closeDropdown={() => setIsMobileDropdownOpen(false)}
+              // ✅ show above the bottom nav
+              className="bottom-14 right-0 mt-0"
+            />
+          )}
+        </div>
       </div>
     </div>
   );

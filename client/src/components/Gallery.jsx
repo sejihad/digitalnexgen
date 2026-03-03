@@ -53,9 +53,9 @@ const Gallery = ({ category }) => {
 
   return (
     <div className="p-3 max-w-[1440px] mx-auto">
-      <h2 className="text-center text-3xl font-bold text-gray-700 dark:text-white mb-12">
+      {/* <h2 className="text-center text-3xl font-bold text-gray-700 dark:text-white mb-12">
         Made on Digital NexGen
-      </h2>
+      </h2> */}
 
       {/* Masonry / column layout */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">

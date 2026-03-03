@@ -211,14 +211,14 @@ const OfferModal = () => {
             {hasImage ? (
               <>
                 {/* Image (compact height) */}
-                <div className="mb-4">
+                {/* <div className="mb-4">
                   <img
                     src={offerImageUrl}
                     alt={latestOffer?.title || "Offer"}
                     className="w-full h-36 md:h-40 object-cover rounded-xl border border-white/20 shadow-md"
                     loading="lazy"
                   />
-                </div>
+                </div> */}
 
                 {/* Title + discount (compact) */}
                 <div className="text-center mb-3">

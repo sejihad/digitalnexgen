@@ -1,15 +1,25 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useRef } from "react";
-import architecture_design from "../assets/p-s/a-d.jpg";
+import { useMemo, useRef, useState } from "react";
+
 import app_development from "../assets/p-s/app-d.jpg";
 import book_design from "../assets/p-s/b-d.jpg";
 import video_editing from "../assets/p-s/v-e.png";
 import website_development from "../assets/p-s/w-d.jpg";
+
+const shuffleArray = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
 const PopularServices = () => {
   const scrollerRef = useRef(null);
 
-  // ✅ তোমার সার্ভিস ডেটা এখানে বসাও
-  const services = useMemo(
+  // base list (stable)
+  const baseServices = useMemo(
     () => [
       {
         title: "Website Development",
@@ -21,12 +31,11 @@ const PopularServices = () => {
         image: video_editing,
         href: "/video-animation/video-editing",
       },
-
-      {
-        title: "3D Architecture",
-        image: architecture_design,
-        href: "/graphics-design/3d-architecture",
-      },
+      // {
+      //   title: "Book Cover Design",
+      //   image: architecture_design,
+      //   href: "/graphics-design/book-covers",
+      // },
       {
         title: "Book Design",
         image: book_design,
@@ -47,13 +56,16 @@ const PopularServices = () => {
     [],
   );
 
+  // ✅ shuffled ONCE per page load
+  const [services] = useState(() => shuffleArray(baseServices));
+
   const scrollByAmount = () => {
     const el = scrollerRef.current;
     if (!el) return 320;
 
     const card = el.querySelector("[data-card='true']");
     const cardWidth = card ? card.getBoundingClientRect().width : 240;
-    return Math.max(220, Math.floor(cardWidth + 16)); // gap included
+    return Math.max(220, Math.floor(cardWidth + 16));
   };
 
   const handleNext = () => {
@@ -70,13 +82,11 @@ const PopularServices = () => {
 
   return (
     <section className="w-11/12 max-w-[1440px] mx-auto py-8">
-      {/* Title */}
       <h2 className="text-[34px] sm:text-[42px] md:text-[58px] leading-none font-light text-gray-800 dark:text-white mb-6">
         Popular services
       </h2>
 
       <div className="relative">
-        {/* Left button */}
         <button
           type="button"
           onClick={handlePrev}
@@ -92,7 +102,6 @@ const PopularServices = () => {
           <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-white" />
         </button>
 
-        {/* Right button */}
         <button
           type="button"
           onClick={handleNext}
@@ -109,7 +118,6 @@ const PopularServices = () => {
           <ChevronRight className="w-6 h-6 text-gray-700 dark:text-white" />
         </button>
 
-        {/* Slider */}
         <div
           ref={scrollerRef}
           className="flex gap-4 overflow-x-auto scroll-smooth pb-2 pr-10
@@ -118,7 +126,7 @@ const PopularServices = () => {
         >
           {services.map((svc, idx) => (
             <a
-              key={idx}
+              key={svc.href} // ✅ better key than idx
               href={svc.href}
               data-card="true"
               className="
@@ -133,17 +141,15 @@ const PopularServices = () => {
                 overflow-hidden
               "
             >
-              {/* Image (no extra bg) */}
               <div className="w-full h-[150px] md:h-[140px] lg:h-[150px] overflow-hidden">
                 <img
                   src={svc.image}
                   alt={svc.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-500"
                   loading="lazy"
                 />
               </div>
 
-              {/* Title */}
               <div className="p-4">
                 <h3 className="text-base md:text-[15px] font-semibold text-gray-800 dark:text-white line-clamp-2">
                   {svc.title}
@@ -156,12 +162,10 @@ const PopularServices = () => {
           ))}
         </div>
 
-        {/* Mobile hint */}
         <div className="md:hidden text-xs text-gray-500 dark:text-gray-400 mt-3">
           Swipe to explore →
         </div>
 
-        {/* Desktop hint (optional) */}
         <div className="hidden md:block text-xs text-gray-500 dark:text-gray-400 mt-3">
           Use arrows to scroll
         </div>

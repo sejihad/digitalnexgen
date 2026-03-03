@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Gift, Send, X } from "lucide-react";
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 
@@ -10,29 +10,49 @@ const Message = ({ conversationId }) => {
   const stateServiceTitle = location.state?.serviceTitle;
   const stateServiceId = location.state?.serviceId;
   const { id: routeId } = useParams();
+  const convId = conversationId || routeId;
+
   const [conversation, setConversation] = useState({ messages: [] });
   const [offers, setOffers] = useState([]);
   const [socket, setSocket] = useState(null);
+
   const [newMessage, setNewMessage] = useState("");
+
+  // ✅ Offer form now supports gig + features
   const [newOffer, setNewOffer] = useState({
+    gigId: "",
+    gigTitle: "",
+    gigSubCategory: "",
+    gigCoverImage: "",
     description: "",
+    featuresText: "", // newline separated
     price: "",
     deliveryTime: "",
   });
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [showOfferForm, setShowOfferForm] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
   const [gig, setGig] = useState(null);
   const [savedGigs, setSavedGigs] = useState([]);
+
   const [headerName, setHeaderName] = useState("");
   const [headerUser, setHeaderUser] = useState(null);
+
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [isTypingVisible, setIsTypingVisible] = useState(false);
 
+  // ✅ payment modal for accepting offer
+  const [payOffer, setPayOffer] = useState(null); // offer object or null
+  const [isPaying, setIsPaying] = useState(false);
+
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
   const messagesContainerRef = useRef(null);
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL;
 
   const currentUser = JSON.parse(localStorage.getItem("user")) || {};
   const meId = String(currentUser.id || currentUser._id || "");
@@ -50,52 +70,42 @@ const Message = ({ conversationId }) => {
       : adminId && adminId !== meId
         ? adminId
         : sellerId || adminId || buyerId || "";
+
   const getDisplayName = (msg) => {
-    // তুমি যদি Admin হও → সবাইকে real username দেখাবে
+    // If Admin -> real usernames
     if (currentUser?.isAdmin) {
       return msg.userId?.name || msg.userId?.username || "User";
     }
-
-    // তুমি যদি Normal user হও
+    // Normal user: if admin sender show "Admin"
     if (msg.userId?.isAdmin) {
       return msg.userId?.name || msg.userId?.username || "Admin";
     }
-
     return msg.userId?.name || "User";
   };
 
-  // derive isAdmin once from stored user to avoid effect dependency churn
   useEffect(() => {
-    setIsAdmin(currentUser?.isAdmin);
+    setIsAdmin(Boolean(currentUser?.isAdmin));
   }, []);
 
-  // Socket connection
+  // ✅ Socket connection
   useEffect(() => {
-    const s = io(import.meta.env.VITE_API_BASE_URL, {
-      withCredentials: true,
-    });
+    const s = io(apiBase, { withCredentials: true });
 
     const token = localStorage.getItem("token");
     if (token) s.emit("user:join", token);
 
-    // join conversation room
-    if (conversationId || routeId) {
-      s.emit("conversation:join", conversationId || routeId);
-    }
+    if (convId) s.emit("conversation:join", convId);
 
     setSocket(s);
+    return () => s.disconnect();
+  }, [apiBase, convId]);
 
-    return () => {
-      s.disconnect();
-    };
-  }, [conversationId, routeId]);
-
-  // Socket listeners for messages and typing
+  // ✅ Socket listeners (message + typing)
   useEffect(() => {
     if (!socket) return;
 
     const handleMessage = (data) => {
-      if (data.conversationId === (conversationId || routeId)) {
+      if (data.conversationId === convId) {
         setConversation((prev) => ({
           ...prev,
           messages: [...prev.messages, data.message],
@@ -104,12 +114,10 @@ const Message = ({ conversationId }) => {
     };
 
     const handleTyping = (data) => {
-      if (data.conversationId === (conversationId || routeId)) {
+      if (data.conversationId === convId) {
         setIsTypingVisible(data.isTyping);
         if (data.isTyping) {
-          const timer = setTimeout(() => {
-            setIsTypingVisible(false);
-          }, 3000);
+          const timer = setTimeout(() => setIsTypingVisible(false), 3000);
           setTypingTimeout(timer);
         }
       }
@@ -123,53 +131,64 @@ const Message = ({ conversationId }) => {
       socket.off("typing:update", handleTyping);
       if (typingTimeout) clearTimeout(typingTimeout);
     };
-  }, [socket, conversationId, routeId]);
+  }, [socket, convId, typingTimeout]);
 
-  // Auto-scroll to bottom
-  // useEffect(() => {
-  //   scrollToBottom();
-  // }, [conversation.messages, offers, isTypingVisible]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // Fetch conversation data
+  // ✅ auto scroll
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversation.messages, offers, isTypingVisible]);
+
+  const fetchOffers = async () => {
+    if (!convId) return;
+    try {
+      const offersRes = await axios.get(
+        `${apiBase}/api/offers?conversationId=${convId}`,
+        { withCredentials: true },
+      );
+      setOffers(offersRes.data || []);
+    } catch {
+      // ignore
+    }
+  };
+
+  // ✅ Fetch conversation + messages + offers
   useEffect(() => {
     const fetchConversation = async () => {
+      if (!convId) return;
       try {
         const conversationRes = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/conversations/single/${
-            conversationId || routeId
-          }`,
+          `${apiBase}/api/conversations/single/${convId}`,
           { withCredentials: true },
         );
 
         if (conversationRes.data) {
           const messageRes = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/messages/${
-              conversationId || routeId
-            }`,
-            { withCredentials: true },
+            `${apiBase}/api/messages/${convId}`,
+            {
+              withCredentials: true,
+            },
           );
 
-          const offersRes = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/offers?conversationId=${
-              conversationId || routeId
-            }`,
-            { withCredentials: true },
-          );
-
-          setOffers(offersRes.data || []);
           setConversation({
             ...conversationRes.data,
             messages: messageRes.data || [],
           });
 
-          // Merge server-linkedServices
+          await fetchOffers();
+
+          // Merge server-linkedServices into local savedGigs
           const serverLinked = Array.isArray(
             conversationRes.data.linkedServices,
           )
             ? conversationRes.data.linkedServices
             : [];
+
           if (serverLinked.length > 0) {
-            const key = `conv_gigs_${conversationId || routeId}`;
+            const key = `conv_gigs_${convId}`;
             try {
               const prev = JSON.parse(localStorage.getItem(key) || "[]");
               const normalized = serverLinked.map((s) => ({
@@ -205,116 +224,110 @@ const Message = ({ conversationId }) => {
             }
           }
         }
-      } catch (error) {}
+      } catch {
+        // ignore
+      }
     };
 
     fetchConversation();
-  }, [conversationId, routeId]);
+  }, [apiBase, convId]);
 
-  // Fetch counterpart username
+  // ✅ Fetch counterpart username
   useEffect(() => {
     const loadName = async () => {
       try {
         if (!counterpartId) return;
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/users/${counterpartId}`,
-          { withCredentials: true },
-        );
+        const res = await axios.get(`${apiBase}/api/users/${counterpartId}`, {
+          withCredentials: true,
+        });
         const u = res?.data || {};
-
         if (u) {
-          if (currentUser?.isAdmin) {
+          if (currentUser?.isAdmin)
             setHeaderName(u.name || u.username || "User");
-          } else {
+          else
             setHeaderName(u.isAdmin ? "Admin" : u.name || u.username || "User");
-          }
         }
-
         setHeaderUser(u);
       } catch {
         // ignore
       }
     };
     loadName();
-  }, [counterpartId]);
+  }, [apiBase, counterpartId]);
 
-  // Load saved gigs from localStorage
+  // ✅ Load saved gigs from localStorage
   useEffect(() => {
-    const key = `conv_gigs_${conversationId || routeId}`;
+    const key = `conv_gigs_${convId}`;
     try {
       const prev = JSON.parse(localStorage.getItem(key) || "[]");
       if (Array.isArray(prev)) setSavedGigs(prev);
     } catch {
       // ignore
     }
-  }, [conversationId, routeId]);
+  }, [convId]);
 
-  // Load gig details
+  // ✅ Load gig details (optional)
   useEffect(() => {
     const serviceId =
       stateServiceId || conversation?.serviceId || conversation?.service?._id;
     if (!serviceId) return;
+
     let isMounted = true;
     const load = async () => {
       try {
         const res = await axios.get(
-          `${
-            import.meta.env.VITE_API_BASE_URL
-          }/api/services/single-service/${serviceId}`,
+          `${apiBase}/api/services/single-service/${serviceId}`,
         );
-        if (isMounted) {
-          setGig(res.data);
-          const key = `conv_gigs_${conversationId || routeId}`;
-          const item = {
-            serviceId: res.data?._id,
-            title: res.data?.title,
-            subCategory: res.data?.subCategory,
-            coverImage: res.data?.coverImage,
-            savedAt: Date.now(),
-          };
-          try {
-            const prev = JSON.parse(localStorage.getItem(key) || "[]");
-            const merged = [
-              item,
-              ...prev.filter(
-                (g) => String(g.serviceId) !== String(item.serviceId),
-              ),
-            ];
-            localStorage.setItem(key, JSON.stringify(merged));
-            setSavedGigs(merged);
-          } catch {
-            // ignore
-          }
+        if (!isMounted) return;
+        setGig(res.data);
+
+        const key = `conv_gigs_${convId}`;
+        const item = {
+          serviceId: res.data?._id,
+          title: res.data?.title,
+          subCategory: res.data?.subCategory,
+          coverImage: res.data?.coverImage,
+          savedAt: Date.now(),
+        };
+
+        try {
+          const prev = JSON.parse(localStorage.getItem(key) || "[]");
+          const merged = [
+            item,
+            ...prev.filter(
+              (g) => String(g.serviceId) !== String(item.serviceId),
+            ),
+          ];
+          localStorage.setItem(key, JSON.stringify(merged));
+          setSavedGigs(merged);
+        } catch {
+          // ignore
         }
       } catch {
         // ignore
       }
     };
+
     load();
     return () => {
       isMounted = false;
     };
   }, [
+    apiBase,
+    convId,
     stateServiceId,
     conversation?.serviceId,
     conversation?.service,
-    conversationId,
-    routeId,
   ]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const handleTypingIndicator = (typing) => {
-    if (socket && (conversationId || routeId)) {
-      setIsTyping(typing);
-      socket.emit("typing:update", {
-        conversationId: conversationId || routeId,
-        userId: meId,
-        isTyping: typing,
-      });
-    }
+    if (!socket || !convId) return;
+    setIsTyping(typing);
+    socket.emit("typing:update", {
+      conversationId: convId,
+      userId: meId,
+      isTyping: typing,
+    });
   };
 
   const handleSendMessage = async () => {
@@ -333,18 +346,21 @@ const Message = ({ conversationId }) => {
       messages: [...prev.messages, tempMessage],
     }));
 
+    const text = newMessage;
     setNewMessage("");
     handleTypingIndicator(false);
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/messages`,
-        { conversationId: conversationId || routeId, message: newMessage },
+        `${apiBase}/api/messages`,
+        { conversationId: convId, message: text },
         { withCredentials: true },
       );
 
       setConversation((prev) => {
-        const msgs = prev.messages.filter((m) => !m._id.startsWith("temp-"));
+        const msgs = prev.messages.filter(
+          (m) => !String(m._id).startsWith("temp-"),
+        );
         return { ...prev, messages: [...msgs, response.data] };
       });
 
@@ -352,62 +368,261 @@ const Message = ({ conversationId }) => {
         const receiverId = isAdmin
           ? buyerId || sellerId
           : adminId || sellerId || buyerId;
-
         socket.emit("message:send", {
-          conversationId: conversationId || routeId,
+          conversationId: convId,
           receiverId,
           message: response.data,
         });
       }
-    } catch (err) {
+    } catch {
+      // ignore
     } finally {
       setIsSending(false);
     }
   };
 
+  // ✅ Admin create offer with gig + features
   const handleCreateOffer = async () => {
-    if (!newOffer.description || !newOffer.price || !newOffer.deliveryTime) {
-      return;
-    }
+    const {
+      gigId,
+      gigTitle,
+      gigSubCategory,
+      gigCoverImage,
+      description,
+      featuresText,
+      price,
+      deliveryTime,
+    } = newOffer;
+
+    if (!gigId || !gigTitle || !description || !price || !deliveryTime) return;
+
+    const features = String(featuresText || "")
+      .split("\n")
+      .map((x) => x.trim())
+      .filter(Boolean);
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/offers`,
+        `${apiBase}/api/offers`,
         {
-          conversationId: conversationId || routeId,
+          conversationId: convId,
           buyerId: conversation.buyerId,
-          offerDetails: newOffer,
+          gig: {
+            id: gigId,
+            title: gigTitle,
+            subCategory: gigSubCategory || "",
+            coverImage: gigCoverImage || "",
+          },
+          offerDetails: {
+            description,
+            features,
+            price: Number(price),
+            deliveryTime: Number(deliveryTime),
+          },
         },
         { withCredentials: true },
       );
 
       setOffers((prev) => [...prev, response.data]);
-      setNewOffer({ description: "", price: "", deliveryTime: "" });
+      setNewOffer({
+        gigId: "",
+        gigTitle: "",
+        gigSubCategory: "",
+        gigCoverImage: "",
+        description: "",
+        featuresText: "",
+        price: "",
+        deliveryTime: "",
+      });
       setShowOfferForm(false);
-    } catch (error) {}
+    } catch {
+      // ignore
+    }
   };
 
-  const handleRespondToOffer = async (offerId, status) => {
+  // ✅ Decline only (accept will start payment)
+  const handleDeclineOffer = async (offerId) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_BASE_URL}/api/offers/${offerId}`,
-        { status },
+        `${apiBase}/api/offers/${offerId}`,
+        { status: "declined" },
         { withCredentials: true },
       );
 
       setOffers((prev) =>
-        prev.map((offer) =>
-          offer._id === offerId ? { ...offer, ...response.data } : offer,
+        prev.map((o) =>
+          String(o._id) === String(offerId) ? { ...o, ...response.data } : o,
         ),
       );
-    } catch (error) {}
+    } catch {
+      // ignore
+    }
   };
 
-  // Responsive design for messages
-  const getMessageWidthClass = () => {
-    if (window.innerWidth < 640) return "max-w-[85%]";
-    if (window.innerWidth < 768) return "max-w-[80%]";
-    return "max-w-[70%]";
+  // ✅ Start payment for offer (Stripe/PayPal) -> backend returns redirect url
+  const startOfferPayment = async (offer, provider) => {
+    if (!offer?._id) return;
+    setIsPaying(true);
+
+    try {
+      const url =
+        provider === "stripe"
+          ? `${apiBase}/api/offers/${offer._id}/checkout/stripe`
+          : `${apiBase}/api/offers/${offer._id}/checkout/paypal`;
+
+      const res = await axios.post(url, {}, { withCredentials: true });
+
+      if (res?.data?.url) {
+        window.location.href = res.data.url;
+        return;
+      }
+
+      // fallback (if backend returns paypal {id})
+      if (provider === "paypal" && res?.data?.id) {
+        window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${res.data.id}`;
+        return;
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsPaying(false);
+      setPayOffer(null);
+    }
+  };
+
+  // ✅ timeline (messages + offers serially)
+  const timeline = useMemo(() => {
+    return [
+      ...(conversation.messages || []).map((m) => ({
+        kind: "message",
+        _id: String(m._id),
+        createdAt: m.createdAt,
+        data: m,
+      })),
+      ...(offers || []).map((o) => ({
+        kind: "offer",
+        _id: String(o._id),
+        createdAt: o.createdAt || o.updatedAt,
+        data: o,
+      })),
+    ]
+      .filter((x) => x.createdAt)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [conversation.messages, offers]);
+
+  const renderOfferCard = (offer) => {
+    const features = Array.isArray(offer?.offerDetails?.features)
+      ? offer.offerDetails.features
+      : [];
+    const hasGig = Boolean(offer?.gig?.title || offer?.gig?.id);
+
+    return (
+      <div className="max-w-[85%] mx-auto p-3 md:p-4 rounded-lg shadow-md bg-white border border-gray-200 text-gray-900 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:border-0 dark:text-white">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 font-semibold">
+            <Gift size={18} />
+            Custom Offer
+          </div>
+
+          <div className="text-sm">
+            Status:{" "}
+            <span
+              className={`font-medium ${
+                offer.status === "accepted"
+                  ? "text-green-500"
+                  : offer.status === "declined"
+                    ? "text-red-500"
+                    : "text-yellow-500"
+              }`}
+            >
+              {offer.status}
+            </span>
+          </div>
+        </div>
+
+        {hasGig && (
+          <div className="mt-3 flex gap-3 items-start">
+            {offer.gig?.coverImage ? (
+              <img
+                src={offer.gig.coverImage?.url || offer.gig.coverImage}
+                alt={offer.gig.title || "Gig"}
+                className="w-14 h-12 rounded-md object-cover border border-white/10"
+              />
+            ) : (
+              <div className="w-14 h-12 rounded-md bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs">
+                Gig
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <div className="text-sm font-semibold truncate">
+                {offer.gig?.title}
+              </div>
+              {offer.gig?.subCategory && (
+                <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                  {offer.gig.subCategory}
+                </div>
+              )}
+              {offer.gig?.id && offer.gig?.subCategory && (
+                <Link
+                  to={`/${offer.gig.subCategory}/${offer.gig.id}`}
+                  className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
+                >
+                  View Gig
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 text-sm whitespace-pre-line">
+          {offer.offerDetails?.description}
+        </div>
+
+        {features.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
+              Features
+            </div>
+            <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+              {features.map((f, idx) => (
+                <li key={idx} className="break-words">
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">
+          Price:{" "}
+          <span className="font-semibold">${offer.offerDetails?.price}</span> ·
+          Delivery:{" "}
+          <span className="font-semibold">
+            {offer.offerDetails?.deliveryTime}
+          </span>{" "}
+          days
+        </div>
+
+        {/* ✅ Buyer actions */}
+        {!isAdmin && offer.status === "pending" && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => setPayOffer(offer)} // ✅ open payment modal
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
+            >
+              Accept & Pay
+            </button>
+            <button
+              onClick={() => handleDeclineOffer(offer._id)}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
+            >
+              Decline
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -416,7 +631,7 @@ const Message = ({ conversationId }) => {
         className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm"
         ref={containerRef}
       >
-        {/* Header - Fixed */}
+        {/* Header */}
         <div className="flex-shrink-0 px-4 md:px-6 py-3 md:py-4 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -450,7 +665,6 @@ const Message = ({ conversationId }) => {
             </div>
           </div>
 
-          {/* Gig info in header for mobile */}
           {(stateServiceTitle || conversation?.service?.title) && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
               {stateServiceTitle || conversation?.service?.title}
@@ -458,7 +672,7 @@ const Message = ({ conversationId }) => {
           )}
         </div>
 
-        {/* Main Content Area with Scroll */}
+        {/* Main */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Messages Container */}
           <div
@@ -481,7 +695,7 @@ const Message = ({ conversationId }) => {
                         <div className="w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
                           {g.coverImage ? (
                             <img
-                              src={g.coverImage}
+                              src={g.coverImage?.url || g.coverImage}
                               alt={g.title}
                               className="w-full h-full object-cover"
                             />
@@ -511,6 +725,7 @@ const Message = ({ conversationId }) => {
                 </div>
               </div>
             )}
+
             {conversation.messages.length === 0 && offers.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
                 <div className="text-center">
@@ -520,180 +735,183 @@ const Message = ({ conversationId }) => {
               </div>
             ) : (
               <>
-                {conversation.messages.map((msg, index) => {
-                  const isSender =
-                    String(msg.userId?._id || msg.userId) === meId;
-                  const displayName = getDisplayName(msg);
-                  const avatar = msg.userId?.img?.url;
+                {timeline.map((item) => {
+                  if (item.kind === "message") {
+                    const msg = item.data;
+                    const isSender =
+                      String(msg.userId?._id || msg.userId) === meId;
+                    const displayName = getDisplayName(msg);
+                    const avatar = msg.userId?.img?.url;
 
-                  return (
-                    <div
-                      key={index}
-                      className={`flex gap-3 ${isSender ? "justify-end" : "justify-start"}`}
-                    >
-                      {/* Avatar (left side for receiver) */}
-                      {!isSender && (
-                        <div className="flex flex-col items-center">
-                          <img
-                            src={avatar || "/avatar.png"}
-                            alt={displayName}
-                            className="w-9 h-9 rounded-full object-cover border"
-                          />
-                        </div>
-                      )}
-
-                      {/* Message bubble */}
-                      <div className="max-w-[70%]">
+                    return (
+                      <div
+                        key={`m-${item._id}`}
+                        className={`flex gap-3 ${isSender ? "justify-end" : "justify-start"}`}
+                      >
                         {!isSender && (
-                          <div className="text-xs text-gray-500 mb-1">
-                            {displayName}
+                          <div className="flex flex-col items-center">
+                            <img
+                              src={avatar || "/avatar.png"}
+                              alt={displayName}
+                              className="w-9 h-9 rounded-full object-cover border"
+                            />
                           </div>
                         )}
 
-                        <div
-                          className={`px-4 py-2 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                            isSender
-                              ? "bg-pink-500 text-white rounded-br-none"
-                              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none"
-                          }`}
-                        >
-                          {msg.message}
+                        <div className="max-w-[70%]">
+                          {!isSender && (
+                            <div className="text-xs text-gray-500 mb-1">
+                              {displayName}
+                            </div>
+                          )}
+
+                          <div
+                            className={`px-4 py-2 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                              isSender
+                                ? "bg-pink-500 text-white rounded-br-none"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none"
+                            }`}
+                          >
+                            {msg.message}
+                          </div>
+
+                          <div
+                            className={`text-[10px] mt-1 ${
+                              isSender
+                                ? "text-right text-pink-200"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
                         </div>
 
-                        <div
-                          className={`text-[10px] mt-1 ${
-                            isSender
-                              ? "text-right text-pink-200"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
+                        {isSender && (
+                          <img
+                            src={avatar || "/avatar.png"}
+                            alt="Me"
+                            className="w-9 h-9 rounded-full object-cover border"
+                          />
+                        )}
                       </div>
+                    );
+                  }
 
-                      {/* Avatar (right side for sender) */}
-                      {isSender && (
-                        <img
-                          src={avatar || "/avatar.png"}
-                          alt="Me"
-                          className="w-9 h-9 rounded-full object-cover border"
-                        />
-                      )}
+                  // Offer bubble
+                  return (
+                    <div key={`o-${item._id}`}>
+                      {renderOfferCard(item.data)}
                     </div>
                   );
                 })}
-
-                {/* Offers */}
-                {offers.length > 0 && (
-                  <div className="space-y-3 md:space-y-4">
-                    {offers.map((offer) => (
-                      <div
-                        key={offer._id}
-                        className="p-3 md:p-4 rounded-lg shadow-md bg-white border border-gray-200 text-gray-900 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:border-0 dark:text-white"
-                      >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                          <div className="flex-1">
-                            <div className="text-base md:text-lg font-semibold">
-                              {offer.offerDetails?.description}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-300">
-                              Price: ${offer.offerDetails?.price} · Delivery:{" "}
-                              {offer.offerDetails?.deliveryTime} days
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-200">
-                            Status:{" "}
-                            <span
-                              className={`font-medium ${
-                                offer.status === "accepted"
-                                  ? "text-green-500"
-                                  : offer.status === "declined"
-                                    ? "text-red-500"
-                                    : "text-yellow-500"
-                              }`}
-                            >
-                              {offer.status}
-                            </span>
-                          </div>
-                        </div>
-
-                        {!isAdmin && offer.status === "pending" && (
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              onClick={() =>
-                                handleRespondToOffer(offer._id, "accepted")
-                              }
-                              className="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleRespondToOffer(offer._id, "declined")
-                              }
-                              className="flex-1 md:flex-none bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 <div ref={messagesEndRef} />
               </>
             )}
           </div>
 
-          {/* Input Area - Fixed */}
+          {/* Input Area */}
           <div className="flex-shrink-0 bg-white p-3 md:p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
+              {/* ✅ Admin Offer Form */}
               {isAdmin && showOfferForm && (
                 <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={newOffer.description}
-                      onChange={(e) =>
-                        setNewOffer({
-                          ...newOffer,
-                          description: e.target.value,
-                        })
-                      }
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-3">
+                    {/* Gig selector */}
+                    <select
+                      value={newOffer.gigId}
+                      onChange={(e) => {
+                        const gid = e.target.value;
+                        const selected = savedGigs.find(
+                          (g) => String(g.serviceId) === String(gid),
+                        );
+                        setNewOffer((p) => ({
+                          ...p,
+                          gigId: gid,
+                          gigTitle: selected?.title || "",
+                          gigSubCategory: selected?.subCategory || "",
+                          gigCoverImage:
+                            selected?.coverImage?.url ||
+                            selected?.coverImage ||
+                            "",
+                        }));
+                      }}
                       className="p-2 bg-gray-700 rounded text-sm md:text-base"
-                    />
+                    >
+                      <option value="">Select a gig</option>
+                      {savedGigs.map((g) => (
+                        <option
+                          key={String(g.serviceId)}
+                          value={String(g.serviceId)}
+                        >
+                          {g.title}
+                        </option>
+                      ))}
+                    </select>
+
                     <input
                       type="number"
                       placeholder="Price"
                       value={newOffer.price}
                       onChange={(e) =>
-                        setNewOffer({ ...newOffer, price: e.target.value })
+                        setNewOffer((p) => ({ ...p, price: e.target.value }))
                       }
                       className="p-2 bg-gray-700 rounded text-sm md:text-base"
                     />
+
                     <input
                       type="number"
                       placeholder="Delivery (days)"
                       value={newOffer.deliveryTime}
                       onChange={(e) =>
-                        setNewOffer({
-                          ...newOffer,
+                        setNewOffer((p) => ({
+                          ...p,
                           deliveryTime: e.target.value,
-                        })
+                        }))
                       }
                       className="p-2 bg-gray-700 rounded text-sm md:text-base"
                     />
+
+                    <textarea
+                      placeholder="Description"
+                      value={newOffer.description}
+                      onChange={(e) =>
+                        setNewOffer((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                      rows={5}
+                      className="p-2 bg-gray-700 rounded text-sm md:text-base w-full md:col-span-2 resize-y"
+                    />
                   </div>
+
+                  <textarea
+                    placeholder="Features (one per line)"
+                    value={newOffer.featuresText}
+                    onChange={(e) =>
+                      setNewOffer((p) => ({
+                        ...p,
+                        featuresText: e.target.value,
+                      }))
+                    }
+                    rows={4}
+                    className="w-full p-2 bg-gray-700 rounded text-sm md:text-base mb-3"
+                  />
+
                   <div className="flex gap-2">
                     <button
                       onClick={handleCreateOffer}
-                      className="flex-1 bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 rounded text-sm md:text-base"
+                      disabled={
+                        !newOffer.gigId ||
+                        !newOffer.description ||
+                        !newOffer.price ||
+                        !newOffer.deliveryTime
+                      }
+                      className="flex-1 bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 rounded text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send Offer
                     </button>
@@ -732,14 +950,10 @@ const Message = ({ conversationId }) => {
                 </div>
 
                 <div className="flex gap-2">
-                  {/* Send Button */}
                   <button
                     onClick={handleSendMessage}
                     disabled={isSending || !newMessage.trim()}
-                    className="bg-pink-500 hover:bg-colorNeonPink text-white
-    px-4 py-2 md:py-3 rounded-lg
-    disabled:opacity-50 disabled:cursor-not-allowed
-    transition-colors flex items-center justify-center"
+                    className="bg-pink-500 hover:bg-colorNeonPink text-white px-4 py-2 md:py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                     title="Send message"
                   >
                     {isSending ? (
@@ -749,17 +963,14 @@ const Message = ({ conversationId }) => {
                     )}
                   </button>
 
-                  {/* Offer Button (Admin only) */}
                   {isAdmin && (
                     <button
                       onClick={() => setShowOfferForm((p) => !p)}
-                      className={`px-4 py-2 md:py-3 rounded-lg
-      transition-colors flex items-center justify-center
-      ${
-        showOfferForm
-          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
-          : "bg-pink-500 hover:bg-colorNeonPink text-white"
-      }`}
+                      className={`px-4 py-2 md:py-3 rounded-lg transition-colors flex items-center justify-center ${
+                        showOfferForm
+                          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
+                          : "bg-pink-500 hover:bg-colorNeonPink text-white"
+                      }`}
                       title={showOfferForm ? "Close offer" : "Send offer"}
                     >
                       {showOfferForm ? <X size={18} /> : <Gift size={18} />}
@@ -769,6 +980,68 @@ const Message = ({ conversationId }) => {
               </div>
             </div>
           </div>
+
+          {/* ✅ Payment modal for accepting offer */}
+          {payOffer && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+              <div className="bg-gray-900 text-gray-100 rounded-2xl p-6 shadow-2xl w-full max-w-md">
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="text-lg font-bold">Pay to accept offer</div>
+                  <button
+                    onClick={() => (!isPaying ? setPayOffer(null) : null)}
+                    className="text-gray-400 hover:text-white"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="text-sm text-gray-300">
+                  <div className="font-semibold">
+                    {payOffer.gig?.title || "Offer"}
+                  </div>
+                  <div className="mt-1">
+                    Amount:{" "}
+                    <span className="font-semibold">
+                      ${payOffer.offerDetails?.price}
+                    </span>
+                  </div>
+                  <div className="mt-1">
+                    Delivery:{" "}
+                    <span className="font-semibold">
+                      {payOffer.offerDetails?.deliveryTime}
+                    </span>{" "}
+                    days
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  <button
+                    onClick={() => startOfferPayment(payOffer, "stripe")}
+                    disabled={isPaying}
+                    className="w-full bg-white text-black font-semibold py-3 rounded-lg hover:brightness-95 disabled:opacity-50"
+                  >
+                    {isPaying ? "Processing..." : "💳 Pay with Card or Others"}
+                  </button>
+
+                  <button
+                    onClick={() => startOfferPayment(payOffer, "paypal")}
+                    disabled={isPaying}
+                    className="w-full bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 disabled:opacity-50"
+                  >
+                    {isPaying ? "Processing..." : "🅿️ Pay with PayPal"}
+                  </button>
+
+                  <button
+                    onClick={() => (!isPaying ? setPayOffer(null) : null)}
+                    className="w-full text-gray-400 text-sm hover:text-white hover:underline"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

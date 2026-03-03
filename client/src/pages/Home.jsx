@@ -2,12 +2,13 @@ import Hero from "../components/Hero";
 import ServiceCards from "../components/ServiceCards";
 // import HomeVideo from "../components/HomeVideo";
 import Gallery from "../components/Gallery";
-import StatisticsSection from "../components/StatisticsSection";
+import HomeVideo from "../components/HomeVideo";
 import PopularServices from "../components/PopularServices";
+import StatisticsSection from "../components/StatisticsSection";
 
 const Home = () => {
   return (
-    <div className="  pb-20">
+    <div className="">
       <Hero
         bloomColor1="rgba(12, 187, 40, 0.8)"
         bloomColor2="rgba(12, 187, 60, 0.8)"
@@ -31,7 +32,7 @@ const Home = () => {
       </div>
       {/* popular services */}
       <PopularServices />
-      {/* <HomeVideo /> */}
+      <HomeVideo />
       <div className="lg:mb-16">
         <Gallery category="hero section" />
       </div>

@@ -347,7 +347,7 @@ const ServiceListSidebar = ({
                     className={`cursor-pointer text-xs p-2.5 ml-2 rounded-md transition-all ${
                       selectedGroup === group.name
                         ? "text-pink-500 font-bold bg-pink-500/10"
-                        : "hover:text-pink-400"
+                        : "hover:text-green-400"
                     }`}
                   >
                     • {group.name}

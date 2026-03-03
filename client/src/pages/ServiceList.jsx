@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { FiMenu } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ServiceListSidebar from "../components/ServiceListSidebar.jsx";
@@ -143,10 +144,11 @@ const ServiceList = () => {
       {/* --- MOBILE ACTION BAR --- */}
       <div className="md:hidden sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 py-3 flex justify-between items-center">
         <button
-          className="bg-pink-500 hover:bg-pink-600 text-white text-xs px-4 py-2 rounded-lg transition-all"
+          className="flex items-center gap-2  hover:bg-green-600 hover:text-white dark:text-white text-xs px-4 py-2 rounded-lg transition-all border-green-500 border-2 font-bold text-black"
           onClick={() => setIsOpen(true)}
         >
-          See Categories
+          <FiMenu size={16} />
+          Categories
         </button>
         <span className="text-xs font-medium dark:text-gray-300 text-gray-600 truncate max-w-[150px]">
           {selectedGroup || selectedCategory.replace("-", " ")}

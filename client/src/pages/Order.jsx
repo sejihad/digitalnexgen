@@ -52,7 +52,17 @@ const Order = () => {
     };
     return colors[status.toLowerCase()] || "#9E9E9E";
   };
+  // ✅ UI-only: pick description + features (offer priority)
+  const uiDescription =
+    order?.service?.offer?.description || order?.service?.description || "";
 
+  const uiFeatures =
+    Array.isArray(order?.service?.offer?.features) &&
+    order.service.offer.features.length
+      ? order.service.offer.features
+      : Array.isArray(order?.service?.features) && order.service.features.length
+        ? order.service.features
+        : [];
   const generatePDF = () => {
     if (!order) return;
 
@@ -215,6 +225,20 @@ const Order = () => {
               <p className="text-xs text-gray-400 break-all">
                 Offer ID: {order.service.offer.id}
               </p>
+              {order.service.offer?.description && (
+                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                  {order.service.offer.description}
+                </p>
+              )}
+
+              {Array.isArray(order.service.offer?.features) &&
+                order.service.offer.features.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-200 list-disc list-inside">
+                    {order.service.offer.features.map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                )}
             </div>
           )}
 

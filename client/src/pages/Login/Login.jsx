@@ -203,7 +203,7 @@ const Login = () => {
         ? cleanPhone.slice(1)
         : cleanPhone;
       combinedPhone =
-        (registerCredentials.countryCode || "+880") + localForE164;
+        (registerCredentials.countryCode || "+880") + ` ` + localForE164;
     }
 
     const userData = {
@@ -252,11 +252,23 @@ const Login = () => {
     if (name === "phone") {
       const digits = value.replace(/[^0-9]/g, "");
       setRegisterCredentials((prev) => ({ ...prev, phone: digits }));
-    } else {
-      setRegisterCredentials((prev) => ({ ...prev, [name]: value }));
+      return;
     }
-  };
 
+    if (name === "countryCode") {
+      const selectedCountry =
+        e.target.options[e.target.selectedIndex].dataset.country; // ✅ get key
+
+      setRegisterCredentials((prev) => ({
+        ...prev,
+        countryCode: value,
+        country: selectedCountry, // ✅ set country = key/name
+      }));
+      return;
+    }
+
+    setRegisterCredentials((prev) => ({ ...prev, [name]: value }));
+  };
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setRegisterCredentials((prev) => ({
@@ -425,7 +437,11 @@ const Login = () => {
                   {Object.entries(countryCodes).map(
                     ([country, code]) =>
                       code && (
-                        <option key={country} value={`+${code}`}>
+                        <option
+                          key={country}
+                          value={`+${code}`}
+                          data-country={country} // ✅ add this
+                        >
                           +{code} ({country})
                         </option>
                       ),

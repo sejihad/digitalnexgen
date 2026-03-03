@@ -2,10 +2,11 @@ import { useSelector } from "react-redux";
 // import FloatingMessageButton from "./components/FloatingMessageButton";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
+import FancyCursor from "./FancyCursor";
 import OfferModal from "./components/OfferModal";
 import Spinner from "./components/Spinner";
+import "./cursor.css";
 import AppRoutes from "./routes/AppRoutes";
-
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <div className="dark:bg-black ">
+      <FancyCursor />
       <Spinner />
       <AppRoutes />
       <OfferModal />

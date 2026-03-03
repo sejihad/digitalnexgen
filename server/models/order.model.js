@@ -11,6 +11,8 @@ const serviceOrderSchema = new mongoose.Schema(
         id: { type: String },
         title: { type: String },
         price: { type: Number },
+        features: [String],
+        description: { type: String },
       },
     },
     finalPrice: {

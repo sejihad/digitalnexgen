@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import Stripe from "stripe";
+import Offer from "../models/offer.model.js";
 import ServiceOrder from "../models/order.model.js";
 import User from "../models/user.model.js";
 import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
@@ -54,7 +55,9 @@ export const createCheckoutSession = async (req, res, next) => {
         offerId: offerId || "",
         offerPrice: pricing.offer ? pricing.offer.offerPrice : "",
         offerTitle: pricing.offer ? pricing.offer.offerTitle : "",
-
+        offerFeatures: pricing.offer
+          ? JSON.stringify(pricing.offer.offerFeatures)
+          : "",
         couponCode: couponCode || "",
         couponDiscountPercent: pricing.coupon
           ? pricing.coupon.discountPercent
@@ -76,6 +79,7 @@ export const stripeWebhook = async (req, res) => {
   if (!stripe) {
     return res.status(503).send("Stripe not configured on server");
   }
+
   const sig = req.headers["stripe-signature"];
   if (!sig) {
     return res.status(400).send("Missing signature");
@@ -92,46 +96,78 @@ export const stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Confirm only successful payment event
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
+  // ✅ Only successful payment event
+  if (event.type !== "checkout.session.completed") {
+    return res.status(200).send("Ignored");
+  }
 
-    try {
-      // ✅ Avoid duplicate orders by checking payment_intent
-      const existingOrder = await ServiceOrder.findOne({
-        "payment.transactionId": session.payment_intent,
-      });
+  const session = event.data.object;
 
-      if (existingOrder) {
-        return res.status(200).send("Order already created.");
+  try {
+    // ✅ shared duplicate protection (normal + offer)
+    const existingOrder = await ServiceOrder.findOne({
+      "payment.transactionId": session.payment_intent,
+    });
+
+    if (existingOrder) {
+      // If offer flow and offer not accepted yet -> accept it
+      if (session?.metadata?.flow === "offer" && session?.metadata?.offerId) {
+        await Offer.findByIdAndUpdate(session.metadata.offerId, {
+          $set: { status: "accepted" },
+        }).catch(() => {});
+      }
+      return res.status(200).send("Order already created.");
+    }
+
+    /* =========================
+       ✅ 1) OFFER FLOW
+    ========================= */
+    if (session?.metadata?.flow === "offer") {
+      const offerId = session.metadata.offerId;
+      const buyerUserId = session.metadata.userId;
+
+      if (!offerId || !buyerUserId) {
+        return res.status(400).send("Offer metadata missing.");
       }
 
-      // ✅ Find user from metadata
-      const user = await User.findById(session.metadata.userId);
-      if (!user) {
-        return res.status(404).send("User not found");
+      const offer = await Offer.findById(offerId);
+      if (!offer) return res.status(404).send("Offer not found");
+
+      // ✅ security: ensure payer is offer buyer
+      if (String(offer.buyerId) !== String(buyerUserId)) {
+        return res.status(403).send("Not your offer");
       }
 
-      // ✅ Create new order
+      // declined হলে create করবে না
+      if (offer.status === "declined") {
+        return res.status(200).send("Offer declined previously.");
+      }
+
+      const user = await User.findById(buyerUserId);
+      if (!user) return res.status(404).send("User not found");
+
+      const amount = Number(
+        session.metadata.finalPrice || offer.offerDetails?.price || 0,
+      );
+
       const newOrder = new ServiceOrder({
         service: {
-          id: session.metadata.serviceId,
-          name: session.metadata.title,
-          type: session.metadata.name,
-          price: Number(session.metadata.servicePrice),
+          id: String(offer.gig?.id || session.metadata.gigId || ""),
+          name: String(
+            offer.gig?.title || session.metadata.gigTitle || "Custom Offer",
+          ),
+          type: "custom",
+          price: amount,
           offer: {
-            id: session.metadata.offerId || null,
-            title: session.metadata.offerTitle || null,
-            price: Number(session.metadata.offerPrice) || null,
+            id: String(offer._id),
+            title: "Custom Offer",
+            price: amount,
+            features: offer.offerDetails?.features || [],
+            description: offer.offerDetails?.description || "",
           },
         },
-        finalPrice: Number(session.metadata.finalPrice),
-        coupon: {
-          code: session.metadata.couponCode || null,
-          discountPercent:
-            Number(session.metadata.couponDiscountPercent) || null,
-          discountAmount: Number(session.metadata.couponDiscountAmount) || null,
-        },
+        finalPrice: amount,
+        coupon: { code: null, discountPercent: null, discountAmount: null },
         user: {
           id: user._id,
           name: user.username,
@@ -148,10 +184,63 @@ export const stripeWebhook = async (req, res) => {
       });
 
       await newOrder.save();
-    } catch (err) {
-      return res.status(500).send("Internal server error");
-    }
-  }
 
-  res.status(200).send("Received");
+      // ✅ mark accepted ONLY after payment
+      if (offer.status !== "accepted") {
+        offer.status = "accepted";
+        await offer.save();
+      }
+
+      return res.status(200).send("Offer order created + offer accepted.");
+    }
+
+    /* =========================
+       ✅ 2) NORMAL SERVICE FLOW
+    ========================= */
+    const user = await User.findById(session.metadata.userId);
+    if (!user) return res.status(404).send("User not found");
+
+    const newOrder = new ServiceOrder({
+      service: {
+        id: session.metadata.serviceId,
+        name: session.metadata.title,
+        type: session.metadata.name,
+        price: Number(session.metadata.servicePrice),
+        offer: {
+          id: session.metadata.offerId || null,
+          title: session.metadata.offerTitle || null,
+          price: Number(session.metadata.offerPrice) || null,
+          features: session.metadata.offerFeatures
+            ? JSON.parse(session.metadata.offerFeatures)
+            : [],
+          description: session.metadata.offerDescription || undefined,
+        },
+      },
+      finalPrice: Number(session.metadata.finalPrice),
+      coupon: {
+        code: session.metadata.couponCode || null,
+        discountPercent: Number(session.metadata.couponDiscountPercent) || null,
+        discountAmount: Number(session.metadata.couponDiscountAmount) || null,
+      },
+      user: {
+        id: user._id,
+        name: user.username,
+        email: user.email,
+        phone: user.phone,
+      },
+      payment: {
+        method: "stripe",
+        transactionId: session.payment_intent,
+        status: "paid",
+      },
+      order_status: "pending",
+      cancel_request: false,
+    });
+
+    await newOrder.save();
+    return res.status(200).send("Order created.");
+  } catch (err) {
+    console.error("stripeWebhook error:", err);
+    return res.status(500).send("Internal server error");
+  }
 };
