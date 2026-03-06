@@ -24,6 +24,7 @@ const paypalClient = new paypal.core.PayPalHttpClient(paypalEnv);
 
 /* -------------------- EXISTING: CREATE OFFER -------------------- */
 export const createOffer = async (req, res, next) => {
+  console.log("called createOffer with body:", req.body);
   try {
     if (!req.isAdmin) {
       return res
@@ -79,6 +80,7 @@ export const createOffer = async (req, res, next) => {
     const savedOffer = await newOffer.save();
     res.status(201).json(savedOffer);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };

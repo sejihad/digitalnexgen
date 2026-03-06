@@ -23,7 +23,7 @@ const Login = () => {
   // Get auth state from Redux
   const { error, loading, otpPending, otpUserId, otpMessage, isAuthenticated } =
     useSelector((state) => state.auth);
-
+  const [turnstileKey, setTurnstileKey] = useState(Date.now());
   // Local states
   const [otp, setOtp] = useState("");
   const [cfTokenLogin, setCfTokenLogin] = useState("");
@@ -152,7 +152,9 @@ const Login = () => {
         }
       })
       .catch((err) => {
-        // Error is handled by reducer and shown via useEffect
+        setCfTokenLogin("");
+        setTurnstileKey(Date.now());
+        toast.error(error || "Login failed");
       });
   };
 
@@ -279,7 +281,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-5 bg-slate-50 dark:bg-black">
+    <div className="min-h-screen flex items-center justify-center p-2 bg-slate-50 dark:bg-black">
       <div className="containers bg-white shadow-lg dark:shadow-gray-700/50">
         {/* Login Form */}
         <div className="form-box login">
@@ -360,16 +362,20 @@ const Login = () => {
                 <i className="bx bx-lock-alt"></i>
               </div>
 
-              <div className="turnstile-container" style={{ margin: "10px 0" }}>
-                <Turnstile
-                  sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-                  onVerify={(token) => setCfTokenLogin(token)}
-                  onExpire={() => setCfTokenLogin("")}
-                  onError={() => {
-                    toast.error("Verification failed. Please try again.");
-                    setCfTokenLogin("");
-                  }}
-                />
+              {/* Turnstile section - এইভাবে replace করুন */}
+              <div className="w-full flex justify-center items-center my-4">
+                <div className="w-full max-w-full overflow-x-auto">
+                  <Turnstile
+                    key={turnstileKey}
+                    sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                    onVerify={(token) => setCfTokenLogin(token)}
+                    onExpire={() => setCfTokenLogin("")}
+                    onError={() => {
+                      toast.error("Verification failed. Please try again.");
+                      setCfTokenLogin("");
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="forget-link">

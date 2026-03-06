@@ -3,7 +3,7 @@ import Chat from "../components/Chat";
 import FacebookCallbackHandler from "../components/FacebookCallbackHandler";
 import GoogleCallbackHandler from "../components/GoogleCallbackHandler ";
 import Message from "../components/Message";
-import Messages from "../components/Messages";
+
 import ScrollToTop from "../components/ScrollToTop";
 import AdminLayout from "../layouts/AdminLayout";
 import AuthLayout from "../layouts/AuthLayout";
@@ -36,6 +36,7 @@ import Business from "../pages/Business";
 import Contact from "../pages/Contact";
 import Coupons from "../pages/Coupons";
 import Dashboard from "../pages/Dashboard";
+import Delete from "../pages/Delete.jsx";
 import DigitalMarketing from "../pages/DigitalMarketing";
 import EditBlog from "../pages/EditBlog";
 import EditGallery from "../pages/EditGallery.jsx";
@@ -92,9 +93,10 @@ const AppRoutes = ({ theme, toggleTheme }) => {
         >
           <Route index element={<Home />} />
 
-          <Route path="/chat" element={<Chat />} />
-          <Route path="messages" element={<Messages />} />
+          <Route path="chat" element={<Chat />} />
+
           <Route path="services" element={<Services />} />
+
           <Route path="google-success" element={<GoogleSuccess />} />
           <Route path="service-list" element={<ServiceList />} />
           <Route path="programming-tech" element={<ProgrammingTech />} />
@@ -127,6 +129,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path=":subCategory/:id" element={<SingleService />} />
           <Route path="search" element={<SearchResult />} />
           <Route path="profile/:id" element={<Profile />} />
+
           <Route path="settings" element={<Settings />} />
           <Route path="blog" element={<Blog />} />
           <Route path="blog/:id" element={<SingleBlog />} />
@@ -142,6 +145,14 @@ const AppRoutes = ({ theme, toggleTheme }) => {
             element={
               <ProtectedRoute>
                 <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="profile/delete"
+            element={
+              <ProtectedRoute>
+                <Delete />
               </ProtectedRoute>
             }
           />
@@ -199,6 +210,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
         <Route path="auth" element={<AuthLayout />}>
           <Route path="login" element={<Login />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
+
           <Route path="reset-password/:token" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Route>
@@ -217,7 +229,7 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="services" element={<AdminServices />} />
           <Route path="messages/:id" element={<Message />} />
           <Route path="services/edit/:id" element={<EditService />} />
-          <Route path="/admin/conversations" element={<AdminConvesation />} />
+          <Route path="conversations" element={<AdminConvesation />} />
           <Route path="add-project" element={<AddProject />} />
           <Route path="add-gallery" element={<AddGallery />} />
           <Route path="galleries" element={<AdminGalleries />} />

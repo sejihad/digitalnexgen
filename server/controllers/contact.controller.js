@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import sendEmail from "../utils/sendEmail.js";
 
 export const sendContactMessage = async (req, res) => {
   try {
@@ -195,11 +196,67 @@ export const sendMessage = async (req, res) => {
 
     return res.status(200).json("Message sent successfully.");
   } catch (error) {
-    console.error("sendMessage error:", error);
     return res.status(500).json(error?.message || "Failed to send message");
   }
 };
 
+export const requestAccountDeletion = async (req, res) => {
+  try {
+    const name = String(req.body?.name || "").trim();
+    const email = String(req.body?.email || "").trim();
+    const report = String(req.body?.report || "").trim();
+
+    if (!name || !email || !report) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and reason are required",
+      });
+    }
+
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValidEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address",
+      });
+    }
+
+    const receiver = process.env.SMTP_MAIL;
+
+    if (!receiver) {
+      return res.status(500).json({
+        success: false,
+        message: "Server receiver email is not configured",
+      });
+    }
+
+    await sendEmail({
+      email: receiver,
+      subject: `Account Delete Request - ${email}`,
+      message: `
+A user requested account deletion.
+
+Name: ${name}
+Email: ${email}
+
+Reason:
+${report}
+
+Note: Please review and process within 60 days (policy).
+      `.trim(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your account delete request has been submitted.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to send delete request",
+    });
+  }
+};
 // ✅ small helper to prevent HTML injection in email body
 function escapeHtml(str) {
   return String(str)

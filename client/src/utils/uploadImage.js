@@ -19,10 +19,6 @@ const uploadFile = async (file) => {
     const response = await axios.post(cloudinaryUrl, formData);
     return response.data.secure_url;
   } catch (error) {
-    console.error(
-      "Cloudinary upload error:",
-      error.response ? error.response.data : error.message
-    );
     throw new Error("File upload failed");
   }
 };

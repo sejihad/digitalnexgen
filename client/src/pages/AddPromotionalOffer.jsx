@@ -118,7 +118,6 @@ const AddPromotionalOffer = () => {
       toast.success("Promotional offer created successfully!");
       navigate("/admin/promotional-offers");
     } catch (error) {
-      console.log(error);
       toast.error(error.response?.data?.message || "Failed to create offer");
     } finally {
       dispatch(hideLoading());

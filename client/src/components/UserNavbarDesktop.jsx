@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
   Gift,
   Home,
@@ -14,14 +15,15 @@ import DarkLogo from "../assets/DarkLogo.png";
 import Logo from "../assets/logo.png";
 import placeholder from "../assets/user.png";
 import { ThemeContext } from "../context/ThemeContext";
+import { setHasUnread } from "../redux/chatSlice";
 import { handleLogout } from "../utils/authUtils";
-
 const UserNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // desktop dropdown
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false); // ✅ mobile dropdown
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(placeholder);
   const [searchQuery, setSearchQuery] = useState("");
+  const hasUnread = useSelector((state) => state.chat.hasUnread);
   const mobileSearchRef = useRef(null);
   const user = useSelector((state) => state.auth.user);
   const userId = useSelector(
@@ -42,7 +44,26 @@ const UserNavbar = () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     if (userData?.img?.url) setProfileImage(userData.img.url);
   }, [userId]);
+  useEffect(() => {
+    const loadUnread = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/conversations`,
+          { withCredentials: true },
+        );
 
+        const list = Array.isArray(res.data) ? res.data : [];
+        const anyUnread = list.some((c) => c?.readByCustomer === false);
+
+        dispatch(setHasUnread(anyUnread));
+      } catch (e) {
+        console.log("unread fetch failed", e?.message);
+        dispatch(setHasUnread(false));
+      }
+    };
+
+    if (userId) loadUnread(); // ✅ token না লাগবে
+  }, [userId]);
   // ✅ outside click => close dropdowns (desktop + mobile)
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -266,9 +287,13 @@ const UserNavbar = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleNavigation("/chat")}
-            className="text-primaryText dark:text-white hover:text-primaryRgb"
+            className="relative text-primaryText dark:text-white hover:text-primaryRgb"
           >
             <MessageSquare className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9" />
+
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500" />
+            )}
           </button>
 
           <button
@@ -382,9 +407,14 @@ const UserNavbar = () => {
           </Link>
           <Link
             to="/chat"
-            className="text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
+            className="relative text-black dark:text-white hover:text-primaryRgb flex flex-col items-center"
           >
             <MessageSquare size={20} />
+
+            {hasUnread && (
+              <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+
             <span className="text-xs">Chat</span>
           </Link>
         </div>

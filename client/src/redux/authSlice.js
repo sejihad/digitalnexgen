@@ -114,10 +114,17 @@ export const logoutUser = createAsyncThunk(
 // Safe parsing for localStorage
 const storedUser = localStorage.getItem("user");
 
+let parsedUser = null;
+try {
+  parsedUser =
+    storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
+} catch {
+  parsedUser = null;
+  localStorage.removeItem("user");
+}
 const initialState = {
-  user:
-    storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null,
-  isAuthenticated: storedUser && storedUser !== "undefined" ? true : false,
+  user: parsedUser,
+  isAuthenticated: parsedUser !== null,
   loading: false,
   error: null,
   otpPending: false,

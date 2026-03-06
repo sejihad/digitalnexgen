@@ -3,7 +3,9 @@ import { Gift, Send, X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { io } from "socket.io-client";
+import { useSocket } from "../context/SocketContext.jsx";
+
+const safeStr = (v) => String(v ?? "");
 
 const Message = ({ conversationId }) => {
   const location = useLocation();
@@ -12,20 +14,26 @@ const Message = ({ conversationId }) => {
   const { id: routeId } = useParams();
   const convId = conversationId || routeId;
 
+  const {
+    socket,
+    joinConversation,
+    leaveConversation,
+    startTyping,
+    stopTyping,
+    sendMessage,
+    isConnected,
+  } = useSocket();
+
   const [conversation, setConversation] = useState({ messages: [] });
   const [offers, setOffers] = useState([]);
-  const [socket, setSocket] = useState(null);
-
   const [newMessage, setNewMessage] = useState("");
-
-  // ✅ Offer form now supports gig + features
   const [newOffer, setNewOffer] = useState({
     gigId: "",
     gigTitle: "",
     gigSubCategory: "",
     gigCoverImage: "",
     description: "",
-    featuresText: "", // newline separated
+    featuresText: "",
     price: "",
     deliveryTime: "",
   });
@@ -33,111 +41,154 @@ const Message = ({ conversationId }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showOfferForm, setShowOfferForm] = useState(false);
   const [isSending, setIsSending] = useState(false);
-
-  const [gig, setGig] = useState(null);
   const [savedGigs, setSavedGigs] = useState([]);
-
   const [headerName, setHeaderName] = useState("");
   const [headerUser, setHeaderUser] = useState(null);
-
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
   const [isTypingVisible, setIsTypingVisible] = useState(false);
-
-  // ✅ payment modal for accepting offer
-  const [payOffer, setPayOffer] = useState(null); // offer object or null
+  const [payOffer, setPayOffer] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
 
+  const typingHideTimerRef = useRef(null);
+  const typingStopTimerRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const containerRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const messageTimeoutsRef = useRef(new Map());
 
   const apiBase = import.meta.env.VITE_API_BASE_URL;
-
   const currentUser = JSON.parse(localStorage.getItem("user")) || {};
-  const meId = String(currentUser.id || currentUser._id || "");
-  const buyerId = conversation?.buyerId ? String(conversation.buyerId) : "";
-  const sellerId = conversation?.sellerId ? String(conversation.sellerId) : "";
-  const adminId = conversation?.adminId ? String(conversation.adminId) : "";
+  const meId = safeStr(currentUser.id || currentUser._id || "");
+  const meIsAdmin = Boolean(currentUser?.isAdmin);
 
-  // Admin should always see the buyer's name in header
-  const counterpartId = isAdmin
-    ? buyerId && buyerId !== meId
-      ? buyerId
-      : buyerId
-    : sellerId && sellerId !== meId
-      ? sellerId
-      : adminId && adminId !== meId
-        ? adminId
-        : sellerId || adminId || buyerId || "";
+  const buyerId = conversation?.buyerId ? safeStr(conversation.buyerId) : "";
+  const sellerId = conversation?.sellerId ? safeStr(conversation.sellerId) : "";
+  const adminId = conversation?.adminId ? safeStr(conversation.adminId) : "";
+
+  const counterpartId = meIsAdmin
+    ? buyerId || ""
+    : adminId && adminId !== meId
+      ? adminId
+      : sellerId && sellerId !== meId
+        ? sellerId
+        : buyerId || "";
 
   const getDisplayName = (msg) => {
-    // If Admin -> real usernames
-    if (currentUser?.isAdmin) {
-      return msg.userId?.name || msg.userId?.username || "User";
-    }
-    // Normal user: if admin sender show "Admin"
-    if (msg.userId?.isAdmin) {
+    if (meIsAdmin) return msg.userId?.name || msg.userId?.username || "User";
+    if (msg.userId?.isAdmin)
       return msg.userId?.name || msg.userId?.username || "Admin";
-    }
-    return msg.userId?.name || "User";
+    return msg.userId?.name || msg.userId?.username || "User";
   };
 
   useEffect(() => {
-    setIsAdmin(Boolean(currentUser?.isAdmin));
-  }, []);
+    setIsAdmin(meIsAdmin);
+  }, [meIsAdmin]);
 
-  // ✅ Socket connection
+  // Join conversation
   useEffect(() => {
-    const s = io(apiBase, { withCredentials: true });
+    if (!convId) return;
+    console.log("📌 Joining conversation:", convId);
+    joinConversation(convId);
+    return () => {
+      console.log("🔇 Leaving conversation:", convId);
+      leaveConversation(convId);
+    };
+  }, [convId, joinConversation, leaveConversation]);
 
-    const token = localStorage.getItem("token");
-    if (token) s.emit("user:join", token);
-
-    if (convId) s.emit("conversation:join", convId);
-
-    setSocket(s);
-    return () => s.disconnect();
+  // Mark read
+  useEffect(() => {
+    if (!convId) return;
+    axios
+      .put(
+        `${apiBase}/api/conversations/${convId}/read`,
+        {},
+        { withCredentials: true },
+      )
+      .catch(() => {});
   }, [apiBase, convId]);
 
-  // ✅ Socket listeners (message + typing)
+  // Socket listeners - FIXED: Removed the duplicate handleSendMessage
+  // Message.jsx - Update socket listeners useEffect (around line 180)
+
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !convId) return;
 
-    const handleMessage = (data) => {
-      if (data.conversationId === convId) {
-        setConversation((prev) => ({
-          ...prev,
-          messages: [...prev.messages, data.message],
-        }));
-      }
-    };
+    // ✅ Message receive handler
+    const handleMessage = (payload) => {
+      console.log("📨 message:receive payload:", payload);
 
-    const handleTyping = (data) => {
-      if (data.conversationId === convId) {
-        setIsTypingVisible(data.isTyping);
-        if (data.isTyping) {
-          const timer = setTimeout(() => setIsTypingVisible(false), 3000);
-          setTypingTimeout(timer);
+      if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
+
+      const incoming = payload?.message;
+      if (!incoming?._id) return;
+
+      setConversation((prev) => {
+        const prevMsgs = Array.isArray(prev.messages) ? prev.messages : [];
+
+        // Check for duplicate
+        if (prevMsgs.some((m) => safeStr(m?._id) === safeStr(incoming._id))) {
+          console.log("⚠️ Duplicate message ignored");
+          return prev;
         }
+
+        console.log("✅ Adding new message to UI:", incoming);
+        return {
+          ...prev,
+          messages: [...prevMsgs, incoming],
+        };
+      });
+
+      // Mark as read
+      axios
+        .put(
+          `${apiBase}/api/conversations/${convId}/read`,
+          {},
+          { withCredentials: true },
+        )
+        .catch(() => {});
+    };
+
+    const handleTypingUpdate = (data) => {
+      if (safeStr(data?.conversationId) !== safeStr(convId)) return;
+      if (safeStr(data?.userId) === meId) return;
+
+      if (data?.isTyping) {
+        setIsTypingVisible(true);
+        if (typingHideTimerRef.current)
+          clearTimeout(typingHideTimerRef.current);
+        typingHideTimerRef.current = setTimeout(() => {
+          setIsTypingVisible(false);
+        }, 2500);
+      } else {
+        setIsTypingVisible(false);
+        if (typingHideTimerRef.current)
+          clearTimeout(typingHideTimerRef.current);
       }
     };
 
+    // ✅ Attach listeners
     socket.on("message:receive", handleMessage);
-    socket.on("typing:update", handleTyping);
+    socket.on("typing:update", handleTypingUpdate);
+
+    console.log("👂 Socket listeners attached for conversation:", convId);
 
     return () => {
+      console.log("🧹 Removing socket listeners");
       socket.off("message:receive", handleMessage);
-      socket.off("typing:update", handleTyping);
-      if (typingTimeout) clearTimeout(typingTimeout);
+      socket.off("typing:update", handleTypingUpdate);
+      if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
     };
-  }, [socket, convId, typingTimeout]);
+  }, [socket, convId, apiBase, meId]); // ✅ Dependencies correct
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      messageTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      messageTimeoutsRef.current.clear();
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // ✅ auto scroll
   useEffect(() => {
     scrollToBottom();
   }, [conversation.messages, offers, isTypingVisible]);
@@ -150,12 +201,10 @@ const Message = ({ conversationId }) => {
         { withCredentials: true },
       );
       setOffers(offersRes.data || []);
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
-  // ✅ Fetch conversation + messages + offers
+  // Fetch conversation
   useEffect(() => {
     const fetchConversation = async () => {
       if (!convId) return;
@@ -168,19 +217,16 @@ const Message = ({ conversationId }) => {
         if (conversationRes.data) {
           const messageRes = await axios.get(
             `${apiBase}/api/messages/${convId}`,
-            {
-              withCredentials: true,
-            },
+            { withCredentials: true },
           );
 
           setConversation({
             ...conversationRes.data,
-            messages: messageRes.data || [],
+            messages: Array.isArray(messageRes.data) ? messageRes.data : [],
           });
 
           await fetchOffers();
 
-          // Merge server-linkedServices into local savedGigs
           const serverLinked = Array.isArray(
             conversationRes.data.linkedServices,
           )
@@ -192,7 +238,7 @@ const Message = ({ conversationId }) => {
             try {
               const prev = JSON.parse(localStorage.getItem(key) || "[]");
               const normalized = serverLinked.map((s) => ({
-                serviceId: String(s.serviceId),
+                serviceId: safeStr(s.serviceId),
                 title: s.title,
                 subCategory: s.subCategory,
                 coverImage: s.coverImage,
@@ -203,7 +249,7 @@ const Message = ({ conversationId }) => {
                 ...prev.filter(
                   (g) =>
                     !normalized.some(
-                      (n) => String(n.serviceId) === String(g.serviceId),
+                      (n) => safeStr(n.serviceId) === safeStr(g.serviceId),
                     ),
                 ),
               ];
@@ -212,7 +258,7 @@ const Message = ({ conversationId }) => {
             } catch {
               setSavedGigs(
                 serverLinked.map((s) => ({
-                  serviceId: String(s.serviceId),
+                  serviceId: safeStr(s.serviceId),
                   title: s.title,
                   subCategory: s.subCategory,
                   coverImage: s.coverImage,
@@ -224,15 +270,13 @@ const Message = ({ conversationId }) => {
             }
           }
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
 
     fetchConversation();
   }, [apiBase, convId]);
 
-  // ✅ Fetch counterpart username
+  // Fetch username
   useEffect(() => {
     const loadName = async () => {
       try {
@@ -242,44 +286,39 @@ const Message = ({ conversationId }) => {
         });
         const u = res?.data || {};
         if (u) {
-          if (currentUser?.isAdmin)
-            setHeaderName(u.name || u.username || "User");
+          if (meIsAdmin) setHeaderName(u.name || u.username || "User");
           else
             setHeaderName(u.isAdmin ? "Admin" : u.name || u.username || "User");
         }
         setHeaderUser(u);
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
     loadName();
-  }, [apiBase, counterpartId]);
+  }, [apiBase, counterpartId, meIsAdmin]);
 
-  // ✅ Load saved gigs from localStorage
+  // Load saved gigs
   useEffect(() => {
     const key = `conv_gigs_${convId}`;
     try {
       const prev = JSON.parse(localStorage.getItem(key) || "[]");
       if (Array.isArray(prev)) setSavedGigs(prev);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [convId]);
 
-  // ✅ Load gig details (optional)
+  // Load gig details
   useEffect(() => {
     const serviceId =
       stateServiceId || conversation?.serviceId || conversation?.service?._id;
     if (!serviceId) return;
 
     let isMounted = true;
+
     const load = async () => {
       try {
         const res = await axios.get(
           `${apiBase}/api/services/single-service/${serviceId}`,
         );
         if (!isMounted) return;
-        setGig(res.data);
 
         const key = `conv_gigs_${convId}`;
         const item = {
@@ -295,17 +334,13 @@ const Message = ({ conversationId }) => {
           const merged = [
             item,
             ...prev.filter(
-              (g) => String(g.serviceId) !== String(item.serviceId),
+              (g) => safeStr(g.serviceId) !== safeStr(item.serviceId),
             ),
           ];
           localStorage.setItem(key, JSON.stringify(merged));
           setSavedGigs(merged);
-        } catch {
-          // ignore
-        }
-      } catch {
-        // ignore
-      }
+        } catch {}
+      } catch {}
     };
 
     load();
@@ -320,68 +355,97 @@ const Message = ({ conversationId }) => {
     conversation?.service,
   ]);
 
-  const handleTypingIndicator = (typing) => {
-    if (!socket || !convId) return;
-    setIsTyping(typing);
-    socket.emit("typing:update", {
-      conversationId: convId,
-      userId: meId,
-      isTyping: typing,
-    });
+  const handleTypingIndicator = (text) => {
+    if (!convId) return;
+    const hasText = Boolean(String(text || "").length);
+
+    if (hasText) {
+      startTyping(convId);
+      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = setTimeout(() => {
+        stopTyping(convId);
+      }, 900);
+    } else {
+      stopTyping(convId);
+      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+    }
   };
 
+  // ✅ FIXED HANDLE SEND MESSAGE - Using REST API (more reliable)
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    const text = String(newMessage || "").trim();
+    if (!text || !convId) return;
+
+    if (!isConnected) {
+      alert("Connecting to server... Please wait a moment.");
+      return;
+    }
+
     setIsSending(true);
 
+    const tempId = `temp-${Date.now()}`;
     const tempMessage = {
-      _id: `temp-${Date.now()}`,
-      message: newMessage,
-      userId: meId,
+      _id: tempId,
+      message: text,
+      userId: {
+        _id: meId,
+        isAdmin: meIsAdmin,
+        name: currentUser?.name,
+        username: currentUser?.username,
+        img: currentUser?.img,
+      },
       createdAt: new Date().toISOString(),
     };
 
     setConversation((prev) => ({
       ...prev,
-      messages: [...prev.messages, tempMessage],
+      messages: [...(prev.messages || []), tempMessage],
     }));
 
-    const text = newMessage;
     setNewMessage("");
-    handleTypingIndicator(false);
+    handleTypingIndicator("");
 
     try {
+      // ✅ Use REST API (which emits socket events)
       const response = await axios.post(
         `${apiBase}/api/messages`,
         { conversationId: convId, message: text },
         { withCredentials: true },
       );
 
+      console.log("✅ REST response:", response.data);
+
+      // Replace temp message with real one
       setConversation((prev) => {
-        const msgs = prev.messages.filter(
-          (m) => !String(m._id).startsWith("temp-"),
-        );
-        return { ...prev, messages: [...msgs, response.data] };
+        const prevMsgs = prev.messages || [];
+        const withoutTemp = prevMsgs.filter((m) => safeStr(m._id) !== tempId);
+
+        if (response.data) {
+          return {
+            ...prev,
+            messages: [...withoutTemp, response.data],
+          };
+        }
+        return { ...prev, messages: withoutTemp };
       });
 
-      if (socket) {
-        const receiverId = isAdmin
-          ? buyerId || sellerId
-          : adminId || sellerId || buyerId;
-        socket.emit("message:send", {
-          conversationId: convId,
-          receiverId,
-          message: response.data,
-        });
-      }
-    } catch {
-      // ignore
-    } finally {
       setIsSending(false);
+    } catch (error) {
+      console.error("❌ Send error:", error);
+
+      // Remove temp message on error
+      setConversation((prev) => ({
+        ...prev,
+        messages: (prev.messages || []).filter(
+          (m) => safeStr(m._id) !== tempId,
+        ),
+      }));
+
+      setIsSending(false);
+      alert("Failed to send message. Please try again.");
     }
   };
 
-  // ✅ Admin create offer with gig + features
   const handleCreateOffer = async () => {
     const {
       gigId,
@@ -394,19 +458,46 @@ const Message = ({ conversationId }) => {
       deliveryTime,
     } = newOffer;
 
-    if (!gigId || !gigTitle || !description || !price || !deliveryTime) return;
+    // Validation
+    if (!gigId || !gigTitle || !description || !price || !deliveryTime) {
+      alert("Please fill all required fields");
+      return;
+    }
 
+    // Find the buyer ID - check multiple possible field names
+    const buyerId =
+      conversation?.buyerId || conversation?.customerId || conversation?.userId;
+
+    console.log("🔍 Checking for buyer ID:", {
+      buyerId: conversation?.buyerId,
+      customerId: conversation?.customerId,
+      userId: conversation?.userId,
+      found: buyerId,
+    });
+
+    if (!buyerId) {
+      console.error(
+        "❌ No buyer/customer ID found in conversation:",
+        conversation,
+      );
+      alert("Cannot create offer: No buyer associated with this conversation");
+      return;
+    }
+
+    // Convert featuresText to array
     const features = String(featuresText || "")
       .split("\n")
-      .map((x) => x.trim())
-      .filter(Boolean);
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
 
     try {
+      console.log("📤 Creating offer with buyerId:", buyerId);
+
       const response = await axios.post(
         `${apiBase}/api/offers`,
         {
           conversationId: convId,
-          buyerId: conversation.buyerId,
+          buyerId: buyerId, // Use the found buyerId
           gig: {
             id: gigId,
             title: gigTitle,
@@ -423,6 +514,8 @@ const Message = ({ conversationId }) => {
         { withCredentials: true },
       );
 
+      console.log("✅ Offer created successfully:", response.data);
+
       setOffers((prev) => [...prev, response.data]);
       setNewOffer({
         gigId: "",
@@ -435,12 +528,18 @@ const Message = ({ conversationId }) => {
         deliveryTime: "",
       });
       setShowOfferForm(false);
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error("❌ Error creating offer:", error);
+      if (error.response) {
+        alert(
+          `Error: ${error.response.data.message || "Failed to create offer"}`,
+        );
+      } else {
+        alert("Error: " + error.message);
+      }
     }
   };
 
-  // ✅ Decline only (accept will start payment)
   const handleDeclineOffer = async (offerId) => {
     try {
       const response = await axios.put(
@@ -451,15 +550,12 @@ const Message = ({ conversationId }) => {
 
       setOffers((prev) =>
         prev.map((o) =>
-          String(o._id) === String(offerId) ? { ...o, ...response.data } : o,
+          safeStr(o._id) === safeStr(offerId) ? { ...o, ...response.data } : o,
         ),
       );
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
-  // ✅ Start payment for offer (Stripe/PayPal) -> backend returns redirect url
   const startOfferPayment = async (offer, provider) => {
     if (!offer?._id) return;
     setIsPaying(true);
@@ -477,31 +573,28 @@ const Message = ({ conversationId }) => {
         return;
       }
 
-      // fallback (if backend returns paypal {id})
       if (provider === "paypal" && res?.data?.id) {
         window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${res.data.id}`;
         return;
       }
     } catch {
-      // ignore
     } finally {
       setIsPaying(false);
       setPayOffer(null);
     }
   };
 
-  // ✅ timeline (messages + offers serially)
   const timeline = useMemo(() => {
     return [
       ...(conversation.messages || []).map((m) => ({
         kind: "message",
-        _id: String(m._id),
+        _id: safeStr(m._id),
         createdAt: m.createdAt,
         data: m,
       })),
       ...(offers || []).map((o) => ({
         kind: "offer",
-        _id: String(o._id),
+        _id: safeStr(o._id),
         createdAt: o.createdAt || o.updatedAt,
         data: o,
       })),
@@ -523,7 +616,6 @@ const Message = ({ conversationId }) => {
             <Gift size={18} />
             Custom Offer
           </div>
-
           <div className="text-sm">
             Status:{" "}
             <span
@@ -604,11 +696,10 @@ const Message = ({ conversationId }) => {
           days
         </div>
 
-        {/* ✅ Buyer actions */}
         {!isAdmin && offer.status === "pending" && (
           <div className="mt-4 flex flex-col sm:flex-row gap-2">
             <button
-              onClick={() => setPayOffer(offer)} // ✅ open payment modal
+              onClick={() => setPayOffer(offer)}
               className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
             >
               Accept & Pay
@@ -627,10 +718,7 @@ const Message = ({ conversationId }) => {
 
   return (
     <div className="h-[100vh] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden container mx-auto">
-      <div
-        className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm"
-        ref={containerRef}
-      >
+      <div className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm">
         {/* Header */}
         <div className="flex-shrink-0 px-4 md:px-6 py-3 md:py-4 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -652,7 +740,6 @@ const Message = ({ conversationId }) => {
                 )}
               </div>
             </div>
-
             <div className="flex items-center gap-3">
               {!conversationId && (
                 <Link
@@ -672,14 +759,12 @@ const Message = ({ conversationId }) => {
           )}
         </div>
 
-        {/* Main */}
+        {/* Main Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Messages Container */}
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gradient-to-t from-transparent via-black/5 to-transparent"
           >
-            {/* Saved gigs carousel */}
             {savedGigs.length > 0 && (
               <div className="flex-shrink-0 px-4 md:px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -688,7 +773,7 @@ const Message = ({ conversationId }) => {
                 <div className="flex overflow-x-auto gap-3 pb-2 -mx-2 px-2 scrollbar-hide">
                   {savedGigs.map((g) => (
                     <div
-                      key={String(g.serviceId)}
+                      key={safeStr(g.serviceId)}
                       className="flex-shrink-0 w-48 md:w-56 bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-800 dark:border-gray-700"
                     >
                       <div className="flex gap-3">
@@ -738,8 +823,8 @@ const Message = ({ conversationId }) => {
                 {timeline.map((item) => {
                   if (item.kind === "message") {
                     const msg = item.data;
-                    const isSender =
-                      String(msg.userId?._id || msg.userId) === meId;
+                    const senderId = safeStr(msg.userId?._id || msg.userId);
+                    const isSender = senderId === meId;
                     const displayName = getDisplayName(msg);
                     const avatar = msg.userId?.img?.url;
 
@@ -782,10 +867,12 @@ const Message = ({ conversationId }) => {
                                 : "text-gray-400"
                             }`}
                           >
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {msg?.createdAt
+                              ? new Date(msg.createdAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""}
                           </div>
                         </div>
 
@@ -800,7 +887,6 @@ const Message = ({ conversationId }) => {
                     );
                   }
 
-                  // Offer bubble
                   return (
                     <div key={`o-${item._id}`}>
                       {renderOfferCard(item.data)}
@@ -816,17 +902,15 @@ const Message = ({ conversationId }) => {
           {/* Input Area */}
           <div className="flex-shrink-0 bg-white p-3 md:p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
-              {/* ✅ Admin Offer Form */}
               {isAdmin && showOfferForm && (
                 <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-3">
-                    {/* Gig selector */}
                     <select
                       value={newOffer.gigId}
                       onChange={(e) => {
                         const gid = e.target.value;
                         const selected = savedGigs.find(
-                          (g) => String(g.serviceId) === String(gid),
+                          (g) => safeStr(g.serviceId) === safeStr(gid),
                         );
                         setNewOffer((p) => ({
                           ...p,
@@ -844,8 +928,8 @@ const Message = ({ conversationId }) => {
                       <option value="">Select a gig</option>
                       {savedGigs.map((g) => (
                         <option
-                          key={String(g.serviceId)}
-                          value={String(g.serviceId)}
+                          key={safeStr(g.serviceId)}
+                          value={safeStr(g.serviceId)}
                         >
                           {g.title}
                         </option>
@@ -933,7 +1017,7 @@ const Message = ({ conversationId }) => {
                     value={newMessage}
                     onChange={(e) => {
                       setNewMessage(e.target.value);
-                      handleTypingIndicator(e.target.value.length > 0);
+                      handleTypingIndicator(e.target.value);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -944,9 +1028,6 @@ const Message = ({ conversationId }) => {
                     className="w-full px-4 py-2 md:py-3 rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 text-sm md:text-base"
                     disabled={isSending}
                   />
-                  {isTyping && (
-                    <div className="text-xs text-gray-500 mt-1">Typing...</div>
-                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -981,7 +1062,7 @@ const Message = ({ conversationId }) => {
             </div>
           </div>
 
-          {/* ✅ Payment modal for accepting offer */}
+          {/* Payment modal */}
           {payOffer && (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
               <div className="bg-gray-900 text-gray-100 rounded-2xl p-6 shadow-2xl w-full max-w-md">

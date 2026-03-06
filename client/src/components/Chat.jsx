@@ -1,226 +1,143 @@
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useSocket } from "../context/SocketContext.jsx";
+import { setHasUnread } from "../redux/chatSlice";
 import Message from "./Message";
 
 const Chat = () => {
-  const [conversations, setConversations] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const sidebarRef = useRef(null);
-  const { socket, joinConversation } = useSocket();
+  const dispatch = useDispatch();
+  const { socket, joinConversation, leaveConversation } = useSocket();
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8800";
 
-  // Close sidebar when clicking outside on mobile
+  // ✅ 1) Load or create conversation
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        window.innerWidth < 768 &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target) &&
-        sidebarOpen
-      ) {
-        setSidebarOpen(false);
+    const loadConversation = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/conversations`, {
+          withCredentials: true,
+        });
+
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (list.length > 0) {
+          setConversationId(list[0]._id);
+        } else {
+          const createRes = await axios.post(
+            `${apiBase}/api/conversations`,
+            {},
+            { withCredentials: true },
+          );
+          if (createRes.data?._id) setConversationId(createRes.data._id);
+        }
+      } catch (e) {
+        toast.error("Failed to load chat");
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [sidebarOpen]);
+    loadConversation();
+  }, [apiBase]);
 
-  // Load conversations
+  // ✅ 2) Load existing messages + mark read when conversationId ready
   useEffect(() => {
-    const fetchConversations = async () => {
+    if (!conversationId) return;
+
+    const loadMessages = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/conversations`,
+          `${apiBase}/api/messages/${conversationId}`,
+          {
+            withCredentials: true,
+          },
+        );
+
+        setMessages(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        toast.error("Failed to load messages");
+        setMessages([]);
+      }
+    };
+
+    const markRead = async () => {
+      try {
+        await axios.put(
+          `${apiBase}/api/conversations/${conversationId}/read`,
+          {},
           { withCredentials: true },
         );
-        setConversations(res.data);
-        if (res.data?.length && !selectedId) {
-          setSelectedId(res.data[0]._id);
-        }
-      } catch (err) {
-        toast.error("Error fetching conversations.");
+      } catch {
+        // ignore
       }
     };
 
-    fetchConversations();
-  }, []);
+    setTypingUsers([]);
+    loadMessages();
+    markRead();
 
-  // Handle conversation select
-  const handleSelect = (id) => {
-    setSelectedId(id);
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  };
+    // ✅ Chat open => unread dot off
+    dispatch(setHasUnread(false));
+  }, [conversationId, apiBase, dispatch]);
 
-  // Join conversation room & listen for messages + typing
+  // ✅ 3) Socket listeners
   useEffect(() => {
-    if (!socket || !selectedId) return;
+    if (!socket || !conversationId) return;
 
-    // join conversation room
-    joinConversation(selectedId);
+    joinConversation(conversationId);
 
-    // Listener for incoming messages
-    const handleReceive = (msg) => {
-      if (msg.conversationId === selectedId) {
-        setMessages((prev) => [...prev, msg]);
-      }
+    const handleReceive = (payload) => {
+      if (payload?.conversationId !== conversationId) return;
+
+      const incoming = payload?.message;
+      if (!incoming?._id) return;
+
+      setMessages((prev) => {
+        if (prev.some((m) => m?._id === incoming._id)) return prev; // ✅ dedupe
+        return [...prev, incoming];
+      });
+
+      // ✅ user is already on chat screen => keep dot off
+      dispatch(setHasUnread(false));
     };
-    socket.on("message:receive", handleReceive);
 
-    // Listener for typing indicator
-    const handleTyping = ({ conversationId, userId, isTyping }) => {
-      if (conversationId !== selectedId) return;
+    const handleTyping = ({ conversationId: cid, userId, isTyping }) => {
+      if (cid !== conversationId) return;
+
       setTypingUsers((prev) => {
         if (isTyping && !prev.includes(userId)) return [...prev, userId];
         if (!isTyping) return prev.filter((id) => id !== userId);
         return prev;
       });
     };
+
+    socket.on("message:receive", handleReceive);
     socket.on("typing:update", handleTyping);
 
     return () => {
+      leaveConversation(conversationId);
       socket.off("message:receive", handleReceive);
       socket.off("typing:update", handleTyping);
     };
-  }, [socket, selectedId]);
-
-  // Responsive design - adjust on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [socket, conversationId, joinConversation, dispatch]);
 
   return (
-    <div className="h-[calc(100vh-80px)] bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex overflow-hidden container mx-auto">
-      {/* Mobile Sidebar Toggle Button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed top-20 left-4 z-50 bg-blue-500 text-white p-2 rounded-lg shadow-lg"
-      >
-        {sidebarOpen ? "✕" : "☰"}
-      </button>
-
-      {/* Sidebar */}
-      <aside
-        ref={sidebarRef}
-        className={`
-          w-full md:w-80 border-r border-gray-200 dark:border-gray-800 
-          flex flex-col bg-white dark:bg-gray-900 absolute md:relative 
-          z-40 transform transition-transform duration-300 ease-in-out
-          h-full ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          }
-        `}
-      >
-        <div className="p-3 flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="font-semibold text-lg">Conversations</div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500 text-center">
-              No conversations yet.
-            </div>
-          ) : (
-            <ul className="h-full">
-              {conversations.map((conv) => {
-                const active = selectedId === conv._id;
-                return (
-                  <li
-                    key={conv._id}
-                    className="border-b border-gray-100 dark:border-gray-800 last:border-b-0"
-                  >
-                    <button
-                      onClick={() => handleSelect(conv._id)}
-                      className={`
-                        w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 
-                        transition-colors duration-200
-                        ${
-                          active
-                            ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500"
-                            : ""
-                        }
-                      `}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate mb-1">
-                            {conv.title ||
-                              conv.counterpartName ||
-                              "Conversation"}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate mb-1">
-                            {conv.lastMessage || "No messages yet"}
-                          </div>
-                          <div className="text-[10px] text-gray-400">
-                            {new Date(conv.updatedAt).toLocaleString()}
-                          </div>
-                        </div>
-                        {conv.unreadCount > 0 && (
-                          <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {conv.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </aside>
-
-      {/* Overlay for mobile */}
-      {sidebarOpen && window.innerWidth < 768 && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Chat Area */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {!selectedId ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-4">
-            <div className="text-center">
-              <div className="text-xl mb-2">Welcome to Chat</div>
-              <p className="text-sm text-gray-400">
-                {conversations.length === 0
-                  ? "Start a new conversation"
-                  : "Select a conversation to start chatting"}
-              </p>
-            </div>
+    <div className="w-full h-[calc(100vh-80px)] flex justify-center bg-slate-50 dark:bg-gray-900">
+      <div className="w-full md:max-w-4xl lg:max-w-5xl h-full flex flex-col bg-white dark:bg-gray-900 shadow-sm">
+        {!conversationId ? (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            Loading chat...
           </div>
         ) : (
           <Message
-            conversationId={selectedId}
+            conversationId={conversationId}
             messages={messages}
             typingUsers={typingUsers}
           />
         )}
-      </main>
+      </div>
     </div>
   );
 };

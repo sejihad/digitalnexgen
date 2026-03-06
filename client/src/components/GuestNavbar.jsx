@@ -67,17 +67,21 @@ const GuestNavbar = () => {
           {/* 1) Logo */}
           <div className="flex-shrink-0">
             <Link to="/">
-              <img src={Logo} alt="Logo" className="dark:hidden w-[160px]" />
+              <img
+                src={Logo}
+                alt="Logo"
+                className="dark:hidden w-[160px] lg:w-[200px] xl:w-[240px]"
+              />
               <img
                 src={DarkLogo}
                 alt="Logo Of Digital NexGen"
-                className="hidden dark:block w-[160px]"
+                className="hidden dark:block w-[160px] lg:w-[200px] xl:w-[240px]"
               />
             </Link>
           </div>
 
           {/* 2) Search (not on "/") */}
-          <div className="flex-1">
+          <div className={`${showSearch ? "flex-1" : "hidden"}`}>
             {showSearch && (
               <div className="relative flex items-center w-full max-w-[520px] transition-all duration-300">
                 <span className="pointer-events-none absolute left-3 text-gray-500 dark:text-gray-400">
@@ -108,7 +112,11 @@ const GuestNavbar = () => {
           </div>
 
           {/* 3) Menu items */}
-          <nav className="flex items-center gap-8 dark:text-[#ededed] text-primaryText font-openSans flex-shrink-0">
+          <nav
+            className={`flex items-center gap-8 dark:text-[#ededed] text-primaryText font-openSans ${
+              showSearch ? "flex-shrink-0" : "flex-1 justify-center"
+            }`}
+          >
             <Link
               to="/"
               className={`hover:text-primaryRgb ${

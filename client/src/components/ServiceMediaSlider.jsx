@@ -31,7 +31,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
   const renderMedia = (media) => {
     // Mobile height ~ h-37 (Tailwind has no h-37 by default, so using arbitrary value)
     // Desktop stays 400px
-    const mediaHeightClass = "h-[148px] md:h-[400px]";
+    const mediaHeightClass = "h-full w-full";
 
     if (media.type === "video") {
       // Extract YouTube video ID

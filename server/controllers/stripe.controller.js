@@ -240,7 +240,6 @@ export const stripeWebhook = async (req, res) => {
     await newOrder.save();
     return res.status(200).send("Order created.");
   } catch (err) {
-    console.error("stripeWebhook error:", err);
     return res.status(500).send("Internal server error");
   }
 };

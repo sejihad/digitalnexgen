@@ -5,7 +5,15 @@ import nodemailer from "nodemailer";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 import sendEmail from "../utils/sendEmail.js";
+const getCookieOptions = () => {
+  const isProd = process.env.NODE_ENV === "production";
 
+  return {
+    httpOnly: true,
+    secure: isProd, // prod এ HTTPS হলে true
+    sameSite: isProd ? "none" : "lax", // ✅ cross-site support (prod)
+  };
+};
 // Cloudflare Turnstile verification
 const verifyTurnstile = async (token, ip) => {
   if (!token) return false;
@@ -210,14 +218,13 @@ export const login = async (req, res, next) => {
 
     res
       .cookie("accessToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        ...getCookieOptions(),
         maxAge: 30 * 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json(info);
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -272,9 +279,7 @@ export const verifyOtp = async (req, res, next) => {
 
     res
       .cookie("accessToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        ...getCookieOptions(),
         maxAge: 30 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -292,10 +297,7 @@ export const googleLoginCallback = async (req, res, next) => {
 
     if (!user) {
       return next(
-        new ErrorHandler(
-          "Google authentication failed. Please try again.",
-          401,
-        ),
+        createError(401, "Google authentication failed. Please try again."),
       );
     }
     if (user.isNewUser) {
@@ -329,9 +331,7 @@ export const googleLoginCallback = async (req, res, next) => {
     );
 
     res.cookie("accessToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...getCookieOptions(),
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
@@ -368,10 +368,7 @@ export const enableTwoFactor = async (req, res, next) => {
 
 export const logout = async (req, res) => {
   res
-    .clearCookie("accessToken", {
-      sameSite: "none",
-      secure: true,
-    })
+    .clearCookie("accessToken", getCookieOptions())
     .status(200)
     .send("User has been successfully logged out");
 };
@@ -451,7 +448,7 @@ export const updatePassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     const isMatch = await bcrypt.compare(oldPassword, user.password);
 
     if (!isMatch) {

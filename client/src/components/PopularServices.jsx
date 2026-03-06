@@ -161,14 +161,6 @@ const PopularServices = () => {
             </a>
           ))}
         </div>
-
-        <div className="md:hidden text-xs text-gray-500 dark:text-gray-400 mt-3">
-          Swipe to explore →
-        </div>
-
-        <div className="hidden md:block text-xs text-gray-500 dark:text-gray-400 mt-3">
-          Use arrows to scroll
-        </div>
       </div>
     </section>
   );

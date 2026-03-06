@@ -484,9 +484,13 @@ const SingleService = () => {
   };
 
   return (
-    <section className="max-w-[1440px] w-11/12 mx-auto p-6  bg-light-bg dark:bg-[#1e1e1e] rounded-md mt-4">
+    <section className="max-w-[1440px] w-11/12 mx-auto p-6 bg-light-bg dark:bg-[#1e1e1e] rounded-md mt-4">
       <div className="flex flex-col lg:flex-row gap-8">
+        {/* =======================
+          LEFT (Desktop main)
+          ======================= */}
         <div className="lg:w-2/3">
+          {/* Title + Stars */}
           <h1 className="text-xl md:text-3xl font-bold primaryText dark:text-gray-200 mb-4">
             {service.title}
             <span className="flex items-center text-yellow-400 text-lg font-medium">
@@ -498,7 +502,7 @@ const SingleService = () => {
             </span>
           </h1>
 
-          {/* ✅ Replace old media section with slider */}
+          {/* Slider */}
           <div className="mb-6">
             <ServiceMediaSlider
               mediaList={[
@@ -509,176 +513,187 @@ const SingleService = () => {
             />
           </div>
 
-          <h2 className="text-xl font-semibold dark:text-gray-300 mt-6 mb-4">
-            About This Service
-          </h2>
+          {/* ✅ Desktop ONLY: Description + Features + Reviews (আগের মতোই left এ থাকবে) */}
+          <div className="hidden lg:block">
+            {/* Description */}
+            <h2 className="text-xl font-semibold dark:text-gray-300 mt-6 mb-4">
+              About This Service
+            </h2>
 
-          <MarkDownWithToggle content={service.desc} limit={500} />
-          <div className="flex flex-wrap gap-2 mt-4 mb-3">
-            <span className="px-2 py-1 bg-red-600 text-white rounded-md text-xs">
-              Category: {service.category}
-            </span>
-            <span className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs">
-              Subcategory: {service.subCategory}
-            </span>
-          </div>
-          {service.shortDesc && (
-            <div>
-              <MarkDownWithToggle content={service.shortDesc} limit={1000} />
+            <MarkDownWithToggle content={service.desc} limit={500} />
+
+            <div className="flex flex-wrap gap-2 mt-4 mb-3">
+              <span className="px-2 py-1 bg-red-600 text-white rounded-md text-xs">
+                Category: {service.category}
+              </span>
+              <span className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs">
+                Subcategory: {service.subCategory}
+              </span>
             </div>
-          )}
 
-          {service.features?.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold dark:text-gray-300 mb-2">
-                Features:
-              </h3>
-              <ul className="list-none ml-6 dark:text-gray-300 space-y-1">
-                {service.features.map((feature, index) => (
-                  <li key={index}>
-                    <div>
+            {service.shortDesc && (
+              <div>
+                <MarkDownWithToggle content={service.shortDesc} limit={1000} />
+              </div>
+            )}
+
+            {service.features?.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold dark:text-gray-300 mb-2">
+                  Features:
+                </h3>
+                <ul className="list-none ml-6 dark:text-gray-300 space-y-1">
+                  {service.features.map((feature, index) => (
+                    <li key={index}>
                       <MarkDownWithToggle content={feature} limit={500} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
-              Reviews:
-            </h3>
-            <div className="mb-8 p-6 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
-                Leave a Review
+            {/* Reviews */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
+                Reviews:
               </h3>
-              {isAuthenticated && isEligibility ? (
-                <form onSubmit={handleReviewSubmit}>
-                  <div className="flex items-center gap-4 mb-4">
-                    <label
-                      htmlFor="star"
-                      className="text-gray-700 dark:text-gray-300"
-                    >
-                      Your Rating:
-                    </label>
-                    <div className="flex gap-1 text-yellow-400">
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <label
-                          key={value}
-                          className="cursor-pointer flex items-center"
-                          onClick={() => setSelectedRating(value)}
-                        >
-                          <span
-                            className={`text-xl ${
-                              selectedRating >= value
-                                ? "text-yellow-400"
-                                : "text-gray-500"
-                            }`}
+
+              <div className="mb-8 p-6 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+                  Leave a Review
+                </h3>
+
+                {isAuthenticated && isEligibility ? (
+                  <form onSubmit={handleReviewSubmit}>
+                    <div className="flex items-center gap-4 mb-4">
+                      <label
+                        htmlFor="star"
+                        className="text-gray-700 dark:text-gray-300"
+                      >
+                        Your Rating:
+                      </label>
+                      <div className="flex gap-1 text-yellow-400">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <label
+                            key={value}
+                            className="cursor-pointer flex items-center"
+                            onClick={() => setSelectedRating(value)}
                           >
-                            ★
-                          </span>
-                        </label>
-                      ))}
+                            <span
+                              className={`text-xl ${
+                                selectedRating >= value
+                                  ? "text-yellow-400"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              ★
+                            </span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  <textarea
-                    name="desc"
-                    rows="4"
-                    className="w-full p-3 rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primaryRgb dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-                    placeholder="Write your review..."
-                    required
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  ></textarea>
+                    <textarea
+                      name="desc"
+                      rows="4"
+                      className="w-full p-3 rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primaryRgb dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                      placeholder="Write your review..."
+                      required
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    ></textarea>
 
-                  <button
-                    type="submit"
-                    className="mt-4 bg-primaryRgb text-white py-2 px-4 rounded-md hover:opacity-90 transition-all"
-                  >
-                    Submit Review
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      className="mt-4 bg-primaryRgb text-white py-2 px-4 rounded-md hover:opacity-90 transition-all"
+                    >
+                      Submit Review
+                    </button>
+                  </form>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Please{" "}
+                    <a
+                      href="/auth/login"
+                      className="text-primaryRgb hover:underline"
+                    >
+                      Sign In and Complete order
+                    </a>{" "}
+                    to leave a review.
+                  </p>
+                )}
+              </div>
+
+              {reviews.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {reviews.map((review) => {
+                    const storedUser = JSON.parse(localStorage.getItem("user"));
+
+                    const isOwner =
+                      storedUser?.isAdmin ||
+                      storedUser?.id === review.userId ||
+                      storedUser?._id === review.userId;
+
+                    return (
+                      <div
+                        key={review._id}
+                        className="relative group flex gap-4 p-4 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700"
+                      >
+                        <img
+                          src={review.userImage || placeholderImg}
+                          alt={`${review.username}'s Profile`}
+                          className="w-12 h-12 rounded-full border border-gray-500 object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-200">
+                                {review.username}{" "}
+                                <span className="text-gray-400">
+                                  ({review.country})
+                                </span>
+                              </p>
+                              <div className="flex items-center gap-1 text-yellow-400 text-sm">
+                                {"★".repeat(review.star)}
+                                {"☆".repeat(5 - review.star)}
+                                <span className="text-gray-400 ml-2 text-xs">
+                                  {review.star}/5
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-400">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <p className="text-gray-300 mt-2 text-sm">
+                            {review.desc}
+                          </p>
+                        </div>
+
+                        {isOwner && (
+                          <button
+                            className="absolute bottom-2 right-2 bg-red-500 text-white py-1 px-2 rounded-md text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteReview(review._id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <p className="text-gray-500 dark:text-gray-400 ">
-                  Please{" "}
-                  <a
-                    href="/auth/login"
-                    className="text-primaryRgb hover:underline"
-                  >
-                    Sign In and Complete order
-                  </a>{" "}
-                  to leave a review.
+                <p className="text-gray-400">
+                  No reviews available for this service.
                 </p>
               )}
             </div>
-
-            {reviews.length > 0 ? (
-              <div className="flex flex-col gap-4">
-                {reviews.map((review) => {
-                  const storedUser = JSON.parse(localStorage.getItem("user"));
-
-                  const isOwner =
-                    storedUser?.isAdmin ||
-                    storedUser?.id === review.userId ||
-                    storedUser?._id === review.userId;
-
-                  return (
-                    <div
-                      key={review._id}
-                      className="relative group flex gap-4 p-4 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700"
-                    >
-                      <img
-                        src={review.userImage || placeholderImg}
-                        alt={`${review.username}'s Profile`}
-                        className="w-12 h-12 rounded-full border border-gray-500 object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-200">
-                              {review.username}{" "}
-                              <span className="text-gray-400">
-                                ({review.country})
-                              </span>
-                            </p>
-                            <div className="flex items-center gap-1 text-yellow-400 text-sm">
-                              {"★".repeat(review.star)}
-                              {"☆".repeat(5 - review.star)}
-                              <span className="text-gray-400 ml-2 text-xs">
-                                {review.star}/5
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-400">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-gray-300 mt-2 text-sm">
-                          {review.desc}
-                        </p>
-                      </div>
-                      {isOwner && (
-                        <button
-                          className="absolute bottom-2 right-2 bg-red-500 text-white py-1 px-2 rounded-md text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleDeleteReview(review._id)}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-400">
-                No reviews available for this service.
-              </p>
-            )}
           </div>
         </div>
 
+        {/* =======================
+          RIGHT (Pricing)
+          ======================= */}
         <div className="lg:w-[30%]">
           <div className="lg:sticky lg:top-10">
             <div className="p-6 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-white/10 dark:text-gray-100 dark:border-gray-700">
@@ -704,12 +719,11 @@ const SingleService = () => {
                     <h3 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                       {selectedPackageDetails.name} Package
                     </h3>
-                    <div>
-                      <MarkDownWithToggle
-                        content={selectedPackageDetails.desc}
-                        limit={500}
-                      />
-                    </div>
+
+                    <MarkDownWithToggle
+                      content={selectedPackageDetails.desc}
+                      limit={500}
+                    />
 
                     <p className="text-xl md:text-2xl font-bold text-primaryRgb mb-2">
                       {(offerPriceMap?.[selectedPackage] ??
@@ -740,7 +754,6 @@ const SingleService = () => {
                       {selectedPackageDetails.deliveryTime || "N/A"} days
                     </p>
 
-                    {/* order now  */}
                     {!isCouponApplied && (
                       <div className="mb-4">
                         <input
@@ -769,6 +782,7 @@ const SingleService = () => {
                         ).toFixed(2)}
                       </span>
                     </p>
+
                     {couponError && (
                       <p className="text-red-400 mt-2">{couponError}</p>
                     )}
@@ -839,6 +853,185 @@ const SingleService = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* =======================
+        ✅ MOBILE ONLY: Description + Features + Reviews (Pricing এর পরে দেখাবে)
+        ======================= */}
+      <div className="lg:hidden mt-8">
+        {/* Description */}
+        <h2 className="text-xl font-semibold dark:text-gray-300 mt-6 mb-4">
+          About This Service
+        </h2>
+
+        <MarkDownWithToggle content={service.desc} limit={500} />
+
+        <div className="flex flex-wrap gap-2 mt-4 mb-3">
+          <span className="px-2 py-1 bg-red-600 text-white rounded-md text-xs">
+            Category: {service.category}
+          </span>
+          <span className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs">
+            Subcategory: {service.subCategory}
+          </span>
+        </div>
+
+        {service.shortDesc && (
+          <div>
+            <MarkDownWithToggle content={service.shortDesc} limit={1000} />
+          </div>
+        )}
+
+        {service.features?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold dark:text-gray-300 mb-2">
+              Features:
+            </h3>
+            <ul className="list-none ml-6 dark:text-gray-300 space-y-1">
+              {service.features.map((feature, index) => (
+                <li key={index}>
+                  <MarkDownWithToggle content={feature} limit={500} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Reviews */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-2">
+            Reviews:
+          </h3>
+
+          <div className="mb-8 p-6 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-200 mb-4">
+              Leave a Review
+            </h3>
+
+            {isAuthenticated && isEligibility ? (
+              <form onSubmit={handleReviewSubmit}>
+                <div className="flex items-center gap-4 mb-4">
+                  <label
+                    htmlFor="star"
+                    className="text-gray-700 dark:text-gray-300"
+                  >
+                    Your Rating:
+                  </label>
+                  <div className="flex gap-1 text-yellow-400">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <label
+                        key={value}
+                        className="cursor-pointer flex items-center"
+                        onClick={() => setSelectedRating(value)}
+                      >
+                        <span
+                          className={`text-xl ${
+                            selectedRating >= value
+                              ? "text-yellow-400"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          ★
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  name="desc"
+                  rows="4"
+                  className="w-full p-3 rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primaryRgb dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                  placeholder="Write your review..."
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                ></textarea>
+
+                <button
+                  type="submit"
+                  className="mt-4 bg-primaryRgb text-white py-2 px-4 rounded-md hover:opacity-90 transition-all"
+                >
+                  Submit Review
+                </button>
+              </form>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">
+                Please{" "}
+                <a
+                  href="/auth/login"
+                  className="text-primaryRgb hover:underline"
+                >
+                  Sign In and Complete order
+                </a>{" "}
+                to leave a review.
+              </p>
+            )}
+          </div>
+
+          {reviews.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {reviews.map((review) => {
+                const storedUser = JSON.parse(localStorage.getItem("user"));
+
+                const isOwner =
+                  storedUser?.isAdmin ||
+                  storedUser?.id === review.userId ||
+                  storedUser?._id === review.userId;
+
+                return (
+                  <div
+                    key={review._id}
+                    className="relative group flex gap-4 p-4 rounded-md border bg-white text-gray-800 border-gray-200 dark:bg-[#2b2b2b] dark:text-gray-100 dark:border-gray-700"
+                  >
+                    <img
+                      src={review.userImage || placeholderImg}
+                      alt={`${review.username}'s Profile`}
+                      className="w-12 h-12 rounded-full border border-gray-500 object-cover"
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-200">
+                            {review.username}{" "}
+                            <span className="text-gray-400">
+                              ({review.country})
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-1 text-yellow-400 text-sm">
+                            {"★".repeat(review.star)}
+                            {"☆".repeat(5 - review.star)}
+                            <span className="text-gray-400 ml-2 text-xs">
+                              {review.star}/5
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <p className="text-gray-300 mt-2 text-sm">
+                        {review.desc}
+                      </p>
+                    </div>
+
+                    {isOwner && (
+                      <button
+                        className="absolute bottom-2 right-2 bg-red-500 text-white py-1 px-2 rounded-md text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteReview(review._id)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-400">
+              No reviews available for this service.
+            </p>
+          )}
         </div>
       </div>
     </section>

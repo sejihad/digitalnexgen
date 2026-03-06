@@ -408,6 +408,15 @@ const Settings = () => {
               </Link>
             </div>
           )}
+          {/* ✅ Delete Account: সবাই দেখতে পাবে */}
+          <div className="mt-3">
+            <Link
+              to="/profile/delete"
+              className="block w-full text-center bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 py-3 px-4 rounded-md font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+            >
+              Request Account Deletion
+            </Link>
+          </div>
         </form>
       </div>
     </div>

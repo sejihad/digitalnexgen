@@ -4,7 +4,8 @@ const { Schema } = mongoose;
 const messageSchema = new Schema(
   {
     conversationId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
       required: true,
     },
     userId: {
@@ -19,7 +20,7 @@ const messageSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Message", messageSchema);

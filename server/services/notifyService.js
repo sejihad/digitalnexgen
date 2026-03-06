@@ -93,9 +93,7 @@ const sendNotify = async ({ title, message, users = [], image, link }) => {
             }
           }
         }
-      } catch (e) {
-        console.log("FCM send failed:", e?.message || e);
-      }
+      } catch (e) {}
 
       // 4️⃣ Emit real-time notification via Socket.IO
       inserted.forEach((userNotify) => {

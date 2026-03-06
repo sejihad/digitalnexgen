@@ -58,7 +58,6 @@ export const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { isAdmin } = req.body;
 
-    // নিজেকে update করতে বাধা (optional)
     // if (id === req.userId) {
     //   return res.status(403).json({
     //     success: false,
@@ -96,10 +95,12 @@ export const updateUserRole = async (req, res) => {
 };
 export const getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    if (req.userId !== req.params.id && !req.isAdmin) {
+      return next(createError(403, "You can access only your account!"));
+    }
+    const user = await User.findById(req.userId);
 
     if (!user) return res.status(404).send("User not found");
-
     res.status(200).json(user);
   } catch (error) {
     res.status(500).send("Something went wrong!");

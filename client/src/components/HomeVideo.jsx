@@ -8,8 +8,8 @@ const HomeVideo = () => {
           h-[220px]            /* Mobile height */
           sm:h-[260px]         /* Small devices */
           md:h-[300px]         /* Tablet */
-          lg:h-[350px]         /* Desktop (slim) */
-          xl:h-[400px]         /* Large screen */
+          lg:h-[450px]         /* Desktop (slim) */
+          xl:h-[600px]         /* Large screen */
           overflow-hidden 
           rounded-xl
         "

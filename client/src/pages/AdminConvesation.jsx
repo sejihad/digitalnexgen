@@ -1,8 +1,11 @@
+// src/pages/AdminConversation.jsx
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketContext.jsx";
+
+const safeStr = (v) => String(v ?? "");
 
 const AdminConversation = () => {
   const navigate = useNavigate();
@@ -15,8 +18,14 @@ const AdminConversation = () => {
   const [conversations, setConversations] = useState([]);
   const [query, setQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [buyerNames, setBuyerNames] = useState({});
-  const [adminNames, setAdminNames] = useState({});
+
+  // ✅ Delete modal + loading
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Avoid calling refresh repeatedly (burst of socket events)
+  const refreshCooldownRef = useRef(false);
 
   // Auth check
   useEffect(() => {
@@ -32,12 +41,22 @@ const AdminConversation = () => {
     const fetchConversations = async () => {
       setLoading(true);
       setError("");
+
       try {
         const res = await axios.get(
           `${apiBaseUrl}/api/conversations/admin/all`,
           { withCredentials: true },
         );
-        setConversations(Array.isArray(res.data) ? res.data : []);
+
+        // ✅ normalize array + sort by updatedAt desc
+        const list = Array.isArray(res.data) ? res.data : [];
+        list.sort((a, b) => {
+          const ta = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+          const tb = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+          return tb - ta;
+        });
+
+        setConversations(list);
       } catch (e) {
         setError(e?.response?.data?.message || "Failed to load conversations");
       } finally {
@@ -48,225 +67,367 @@ const AdminConversation = () => {
     fetchConversations();
   }, [apiBaseUrl, isAuthenticated, user, refreshKey]);
 
-  // Load buyer/admin names
-  useEffect(() => {
-    const loadNames = async () => {
-      const bMap = {};
-      const aMap = {};
-
-      for (const c of conversations) {
-        try {
-          const buyerId =
-            typeof c?.buyerId === "string" ? c.buyerId : c?.buyerId?._id;
-
-          if (buyerId) {
-            const res = await axios.get(`${apiBaseUrl}/api/users/${buyerId}`, {
-              withCredentials: true,
-            });
-            bMap[c._id] = res.data?.name || res.data?.email || buyerId;
-          }
-        } catch {}
-
-        try {
-          const adminId =
-            typeof c?.adminId === "string" ? c.adminId : c?.adminId?._id;
-
-          if (adminId) {
-            const res = await axios.get(`${apiBaseUrl}/api/users/${adminId}`, {
-              withCredentials: true,
-            });
-            aMap[c._id] = res.data?.name || res.data?.email || adminId;
-          }
-        } catch {}
-      }
-
-      setBuyerNames((p) => ({ ...p, ...bMap }));
-      setAdminNames((p) => ({ ...p, ...aMap }));
-    };
-
-    if (conversations.length) loadNames();
-  }, [conversations, apiBaseUrl]);
-
-  // Realtime last message update
+  /**
+   * ✅ Real-time update:
+   * - Update lastMessage + updatedAt
+   * - Set readByAdmins=false (show dot) when message is from someone else
+   * - Move updated conversation to TOP
+   * - If conversation not in list => trigger a refresh (cooldown to prevent spam)
+   */
   useEffect(() => {
     if (!socket) return;
 
-    const handleReceive = (msg) => {
-      setConversations((prev) =>
-        prev.map((c) =>
-          c._id === msg.conversationId
-            ? {
-                ...c,
-                lastMessage: msg.message,
-                updatedAt: new Date().toISOString(),
-              }
-            : c,
-        ),
-      );
+    const handleReceive = (payload) => {
+      console.log("📩 ADMIN UPDATE EVENT:", payload);
+      const cid = safeStr(payload?.conversationId);
+      const msgObj = payload?.message;
+      const senderId = safeStr(payload?.senderId);
+
+      if (!cid) return;
+
+      // মেসেজ টেক্সট বের করা
+      const msgText =
+        typeof msgObj === "string"
+          ? msgObj
+          : safeStr(msgObj?.message || msgObj?.text || msgObj?.content || "");
+
+      const msgCreatedAt = msgObj?.createdAt || new Date().toISOString();
+      const fromMe = senderId && safeStr(user?._id || user?.id) === senderId;
+
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => safeStr(c?._id) === cid);
+
+        // যদি কনভারসেশন লিস্টে না থাকে (নতুন কাস্টমার মেসেজ দিলে)
+        if (idx === -1) {
+          if (!refreshCooldownRef.current) {
+            refreshCooldownRef.current = true;
+            setRefreshKey((k) => k + 1);
+            setTimeout(() => {
+              refreshCooldownRef.current = false;
+            }, 2000);
+          }
+          return prev;
+        }
+
+        const existing = prev[idx];
+        const updated = {
+          ...existing,
+          lastMessage: msgText,
+          updatedAt: msgCreatedAt,
+          readByAdmins: fromMe ? true : false, // যদি আমি না পাঠাই, তবে আনরিড (ডট দেখাবে)
+        };
+
+        const next = [...prev];
+        next.splice(idx, 1); // পুরোনো পজিশন থেকে সরাও
+        return [updated, ...next]; // সবার উপরে দাও
+      });
     };
 
-    socket.on("message:receive", handleReceive);
-    return () => socket.off("message:receive", handleReceive);
-  }, [socket]);
+    // শুধুমাত্র এই একটি ইভেন্ট লিসেন করাই যথেষ্ট অ্যাডমিন লিস্টের জন্য
+    socket.on("admin:conversation:update", handleReceive);
 
-  // Filter
+    // ব্যাকআপ হিসেবে যদি ওপেন চ্যাটে থাকে
+    socket.on("message:receive", handleReceive);
+
+    return () => {
+      socket.off("admin:conversation:update", handleReceive);
+      socket.off("message:receive", handleReceive);
+    };
+  }, [socket, user?._id]); // query সরিয়ে ফেলো এখান থেকে
+  // search filter
   const filtered = useMemo(() => {
     if (!query) return conversations;
+
     const q = query.toLowerCase();
 
     return conversations.filter((c) => {
-      const buyer = buyerNames[c._id] || "";
-      const admin = adminNames[c._id] || "";
+      const buyer =
+        c?.customerId?.name ||
+        c?.customerId?.username ||
+        c?.customerId?.email ||
+        "";
+
       const last = c?.lastMessage || "";
 
       return (
         buyer.toLowerCase().includes(q) ||
-        admin.toLowerCase().includes(q) ||
         last.toLowerCase().includes(q) ||
-        String(c._id).toLowerCase().includes(q)
+        safeStr(c._id).toLowerCase().includes(q)
       );
     });
-  }, [query, conversations, buyerNames, adminNames]);
+  }, [query, conversations]);
 
   const openConversation = (id) => {
-    if (id) navigate(`/admin/messages/${id}`);
+    // ✅ Optimistic: hide dot immediately in list
+    setConversations((prev) =>
+      prev.map((c) =>
+        safeStr(c._id) === safeStr(id) ? { ...c, readByAdmins: true } : c,
+      ),
+    );
+
+    navigate(`/admin/messages/${id}`);
+    // ✅ Real DB read flag should be set in /admin/messages/:id page via PUT /read
   };
 
-  const deleteConversation = async (conv) => {
-    if (!conv?._id) return;
+  // ✅ open confirm modal
+  const askDelete = (conv) => {
+    setError("");
+    setDeleteTarget(conv);
+    setDeleteModalOpen(true);
+  };
+
+  // ✅ confirm delete
+  const confirmDelete = async () => {
+    if (!deleteTarget?._id) return;
+
+    const id = deleteTarget._id;
+    setDeletingId(id);
+    setError("");
+
     try {
-      await axios.delete(`${apiBaseUrl}/api/conversations/${conv._id}`, {
+      await axios.delete(`${apiBaseUrl}/api/conversations/${id}`, {
         withCredentials: true,
       });
-      setRefreshKey((k) => k + 1);
+
+      // instant UI update
+      setConversations((prev) => prev.filter((c) => c._id !== id));
+
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to delete conversation");
+    } finally {
+      setDeletingId(null);
     }
   };
 
+  const closeDeleteModal = () => {
+    if (deletingId) return;
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
   return (
-    <div className="max-w-[1200px] w-11/12 mx-auto py-6">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-        Conversations
-      </h1>
+    <div className="max-w-6xl mx-auto px-4 py-6 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
+      <h1 className="text-2xl font-semibold mb-5">Conversations</h1>
 
       {/* Search */}
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
+      <div className="flex flex-col md:flex-row gap-3 mb-5">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by buyer, admin, message, or id"
-          className="flex-1 px-3 py-2 rounded-md border bg-white text-gray-900
-          focus:ring-2 focus:ring-primaryRgb
-          dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+          placeholder="Search buyer or message..."
+          className="flex-1 px-4 py-2 rounded-md border bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         />
+
         <button
           onClick={() => setRefreshKey((k) => k + 1)}
-          className="px-4 py-2 rounded-md bg-primaryRgb text-white"
+          className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
         >
           Refresh
         </button>
       </div>
 
-      {error && <div className="text-red-500 text-sm mb-3">{error}</div>}
+      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
 
       {loading ? (
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-gray-500 dark:text-gray-300">Loading...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-gray-500">No conversations found.</div>
+        <div className="text-gray-500 dark:text-gray-300">
+          No conversations found.
+        </div>
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto rounded-md border bg-white dark:bg-[#1f1f1f] dark:border-gray-700">
+          <div className="hidden md:block overflow-x-auto rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-[#2a2a2a]">
+              <thead className="bg-gray-100 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left dark:text-white">Buyer</th>
-                  <th className="px-4 py-2 text-left dark:text-white">
-                    Last Message
-                  </th>
-                  <th className="px-4 py-2 text-left dark:text-white">
-                    Updated
-                  </th>
-                  <th className="px-4 py-2 text-left dark:text-white">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left">Buyer</th>
+                  <th className="px-4 py-3 text-left">Last Message</th>
+                  <th className="px-4 py-3 text-left">Updated</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
                 </tr>
               </thead>
+
               <tbody>
-                {filtered.map((c) => (
-                  <tr key={c._id} className="border-t dark:border-gray-700">
-                    <td className="px-4 py-2 dark:text-gray-300">
-                      {buyerNames[c._id] || c?.buyerId}
-                    </td>
-                    <td className="px-4 py-2 max-w-[420px] truncate dark:text-gray-300">
-                      {c?.lastMessage || ""}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap dark:text-gray-300">
-                      {c?.updatedAt
-                        ? new Date(c.updatedAt).toLocaleString()
-                        : ""}
-                    </td>
-                    <td className="px-4 py-2 flex gap-2 dark:text-gray-300">
-                      <button
-                        onClick={() => openConversation(c._id)}
-                        className="px-3 py-1 rounded bg-primaryRgb text-white"
+                {filtered.map((c) => {
+                  const isDeleting = deletingId === c._id;
+                  const isUnread = c?.readByAdmins === false;
+
+                  return (
+                    <tr
+                      key={c._id}
+                      className={`border-t border-gray-200 dark:border-gray-700 ${
+                        isUnread ? "bg-blue-50/60 dark:bg-blue-900/20" : ""
+                      }`}
+                    >
+                      {/* ✅ Buyer + dot */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {isUnread && (
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                          )}
+                          <span>
+                            {c?.customerId?.name ||
+                              c?.customerId?.username ||
+                              c?.customerId?.email ||
+                              "Unknown"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* ✅ Last message (bold when unread) */}
+                      <td
+                        className={`px-4 py-3 max-w-[400px] truncate ${
+                          isUnread ? "font-semibold" : ""
+                        }`}
                       >
-                        Open
-                      </button>
-                      <button
-                        onClick={() => deleteConversation(c)}
-                        className="px-3 py-1 rounded bg-red-600 text-white"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {c?.lastMessage || "No message"}
+                      </td>
+
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {c?.updatedAt
+                          ? new Date(c.updatedAt).toLocaleString()
+                          : ""}
+                      </td>
+
+                      <td className="px-4 py-3 flex gap-2">
+                        <button
+                          onClick={() => openConversation(c._id)}
+                          className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                          disabled={isDeleting}
+                        >
+                          Open
+                        </button>
+
+                        <button
+                          onClick={() => askDelete(c)}
+                          className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? "Deleting..." : "Delete"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
-            {filtered.map((c) => (
-              <div
-                key={c._id}
-                className="border rounded-lg p-4 bg-white dark:bg-[#1f1f1f] dark:border-gray-700"
-              >
-                <div className="flex justify-between mb-1">
-                  <div className="font-medium">
-                    {buyerNames[c._id] || c?.buyerId}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {c?.updatedAt
-                      ? new Date(c.updatedAt).toLocaleDateString()
-                      : ""}
-                  </div>
-                </div>
+            {filtered.map((c) => {
+              const isDeleting = deletingId === c._id;
+              const isUnread = c?.readByAdmins === false;
 
-                <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
-                  {c?.lastMessage || "No messages yet"}
-                </div>
+              return (
+                <div
+                  key={c._id}
+                  className={`border rounded-lg p-4 bg-white dark:bg-gray-800 dark:border-gray-700 ${
+                    isUnread ? "ring-1 ring-blue-200 dark:ring-blue-900" : ""
+                  }`}
+                >
+                  <div className="flex justify-between mb-1">
+                    {/* ✅ Buyer + dot */}
+                    <div className="font-medium flex items-center gap-2">
+                      {isUnread && (
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                      )}
+                      {c?.customerId?.name ||
+                        c?.customerId?.username ||
+                        c?.customerId?.email ||
+                        "Unknown"}
+                    </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openConversation(c._id)}
-                    className="flex-1 py-2 rounded bg-primaryRgb text-white text-sm"
+                    <div className="text-xs text-gray-400">
+                      {c?.updatedAt
+                        ? new Date(c.updatedAt).toLocaleDateString()
+                        : ""}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 ${
+                      isUnread ? "font-semibold" : ""
+                    }`}
                   >
-                    Open
-                  </button>
-                  <button
-                    onClick={() => deleteConversation(c)}
-                    className="flex-1 py-2 rounded bg-red-600 text-white text-sm"
-                  >
-                    Delete
-                  </button>
+                    {c?.lastMessage || "No messages yet"}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openConversation(c._id)}
+                      className="flex-1 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+                      disabled={isDeleting}
+                    >
+                      Open
+                    </button>
+
+                    <button
+                      onClick={() => askDelete(c)}
+                      className="flex-1 py-2 rounded bg-red-600 text-white disabled:opacity-60"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
+      )}
+
+      {/* ✅ Confirm Delete Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* overlay */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={closeDeleteModal}
+          />
+
+          {/* modal */}
+          <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-5">
+            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Delete conversation?
+            </div>
+
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              This action cannot be undone. Are you sure you want to delete this
+              conversation with{" "}
+              <span className="font-semibold">
+                {deleteTarget?.customerId?.name ||
+                  deleteTarget?.customerId?.username ||
+                  deleteTarget?.customerId?.email ||
+                  "this user"}
+              </span>
+              ?
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={closeDeleteModal}
+                disabled={Boolean(deletingId)}
+                className="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700
+                disabled:opacity-60"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                disabled={Boolean(deletingId)}
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deletingId ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

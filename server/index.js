@@ -3,13 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import fileUpload from "express-fileupload";
-import http from "http"; // <-- add this
+import http from "http";
 import mongoose from "mongoose";
 import passport from "passport";
-import { Server } from "socket.io"; // <-- add this
+
 import "./config/passport.js";
 import { initializePassport } from "./config/passport.js";
+
 import { stripeWebhook } from "./controllers/stripe.controller.js";
+
 import authRoute from "./routes/auth.route.js";
 import blogRoute from "./routes/blog.route.js";
 import contactRoute from "./routes/contact.route.js";
@@ -29,15 +31,13 @@ import serviceRoute from "./routes/service.route.js";
 import statisticRoute from "./routes/statistic.route.js";
 import stripeRoute from "./routes/stripe.route.js";
 import userRoute from "./routes/user.route.js";
-dotenv.config();
-const app = express();
 
-// Stripe webhook
-app.post(
-  "/api/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  stripeWebhook,
-);
+// ✅ তোমার socket initializer import করো
+import { initializeSocket } from "./socket.js"; // <-- তোমার ফাইল নাম অনুযায়ী path ঠিক করো
+
+dotenv.config();
+
+const app = express();
 
 const allowedOrigins = [
   "https://digitalnexgen.co",
@@ -45,6 +45,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://digitalnexgen-ui.vercel.app",
 ];
+
+// ✅ CORS
 app.use(
   cors({
     origin: allowedOrigins,
@@ -53,13 +55,23 @@ app.use(
     credentials: true,
   }),
 );
+
+// ✅ Stripe webhook must be RAW (keep this BEFORE express.json)
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook,
+);
+
 initializePassport();
 app.use(passport.initialize());
 
+// middlewares
 app.use(fileUpload());
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
 // Routes
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
@@ -98,37 +110,15 @@ const connectDB = async () => {
   }
 };
 
-// --- Socket.IO setup ---
-const httpServer = http.createServer(app); // <-- use HTTP server
-const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+// ✅ HTTP server
+const httpServer = http.createServer(app);
 
-// Simple Socket.IO example
-io.on("connection", (socket) => {
-  // Join conversation room
-  socket.on("conversation:join", (conversationId) => {
-    socket.join(conversationId);
-  });
-
-  // Send message
-  socket.on("message:send", ({ conversationId, message }) => {
-    // Broadcast to all in room except sender
-    socket
-      .to(conversationId)
-      .emit("message:receive", { conversationId, message });
-  });
-
-  socket.on("disconnect", () => {});
-});
+// ✅ IMPORTANT: only ONE socket server
+initializeSocket(httpServer, allowedOrigins);
 
 // Start server
 const PORT = process.env.PORT || 8800;
-httpServer.listen(PORT, () => {
-  connectDB();
+httpServer.listen(PORT, async () => {
+  await connectDB();
   console.log(`Backend server is running on port ${PORT}...`);
 });

@@ -1,29 +1,26 @@
 import express from "express";
 import {
-  checkUsernameAvailability,
   deleteUser,
   getUser,
-  getUserByUsername,
   getUsers,
   updateUser,
-  updateUsername,
   updateUserRole,
 } from "../controllers/user.controller.js";
-import { verifyAnyAuth } from "../middleware/authAny.js";
+
 import { verifyToken } from "../middleware/jwt.js";
 
 const router = express.Router();
 
 // Public endpoints
 router.get("/", verifyToken, getUsers);
-router.get("/by-username/:username", getUserByUsername);
-router.get("/check-username", checkUsernameAvailability);
+// router.get("/by-username/:username", getUserByUsername);
+// router.get("/check-username", checkUsernameAvailability);
 
 // Authenticated endpoints
-router.delete("/:id", verifyAnyAuth, deleteUser);
-router.get("/:id", verifyAnyAuth, getUser);
-router.put("/:id", verifyAnyAuth, updateUser);
+router.delete("/:id", verifyToken, deleteUser);
+router.get("/:id", verifyToken, getUser);
+router.put("/:id", verifyToken, updateUser);
 router.put("/:id/role", verifyToken, updateUserRole);
-router.put("/me/username", verifyAnyAuth, updateUsername);
+// router.put("/me/username", verifyToken, updateUsername);
 
 export default router;
