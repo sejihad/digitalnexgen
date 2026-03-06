@@ -5,9 +5,9 @@ import { toast } from "sonner";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
-
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
@@ -23,17 +23,20 @@ const Orders = () => {
         setLoading(false);
       }
     };
+
     fetchOrders();
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleCancelRequest = async (orderId) => {
     try {
-      const res = await axios.put(
+      await axios.put(
         `${apiBaseUrl}/api/orders/${orderId}/request-cancel`,
         {},
         { withCredentials: true },
       );
+
       toast.success("Cancel request sent.");
+
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === orderId ? { ...order, cancel_request: true } : order,
@@ -46,58 +49,112 @@ const Orders = () => {
     }
   };
 
-  if (loading) return <p className="text-gray-300 p-6">Loading orders...</p>;
-  if (error) return <p className="text-red-500 p-6">{error}</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black">
+        <div className="container mx-auto px-4 py-8 md:px-6">
+          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+            <p className="text-gray-700 dark:text-gray-300">
+              Loading orders...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black">
+        <div className="container mx-auto px-4 py-8 md:px-6">
+          <div className="rounded-3xl border border-red-200/60 bg-white/70 p-6 shadow-xl backdrop-blur-xl dark:border-red-500/20 dark:bg-white/5">
+            <p className="text-red-500">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <h2 className="text-xl md:text-2xl font-bold mb-4 text-primaryRgb">
-        My Orders
-      </h2>
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-100">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
+        {/* Header */}
+        <div className="mb-6 rounded-3xl border border-black/10 bg-white/70 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+                My Orders
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Track your orders, view details, and request cancellation.
+              </p>
+            </div>
 
-      {/* Mobile View - Cards with Horizontal Scroll */}
-      <div className="md:hidden space-y-4">
-        {orders.length === 0 ? (
-          <div className="text-center p-5 text-gray-500 dark:text-gray-400">
-            No orders found.
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm text-gray-700 shadow-sm backdrop-blur-lg dark:border-white/10 dark:bg-white/10 dark:text-gray-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Total Orders: {orders.length}
+            </div>
           </div>
-        ) : (
-          orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 border border-black/5 dark:border-white/10 overflow-x-auto backdrop-blur"
-            >
-              <div className="min-w-[300px]">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-medium">{order.service.name}</h3>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
-                      Order ID: {order._id}
+        </div>
+
+        {/* Mobile View */}
+        <div className="space-y-4 md:hidden">
+          {orders.length === 0 ? (
+            <div className="rounded-3xl border border-black/10 bg-white/70 p-8 text-center text-gray-500 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:text-gray-400">
+              No orders found.
+            </div>
+          ) : (
+            orders.map((order) => (
+              <div
+                key={order._id}
+                className="group rounded-3xl border border-black/10 bg-white/70 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_35px_rgba(0,0,0,0.12)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]"
+              >
+                <div className="space-y-4 overflow-x-auto">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                        {order.service.name}
+                      </h3>
+                      <div className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+                        Order ID: {order._id}
+                      </div>
+                    </div>
+
+                    <span
+                      className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium capitalize backdrop-blur-md ${
+                        order.payment.status === "paid"
+                          ? "border-emerald-200 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300"
+                          : "border-amber-200 bg-amber-500/10 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300"
+                      }`}
+                    >
+                      {order.payment.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-lg dark:border-white/10 dark:bg-white/5">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Price
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                        ${order.finalPrice}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-lg dark:border-white/10 dark:bg-white/5">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Status
+                      </p>
+                      <p className="mt-1 text-sm font-semibold capitalize text-gray-900 dark:text-white">
+                        {order.order_status}
+                      </p>
                     </div>
                   </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs whitespace-nowrap border ${
-                      order.payment.status === "paid"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                    }`}
-                  >
-                    {order.payment.status}
-                  </span>
-                </div>
 
-                <div className="flex justify-between items-center mt-4">
-                  <div>
-                    <p>${order.finalPrice}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
-                      Status: {order.order_status}
-                    </p>
-                  </div>
-
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     <Link
                       to={`/orders/${order._id}`}
-                      className="bg-[rgb(12,187,20)] hover:brightness-95 text-white text-xs px-3 py-1 rounded whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60"
+                      className="inline-flex items-center justify-center rounded-xl border border-green-500/20 bg-green-500 px-4 py-2 text-xs font-medium text-white shadow-lg shadow-green-500/20 transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-green-500/40"
                     >
                       View Details
                     </Link>
@@ -107,120 +164,134 @@ const Orders = () => {
                       !order.cancel_request && (
                         <button
                           onClick={() => handleCancelRequest(order._id)}
-                          className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-red-600/40"
+                          className="inline-flex items-center justify-center rounded-xl border border-red-500/20 bg-red-500 px-4 py-2 text-xs font-medium text-white shadow-lg shadow-red-500/20 transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-red-500/40"
                         >
                           Request Cancel
                         </button>
                       )}
                   </div>
+
+                  {order.cancel_request && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 backdrop-blur-lg dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                      Cancel request pending
+                    </div>
+                  )}
                 </div>
-
-                {order.cancel_request && (
-                  <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">
-                    Cancel request pending
-                  </p>
-                )}
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
 
-      {/* Desktop View - Table with Horizontal Scroll */}
-      <div className="hidden md:block overflow-x-auto">
-        <div className="min-w-full inline-block align-middle">
-          <table className="w-full border border-black/10 dark:border-gray-700 rounded-lg overflow-hidden">
-            <thead className="bg-gray-100 dark:bg-gray-800 text-left">
-              <tr>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Order ID
-                </th>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Service
-                </th>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Price
-                </th>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Payment
-                </th>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  Status
-                </th>
-                <th className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap text-center">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-transparent text-gray-900 dark:text-gray-100">
-              {orders.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center p-5 text-gray-500 dark:text-gray-400"
-                  >
-                    No orders found.
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr
-                    key={order._id}
-                    className="border-t border-black/10 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <td className="p-3 text-xs break-all max-w-xs">
-                      {order._id}
-                    </td>
-                    <td className="p-3 text-sm whitespace-nowrap">
-                      {order.service.name}
-                    </td>
-                    <td className="p-3 whitespace-nowrap">
-                      ${order.finalPrice}
-                    </td>
-                    <td className="p-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs border ${
-                          order.payment.status === "paid"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
-                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <div className="overflow-hidden rounded-3xl border border-black/10 bg-white/70 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px]">
+                <thead className="border-b border-black/10 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+                  <tr>
+                    <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Order ID
+                    </th>
+                    <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Service
+                    </th>
+                    <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Price
+                    </th>
+                    <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Payment
+                    </th>
+                    <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Status
+                    </th>
+                    <th className="p-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="p-8 text-center text-gray-500 dark:text-gray-400"
+                      >
+                        No orders found.
+                      </td>
+                    </tr>
+                  ) : (
+                    orders.map((order, index) => (
+                      <tr
+                        key={order._id}
+                        className={`transition hover:bg-black/5 dark:hover:bg-white/5 ${
+                          index !== orders.length - 1
+                            ? "border-b border-black/10 dark:border-white/10"
+                            : ""
                         }`}
                       >
-                        {order.payment.status}
-                      </span>
-                    </td>
-                    <td className="p-3 capitalize whitespace-nowrap">
-                      {order.order_status}
-                    </td>
-                    <td className="p-3 text-center space-x-2 whitespace-nowrap">
-                      <Link
-                        to={`/orders/${order._id}`}
-                        className="bg-[rgb(12,187,20)] hover:brightness-95 text-white text-xs px-3 py-1 rounded-md inline-block focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60"
-                      >
-                        Details
-                      </Link>
+                        <td className="max-w-xs break-all p-4 text-xs text-gray-700 dark:text-gray-300">
+                          {order._id}
+                        </td>
 
-                      {order.order_status !== "cancelled" &&
-                        order.order_status !== "completed" &&
-                        !order.cancel_request && (
-                          <button
-                            onClick={() => handleCancelRequest(order._id)}
-                            className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600/40"
+                        <td className="p-4 text-sm font-medium text-gray-900 dark:text-white">
+                          {order.service.name}
+                        </td>
+
+                        <td className="p-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          ${order.finalPrice}
+                        </td>
+
+                        <td className="p-4">
+                          <span
+                            className={`rounded-full border px-3 py-1 text-xs font-medium capitalize ${
+                              order.payment.status === "paid"
+                                ? "border-emerald-200 bg-emerald-500/10 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                : "border-amber-200 bg-amber-500/10 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300"
+                            }`}
                           >
-                            Cancel
-                          </button>
-                        )}
+                            {order.payment.status}
+                          </span>
+                        </td>
 
-                      {order.cancel_request && (
-                        <span className="text-yellow-600 dark:text-yellow-400 text-xs block mt-1">
-                          Cancel requested
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                        <td className="p-4 text-sm capitalize text-gray-700 dark:text-gray-300">
+                          {order.order_status}
+                        </td>
+
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              to={`/orders/${order._id}`}
+                              className="inline-flex items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500 px-4 py-2 text-xs font-medium text-white shadow-lg shadow-emerald-500/20 transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                            >
+                              Details
+                            </Link>
+
+                            {order.order_status !== "cancelled" &&
+                              order.order_status !== "completed" &&
+                              !order.cancel_request && (
+                                <button
+                                  onClick={() => handleCancelRequest(order._id)}
+                                  className="inline-flex items-center justify-center rounded-xl border border-red-500/20 bg-red-500 px-4 py-2 text-xs font-medium text-white shadow-lg shadow-red-500/20 transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                          </div>
+
+                          {order.cancel_request && (
+                            <span className="mt-2 inline-block rounded-full border border-amber-200 bg-amber-500/10 px-3 py-1 text-xs text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                              Cancel requested
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>

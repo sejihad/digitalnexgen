@@ -28,7 +28,7 @@ const Order = () => {
     };
 
     if (id) fetchOrder();
-  }, [id]);
+  }, [id, apiBaseUrl]);
 
   const getStamp = (status) => {
     switch (status) {
@@ -52,7 +52,7 @@ const Order = () => {
     };
     return colors[status.toLowerCase()] || "#9E9E9E";
   };
-  // ✅ UI-only: pick description + features (offer priority)
+
   const uiDescription =
     order?.service?.offer?.description || order?.service?.description || "";
 
@@ -63,253 +63,654 @@ const Order = () => {
       : Array.isArray(order?.service?.features) && order.service.features.length
         ? order.service.features
         : [];
+
   const generatePDF = () => {
     if (!order) return;
 
-    const doc = new jsPDF();
+    const doc = new jsPDF("p", "mm", "a4");
     const pageWidth = doc.internal.pageSize.getWidth();
-    const primaryColor = "#00DCEE";
-    const secondaryColor = "#F5F5F5";
-    const textColor = "#333333";
-    const lightBorder = "#DDDDDD";
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    const img = new Image();
-    img.src = logoUrl;
-    img.onload = () => {
-      doc.addImage(img, "PNG", pageWidth / 2 - 25, 15, 50, 25);
+    const colors = {
+      primary: "#0CBB14",
+      primarySoft: "#EAF9EC",
+      dark: "#1F2937",
+      text: "#374151",
+      muted: "#6B7280",
+      border: "#D1D5DB",
+      lightBg: "#F9FAFB",
+      white: "#FFFFFF",
+    };
 
-      doc.setFontSize(24);
-      doc.setTextColor(primaryColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", pageWidth / 2, 50, { align: "center" });
+    const margin = 14;
+    let y = 18;
 
-      doc.setFontSize(10);
-      doc.setTextColor("#666666");
-      doc.setFont("helvetica", "normal");
-      doc.text(`Invoice #: ${order._id}`, pageWidth - 20, 40, {
-        align: "right",
-      });
-      doc.text(
-        `Date: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
-        pageWidth - 20,
-        45,
-        { align: "right" },
+    const drawText = (
+      text,
+      x,
+      yPos,
+      size = 10,
+      color = colors.text,
+      style = "normal",
+      align = "left",
+    ) => {
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(color);
+      doc.text(text, x, yPos, { align });
+    };
+
+    const drawBox = (
+      x,
+      yPos,
+      w,
+      h,
+      fill = colors.white,
+      border = colors.border,
+    ) => {
+      doc.setFillColor(fill);
+      doc.setDrawColor(border);
+      doc.roundedRect(x, yPos, w, h, 3, 3, "FD");
+    };
+
+    const addWrappedText = (
+      text,
+      x,
+      yPos,
+      maxWidth,
+      size = 10,
+      color = colors.text,
+      style = "normal",
+      lineGap = 5,
+    ) => {
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(color);
+      const lines = doc.splitTextToSize(text || "", maxWidth);
+      doc.text(lines, x, yPos);
+      return yPos + lines.length * lineGap;
+    };
+
+    const logo = new Image();
+    logo.src = logoUrl;
+
+    logo.onload = () => {
+      // Background
+      doc.setFillColor("#FFFFFF");
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      // Top accent bar
+      doc.setFillColor(colors.primary);
+      doc.rect(0, 0, pageWidth, 10, "F");
+
+      // Logo
+      doc.addImage(logo, "PNG", margin, y, 32, 16);
+
+      // Company / document heading
+      drawText(
+        "ORDER INVOICE",
+        pageWidth - margin,
+        y + 6,
+        20,
+        colors.dark,
+        "bold",
+        "right",
+      );
+      drawText(
+        "Service Billing Summary",
+        pageWidth - margin,
+        y + 12,
+        9,
+        colors.muted,
+        "normal",
+        "right",
       );
 
-      doc.setDrawColor(lightBorder);
-      doc.line(15, 55, pageWidth - 15, 55);
+      y += 24;
 
-      const boxHeight = 40;
+      // Invoice meta row
+      drawBox(margin, y, pageWidth - margin * 2, 22, "#F8FAFC", "#E5E7EB");
+      drawText(
+        `Invoice ID: ${order._id}`,
+        margin + 4,
+        y + 7,
+        10,
+        colors.dark,
+        "bold",
+      );
+      drawText(
+        `Issued: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
+        margin + 4,
+        y + 14,
+        9,
+        colors.muted,
+      );
 
-      // Customer box
-      doc.setFillColor(secondaryColor);
-      doc.rect(15, 60, 85, boxHeight, "F");
-      doc.setTextColor(textColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("BILLED TO", 20, 68);
-      doc.setFont("helvetica", "normal");
-      doc.text(order.user.name, 20, 76);
-      doc.text(order.user.email || "N/A", 20, 84);
-      doc.text(order.user.phone || "N/A", 20, 92);
-
-      // Service box
-      doc.setFillColor(secondaryColor);
-      doc.rect(110, 60, 85, boxHeight, "F");
-      doc.setFont("helvetica", "bold");
-      doc.text("SERVICE DETAILS", 115, 68);
-      doc.setFont("helvetica", "normal");
-      doc.text(order.service.name, 115, 76);
-      doc.text(`Type: ${order.service.type}`, 115, 84);
-      doc.text(`Price: $${order.finalPrice}`, 115, 92);
-
-      // Payment info
-      const paymentY = 123;
-      doc.setFont("helvetica", "bold");
-      doc.text("PAYMENT INFORMATION", 15, 115);
-      doc.setFont("helvetica", "normal");
-      doc.text("Payment Method:", 15, paymentY);
-      doc.text(order.payment.method.toUpperCase(), 50, paymentY);
-      doc.text("Transaction ID:", 15, paymentY + 8);
-      doc.text(order.payment.transactionId, 50, paymentY + 8);
-      doc.text("Status:", 15, paymentY + 16);
-      doc.text(order.payment.status.toUpperCase(), 50, paymentY + 16);
-
-      // Order status
-      doc.setFont("helvetica", "bold");
-      doc.text("ORDER STATUS:", 15, paymentY + 30);
+      drawText(
+        "Order Status",
+        pageWidth - 55,
+        y + 7,
+        9,
+        colors.muted,
+        "normal",
+      );
       doc.setFillColor(getStatusColor(order.order_status));
-      doc.rect(50, paymentY + 25, 40, 10, "F");
-      doc.setTextColor("#FFFFFF");
-      doc.text(order.order_status.toUpperCase(), 70, paymentY + 30, {
-        align: "center",
-      });
+      doc.roundedRect(pageWidth - 58, y + 10, 40, 8, 3, 3, "F");
+      drawText(
+        order.order_status.toUpperCase(),
+        pageWidth - 38,
+        y + 15.5,
+        9,
+        "#FFFFFF",
+        "bold",
+        "center",
+      );
+
+      y += 30;
+
+      // Two info boxes
+      const boxGap = 8;
+      const boxWidth = (pageWidth - margin * 2 - boxGap) / 2;
+      const boxHeight = 38;
+
+      // Billed To
+      drawBox(margin, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawText("BILLED TO", margin + 4, y + 7, 10, colors.primary, "bold");
+      drawText(
+        order.user?.name || "N/A",
+        margin + 4,
+        y + 15,
+        11,
+        colors.dark,
+        "bold",
+      );
+      drawText(order.user?.email || "N/A", margin + 4, y + 22, 9, colors.text);
+      drawText(order.user?.phone || "N/A", margin + 4, y + 29, 9, colors.text);
+
+      // Service Details
+      const serviceX = margin + boxWidth + boxGap;
+      drawBox(serviceX, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "SERVICE DETAILS",
+        serviceX + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        order.service?.name || "N/A",
+        serviceX + 4,
+        y + 15,
+        11,
+        colors.dark,
+        "bold",
+      );
+      drawText(
+        `Type: ${order.service?.type || "N/A"}`,
+        serviceX + 4,
+        y + 22,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        serviceX + 4,
+        y + 29,
+        9,
+        colors.text,
+      );
+
+      y += boxHeight + 8;
+
+      // Description / scope section
+      drawText("SERVICE OVERVIEW", margin, y, 11, colors.primary, "bold");
+      y += 4;
+
+      let descHeight = 22;
+      if (uiDescription) {
+        const tempLines = doc.splitTextToSize(
+          uiDescription,
+          pageWidth - margin * 2 - 8,
+        );
+        descHeight = Math.max(22, tempLines.length * 5 + 10);
+      }
+
+      drawBox(
+        margin,
+        y,
+        pageWidth - margin * 2,
+        descHeight,
+        "#FCFCFD",
+        "#E5E7EB",
+      );
+      if (uiDescription) {
+        addWrappedText(
+          uiDescription,
+          margin + 4,
+          y + 7,
+          pageWidth - margin * 2 - 8,
+          9,
+          colors.text,
+        );
+      } else {
+        drawText(
+          "No additional service description available.",
+          margin + 4,
+          y + 8,
+          9,
+          colors.muted,
+        );
+      }
+
+      y += descHeight + 8;
+
+      // Features
+      if (uiFeatures.length > 0) {
+        drawText("FEATURES INCLUDED", margin, y, 11, colors.primary, "bold");
+        y += 4;
+
+        const featureHeight = Math.max(20, uiFeatures.length * 6 + 8);
+        drawBox(
+          margin,
+          y,
+          pageWidth - margin * 2,
+          featureHeight,
+          "#FCFCFD",
+          "#E5E7EB",
+        );
+
+        let featureY = y + 7;
+        uiFeatures.forEach((feature) => {
+          doc.setFillColor(colors.primary);
+          doc.circle(margin + 5, featureY - 1, 1, "F");
+          drawText(feature, margin + 9, featureY, 9, colors.text);
+          featureY += 6;
+        });
+
+        y += featureHeight + 8;
+      }
+
+      // Pricing + Payment row
+      const lowerBoxHeight = 42;
+
+      // Pricing box
+      drawBox(margin, y, boxWidth, lowerBoxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "PRICING SUMMARY",
+        margin + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        `Original Price: $${order.service?.price ?? "N/A"}`,
+        margin + 4,
+        y + 15,
+        9,
+        colors.text,
+      );
+
+      let priceY = y + 22;
+      if (order.service?.offer?.price) {
+        drawText(
+          `Offer Price: $${order.service.offer.price}`,
+          margin + 4,
+          priceY,
+          9,
+          "#15803D",
+          "bold",
+        );
+        priceY += 6;
+      }
+
+      if (order.coupon?.code) {
+        drawText(
+          `Coupon (${order.coupon.code}): -$${order.coupon.discountAmount}`,
+          margin + 4,
+          priceY,
+          9,
+          "#2563EB",
+        );
+        priceY += 6;
+      }
+
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        margin + 4,
+        y + 36,
+        11,
+        colors.dark,
+        "bold",
+      );
+
+      // Payment box
+      drawBox(serviceX, y, boxWidth, lowerBoxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "PAYMENT DETAILS",
+        serviceX + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        `Method: ${order.payment?.method?.toUpperCase() || "N/A"}`,
+        serviceX + 4,
+        y + 15,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Transaction ID: ${order.payment?.transactionId || "N/A"}`,
+        serviceX + 4,
+        y + 22,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Payment Status: ${order.payment?.status?.toUpperCase() || "N/A"}`,
+        serviceX + 4,
+        y + 29,
+        9,
+        colors.text,
+      );
 
       // Stamp
       const stamp = new Image();
       stamp.src = getStamp(order.order_status);
-      stamp.onload = () => {
-        doc.addImage(stamp, "PNG", pageWidth - 70, 120, 25, 25);
 
-        // Border
-        doc.setDrawColor(lightBorder);
-        doc.rect(10, 10, pageWidth - 20, 280);
+      stamp.onload = () => {
+        doc.addImage(stamp, "PNG", pageWidth - 52, y + 2, 24, 24);
+
+        y += lowerBoxHeight + 12;
+
+        // Footer note
+        drawBox(margin, y, pageWidth - margin * 2, 24, "#F0FDF4", "#BBF7D0");
+        drawText("NOTE", margin + 4, y + 7, 10, colors.primary, "bold");
+        addWrappedText(
+          "This invoice confirms the requested IT service order, payment status, and current work status. Please keep this document for your records.",
+          margin + 4,
+          y + 14,
+          pageWidth - margin * 2 - 8,
+          8.5,
+          colors.text,
+        );
+
+        // Footer line
+        drawText(
+          "Thank you for choosing our IT service.",
+          pageWidth / 2,
+          285,
+          10,
+          colors.muted,
+          "italic",
+          "center",
+        );
+
+        // Outer border
+        doc.setDrawColor("#E5E7EB");
+        doc.roundedRect(8, 8, pageWidth - 16, pageHeight - 16, 4, 4);
 
         doc.save(`Invoice_${order._id}.pdf`);
       };
     };
   };
 
-  if (error)
-    return <p className="text-red-500 dark:text-red-400 p-6">{error}</p>;
-  if (!order)
+  if (error) {
     return (
-      <p className="text-gray-600 dark:text-gray-300 p-6">
-        Loading order details...
-      </p>
+      <div className="min-h-screen bg-white p-4 text-gray-900 dark:bg-black dark:text-gray-100">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-red-200/60 bg-white/70 p-4 shadow-lg backdrop-blur-xl dark:border-red-500/20 dark:bg-white/5">
+          <p className="text-red-500 dark:text-red-400">{error}</p>
+        </div>
+      </div>
     );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-white p-4 text-gray-900 dark:bg-black dark:text-gray-100">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-black/10 bg-white/70 p-4 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+          <p className="text-gray-600 dark:text-gray-300">
+            Loading order details...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex justify-center items-start p-4 sm:p-8 text-gray-900 dark:text-gray-100 font-sans">
-      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur rounded-lg shadow-lg p-4 sm:p-8 w-full max-w-3xl mx-auto relative border border-black/5 dark:border-white/10">
-        <div className="flex justify-between items-center mb-6 sm:mb-8">
-          <h1 className="text-sm sm:text-base font-bold text-primaryRgb">{`Order: #${order._id}`}</h1>
-          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            {new Date(order.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
-        </div>
+    <div className="min-h-screen bg-white px-4 py-5 text-gray-900 dark:bg-black dark:text-gray-100">
+      <div className="mx-auto max-w-4xl">
+        <div className="rounded-2xl border border-black/10 bg-white/70 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] sm:p-5">
+          {/* Header */}
+          <div className="mb-4 flex flex-col gap-2 border-b border-black/10 pb-3 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="break-all text-sm font-bold text-[rgb(12,187,20)] sm:text-base">
+                {`Order: #${order._id}`}
+              </h1>
+              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                Complete order overview and invoice details
+              </p>
+            </div>
 
-        {/* Customer + Service */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 text-gray-700 dark:text-gray-300">
-          <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-lg border border-black/5 dark:border-white/10">
-            <h2 className="font-semibold text-base sm:text-lg text-primaryRgb mb-2 sm:mb-3">
-              Customer Details
-            </h2>
-            <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
-              <p className="break-all">Name: {order.user.name}</p>
-              <p className="break-all">Email: {order.user.email || "N/A"}</p>
-              <p className="break-all">Phone: {order.user.phone || "N/A"}</p>
+            <span className="w-fit rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
+              {new Date(order.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+
+          {/* Top info */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+                Customer Details
+              </h2>
+              <div className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                <p className="break-all">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Name:
+                  </span>{" "}
+                  {order.user.name}
+                </p>
+                <p className="break-all">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Email:
+                  </span>{" "}
+                  {order.user.email || "N/A"}
+                </p>
+                <p className="break-all">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Phone:
+                  </span>{" "}
+                  {order.user.phone || "N/A"}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+                Service Details
+              </h2>
+              <div className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Name:
+                  </span>{" "}
+                  {order.service.name}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Type:
+                  </span>{" "}
+                  {order.service.type}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Price:
+                  </span>{" "}
+                  ${order.finalPrice}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-lg border border-black/5 dark:border-white/10">
-            <h2 className="font-semibold text-base sm:text-lg text-primaryRgb mb-2 sm:mb-3">
-              Service Details
+          {/* Pricing */}
+          <div className="mt-3 rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+            <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+              Pricing Summary
             </h2>
-            <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
-              <p>Name: {order.service.name}</p>
-              <p>Type: {order.service.type}</p>
-              <p>Price: ${order.finalPrice}</p>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-2 text-sm sm:text-base">
-          {/* Original Price */}
-          <p>
-            Original Price:{" "}
-            <span className=" text-gray-500">${order.service.price}</span>
-          </p>
 
-          {/* Offer */}
-          {order.service.offer?.price && (
-            <div className="border-l-4 border-green-500 pl-3">
-              <p className="text-green-600 dark:text-green-400 font-medium">
-                Offer Price: ${order.service.offer.price}
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+              <p>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Original Price:
+                </span>{" "}
+                <span className="text-gray-500 dark:text-gray-400">
+                  ${order.service.price}
+                </span>
               </p>
-              <p className="text-xs text-gray-500 break-all">
-                Offer Title: {order.service.offer.title}
-              </p>
-              <p className="text-xs text-gray-400 break-all">
-                Offer ID: {order.service.offer.id}
-              </p>
-              {order.service.offer?.description && (
-                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300 whitespace-pre-line">
-                  {order.service.offer.description}
+
+              {order.service.offer?.price && (
+                <div className="rounded-xl border border-green-200 bg-green-50/80 p-3 dark:border-green-500/20 dark:bg-green-500/10">
+                  <p className="font-medium text-green-700 dark:text-green-300">
+                    Offer Price: ${order.service.offer.price}
+                  </p>
+                  <p className="mt-1 break-all text-xs text-gray-600 dark:text-gray-300">
+                    Offer Title: {order.service.offer.title}
+                  </p>
+                  <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+                    Offer ID: {order.service.offer.id}
+                  </p>
+
+                  {order.service.offer?.description && (
+                    <p className="mt-2 whitespace-pre-line text-xs text-gray-700 dark:text-gray-300">
+                      {order.service.offer.description}
+                    </p>
+                  )}
+
+                  {Array.isArray(order.service.offer?.features) &&
+                    order.service.offer.features.length > 0 && (
+                      <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-gray-700 dark:text-gray-200">
+                        {order.service.offer.features.map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    )}
+                </div>
+              )}
+
+              {order.coupon?.code && (
+                <p className="text-blue-600 dark:text-blue-400">
+                  Coupon ({order.coupon.code}): −$
+                  {order.coupon.discountAmount} ({order.coupon.discountPercent}
+                  %)
                 </p>
               )}
 
-              {Array.isArray(order.service.offer?.features) &&
-                order.service.offer.features.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-200 list-disc list-inside">
-                    {order.service.offer.features.map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-                )}
+              <p className="pt-1 text-base font-bold text-[rgb(12,187,20)]">
+                Final Price: ${order.finalPrice}
+              </p>
+            </div>
+          </div>
+
+          {/* Description / features fallback */}
+          {(uiDescription || uiFeatures.length > 0) && (
+            <div className="mt-3 rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+                Service Overview
+              </h2>
+
+              {uiDescription && (
+                <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
+                  {uiDescription}
+                </p>
+              )}
+
+              {uiFeatures.length > 0 && (
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                  {uiFeatures.map((feature, index) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
-          {/* Coupon */}
-          {order.coupon?.code && (
-            <p className="text-blue-600 dark:text-blue-400">
-              Coupon ({order.coupon.code}): −$
-              {order.coupon.discountAmount} ({order.coupon.discountPercent}%)
-            </p>
-          )}
+          {/* Payment + Order status */}
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+                Payment Information
+              </h2>
+              <div className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Method:
+                  </span>{" "}
+                  {order.payment.method}
+                </p>
+                <p className="break-all">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Transaction ID:
+                  </span>{" "}
+                  {order.payment.transactionId}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Status:
+                  </span>{" "}
+                  <span
+                    className={`ml-1 inline-flex rounded-full border px-2.5 py-1 text-xs ${
+                      order.payment.status === "paid"
+                        ? "border-green-200 bg-green-100 text-green-700 dark:border-green-500/20 dark:bg-green-900/30 dark:text-green-300"
+                        : order.payment.status === "pending"
+                          ? "border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-900/30 dark:text-yellow-300"
+                          : "border-red-200 bg-red-100 text-red-700 dark:border-red-500/20 dark:bg-red-900/30 dark:text-red-300"
+                    }`}
+                  >
+                    {order.payment.status}
+                  </span>
+                </p>
+              </div>
+            </div>
 
-          {/* Final Price */}
-          <p className="font-bold text-lg text-primaryRgb">
-            Final Price: ${order.finalPrice}
-          </p>
-        </div>
-        {/* Payment */}
-        <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-lg mb-4 sm:mb-6 text-gray-700 dark:text-gray-300 border border-black/5 dark:border-white/10">
-          <h2 className="font-semibold text-base sm:text-lg text-primaryRgb mb-2 sm:mb-3">
-            Payment Information
-          </h2>
-          <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
-            <p>Method: {order.payment.method}</p>
-            <p className="break-all">
-              Transaction ID: {order.payment.transactionId}
-            </p>
-            <p>
-              Status:{" "}
-              <span
-                className={`px-2 py-1 rounded text-xs sm:text-sm border ${
-                  order.payment.status === "paid"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
-                    : order.payment.status === "pending"
-                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                      : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
-                }`}
-              >
-                {order.payment.status}
-              </span>
-            </p>
+            <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <h2 className="mb-2 text-sm font-semibold text-[rgb(12,187,20)] sm:text-base">
+                Order Status
+              </h2>
+              <div className="flex items-center">
+                <span
+                  className={`inline-flex rounded-full border px-3 py-1.5 text-sm font-medium ${
+                    order.order_status === "completed"
+                      ? "border-green-200 bg-green-100 text-green-700 dark:border-green-500/20 dark:bg-green-900/30 dark:text-green-300"
+                      : order.order_status === "pending"
+                        ? "border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-900/30 dark:text-yellow-300"
+                        : order.order_status === "in progress"
+                          ? "border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-500/20 dark:bg-blue-900/30 dark:text-blue-300"
+                          : "border-red-200 bg-red-100 text-red-700 dark:border-red-500/20 dark:bg-red-900/30 dark:text-red-300"
+                  }`}
+                >
+                  {order.order_status}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Order Status */}
-        <div className="bg-white/70 dark:bg-gray-800/70 p-4 rounded-lg mb-6 text-gray-700 dark:text-gray-300 border border-black/5 dark:border-white/10">
-          <h2 className="font-semibold text-base sm:text-lg text-primaryRgb mb-2 sm:mb-3">
-            Order Status
-          </h2>
-          <div className="flex items-center">
-            <span
-              className={`px-3 py-1.5 rounded-full text-sm sm:text-base font-medium border ${
-                order.order_status === "completed"
-                  ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800"
-                  : order.order_status === "pending"
-                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                    : order.order_status === "in progress"
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                      : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800"
-              }`}
+          {/* Action */}
+          <div className="mt-4">
+            <button
+              onClick={generatePDF}
+              className="w-full rounded-xl bg-[rgb(12,187,20)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60 sm:w-auto"
             >
-              {order.order_status}
-            </span>
+              Download Invoice
+            </button>
           </div>
         </div>
-
-        <button
-          onClick={generatePDF}
-          className="bg-[rgb(12,187,20)] hover:brightness-95 text-white px-4 py-2 rounded font-semibold focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60"
-        >
-          Download Invoice
-        </button>
       </div>
     </div>
   );

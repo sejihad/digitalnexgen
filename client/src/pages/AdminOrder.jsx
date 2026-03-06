@@ -28,7 +28,7 @@ const AdminOrder = () => {
       }
     };
     fetchOrder();
-  }, [id]);
+  }, [id, apiBaseUrl]);
   const getStamp = (status) => {
     switch (status) {
       case "completed":
@@ -74,132 +74,426 @@ const AdminOrder = () => {
   const generatePDF = () => {
     if (!order) return;
 
-    const doc = new jsPDF();
+    const doc = new jsPDF("p", "mm", "a4");
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Colors
-    const primaryColor = "#00DCEE";
-    const secondaryColor = "#F5F5F5";
-    const textColor = "#333333";
-    const lightBorder = "#DDDDDD";
+    const colors = {
+      primary: "#0CBB14",
+      primarySoft: "#EAF9EC",
+      dark: "#1F2937",
+      text: "#374151",
+      muted: "#6B7280",
+      border: "#D1D5DB",
+      lightBg: "#F9FAFB",
+      white: "#FFFFFF",
+    };
 
-    // Add Logo (top center)
-    const img = new Image();
-    img.src = logoUrl;
-    img.onload = () => {
-      doc.addImage(img, "PNG", pageWidth / 2 - 25, 15, 50, 25);
+    const margin = 14;
+    let y = 18;
 
-      // Invoice header
-      doc.setFontSize(24);
-      doc.setTextColor(primaryColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", pageWidth / 2, 50, { align: "center" });
+    const getStatusColor = (status) => {
+      const statusColors = {
+        pending: "#F59E0B",
+        "in progress": "#3B82F6",
+        completed: "#22C55E",
+        cancelled: "#EF4444",
+      };
+      return statusColors[status?.toLowerCase()] || "#9CA3AF";
+    };
 
-      // Invoice details
-      doc.setFontSize(10);
-      doc.setTextColor("#666666");
-      doc.setFont("helvetica", "normal");
-      doc.text(`Invoice #: ${order._id}`, pageWidth - 20, 40, {
-        align: "right",
-      });
-      doc.text(
-        `Date: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
-        pageWidth - 20,
-        45,
-        { align: "right" },
+    const drawText = (
+      text,
+      x,
+      yPos,
+      size = 10,
+      color = colors.text,
+      style = "normal",
+      align = "left",
+    ) => {
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(color);
+      doc.text(String(text || ""), x, yPos, { align });
+    };
+
+    const drawBox = (
+      x,
+      yPos,
+      w,
+      h,
+      fill = colors.white,
+      border = colors.border,
+    ) => {
+      doc.setFillColor(fill);
+      doc.setDrawColor(border);
+      doc.roundedRect(x, yPos, w, h, 3, 3, "FD");
+    };
+
+    const addWrappedText = (
+      text,
+      x,
+      yPos,
+      maxWidth,
+      size = 10,
+      color = colors.text,
+      style = "normal",
+      lineGap = 5,
+    ) => {
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(color);
+      const lines = doc.splitTextToSize(text || "", maxWidth);
+      doc.text(lines, x, yPos);
+      return yPos + lines.length * lineGap;
+    };
+
+    const logo = new Image();
+    logo.src = logoUrl;
+
+    logo.onload = () => {
+      doc.setFillColor("#FFFFFF");
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      // top accent bar
+      doc.setFillColor(colors.primary);
+      doc.rect(0, 0, pageWidth, 10, "F");
+
+      // logo
+      doc.addImage(logo, "PNG", margin, y, 32, 16);
+
+      // heading
+      drawText(
+        "ORDER INVOICE",
+        pageWidth - margin,
+        y + 6,
+        20,
+        colors.dark,
+        "bold",
+        "right",
+      );
+      drawText(
+        "Order Summary",
+        pageWidth - margin,
+        y + 12,
+        9,
+        colors.muted,
+        "normal",
+        "right",
       );
 
-      // Divider line
-      doc.setDrawColor(lightBorder);
-      doc.line(15, 55, pageWidth - 15, 55);
+      y += 24;
 
-      // Customer and Service side by side
-      const boxHeight = 40;
-
-      // Customer box
-      doc.setFillColor(secondaryColor);
-      doc.rect(15, 60, 85, boxHeight, "F");
-      doc.setTextColor(textColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("BILLED TO", 20, 68);
-      doc.setFont("helvetica", "normal");
-      doc.text(order.user.name, 20, 76);
-      doc.text(order.user.email || "N/A", 20, 84);
-      doc.text(order.user.phone || "N/A", 20, 92);
-
-      // Service box
-      doc.setFillColor(secondaryColor);
-      doc.rect(110, 60, 85, boxHeight, "F");
-      doc.setFont("helvetica", "bold");
-      doc.text("SERVICE DETAILS", 115, 68);
-      doc.setFont("helvetica", "normal");
-      doc.text(order.service.name, 115, 76);
-      doc.text(`Type: ${order.service.type}`, 115, 84);
-      doc.text(`Price: $${order.finalPrice}`, 115, 92);
-
-      // Payment details section
-      doc.setFont("helvetica", "bold");
-      doc.text("PAYMENT INFORMATION", 15, 115);
-
-      const paymentY = 123;
-      doc.setFont("helvetica", "normal");
-      doc.text("Payment Method:", 15, paymentY);
-      doc.text(order.payment.method.toUpperCase(), 50, paymentY);
-
-      doc.text("Transaction ID:", 15, paymentY + 8);
-      doc.text(order.payment.transactionId, 50, paymentY + 8);
-
-      doc.text("Status:", 15, paymentY + 16);
-      doc.text(
-        order.payment.status.toUpperCase(),
-        50,
-        paymentY + 16,
-        null,
-        null,
-        null,
-        {
-          color: order.payment.status === "paid" ? "#4CAF50" : "#FF9800",
-        },
+      // invoice meta
+      drawBox(margin, y, pageWidth - margin * 2, 22, "#F8FAFC", "#E5E7EB");
+      drawText(
+        `Invoice ID: ${order._id}`,
+        margin + 4,
+        y + 7,
+        10,
+        colors.dark,
+        "bold",
+      );
+      drawText(
+        `Issued: ${format(new Date(order.createdAt), "MMM dd, yyyy")}`,
+        margin + 4,
+        y + 14,
+        9,
+        colors.muted,
       );
 
-      // Order status with badge effect
-      doc.setFont("helvetica", "bold");
-      doc.text("ORDER STATUS:", 15, paymentY + 30);
+      drawText("Order Status", pageWidth - 55, y + 7, 9, colors.muted);
       doc.setFillColor(getStatusColor(order.order_status));
-      doc.rect(50, paymentY + 25, 40, 10, "F");
-      doc.setTextColor("#FFFFFF");
-      doc.text(order.order_status.toUpperCase(), 70, paymentY + 30, {
-        align: "center",
-      });
+      doc.roundedRect(pageWidth - 58, y + 10, 40, 8, 3, 3, "F");
+      drawText(
+        String(order.order_status || "").toUpperCase(),
+        pageWidth - 38,
+        y + 15.5,
+        9,
+        "#FFFFFF",
+        "bold",
+        "center",
+      );
 
-      // Terms and conditions
-      doc.setTextColor("#666666");
-      doc.setFontSize(8);
+      y += 30;
 
-      // Add Stamp (right bottom)
+      // info boxes
+      const boxGap = 8;
+      const boxWidth = (pageWidth - margin * 2 - boxGap) / 2;
+      const boxHeight = 38;
+
+      drawBox(margin, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawText("BILLED TO", margin + 4, y + 7, 10, colors.primary, "bold");
+      drawText(
+        order.user?.name || "N/A",
+        margin + 4,
+        y + 15,
+        11,
+        colors.dark,
+        "bold",
+      );
+      drawText(order.user?.email || "N/A", margin + 4, y + 22, 9, colors.text);
+      drawText(order.user?.phone || "N/A", margin + 4, y + 29, 9, colors.text);
+
+      const serviceX = margin + boxWidth + boxGap;
+      drawBox(serviceX, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "SERVICE DETAILS",
+        serviceX + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        order.service?.name || "N/A",
+        serviceX + 4,
+        y + 15,
+        11,
+        colors.dark,
+        "bold",
+      );
+      drawText(
+        `Type: ${order.service?.type || "N/A"}`,
+        serviceX + 4,
+        y + 22,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        serviceX + 4,
+        y + 29,
+        9,
+        colors.text,
+      );
+
+      y += boxHeight + 8;
+
+      // service overview
+      drawText("SERVICE OVERVIEW", margin, y, 11, colors.primary, "bold");
+      y += 4;
+
+      const overviewText =
+        description || "No additional service description available.";
+      const overviewLines = doc.splitTextToSize(
+        overviewText,
+        pageWidth - margin * 2 - 8,
+      );
+      const overviewHeight = Math.max(22, overviewLines.length * 5 + 10);
+
+      drawBox(
+        margin,
+        y,
+        pageWidth - margin * 2,
+        overviewHeight,
+        "#FCFCFD",
+        "#E5E7EB",
+      );
+      addWrappedText(
+        overviewText,
+        margin + 4,
+        y + 7,
+        pageWidth - margin * 2 - 8,
+        9,
+        colors.text,
+      );
+
+      y += overviewHeight + 8;
+
+      // features
+      if (features.length > 0) {
+        drawText("FEATURES INCLUDED", margin, y, 11, colors.primary, "bold");
+        y += 4;
+
+        const featureHeight = Math.max(20, features.length * 6 + 8);
+        drawBox(
+          margin,
+          y,
+          pageWidth - margin * 2,
+          featureHeight,
+          "#FCFCFD",
+          "#E5E7EB",
+        );
+
+        let featureY = y + 7;
+        features.forEach((feature) => {
+          doc.setFillColor(colors.primary);
+          doc.circle(margin + 5, featureY - 1, 1, "F");
+          drawText(feature, margin + 9, featureY, 9, colors.text);
+          featureY += 6;
+        });
+
+        y += featureHeight + 8;
+      }
+
+      // pricing & payment
+      const lowerBoxHeight = 44;
+
+      drawBox(margin, y, boxWidth, lowerBoxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "PRICING SUMMARY",
+        margin + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        `Original Price: $${order.service?.price ?? "N/A"}`,
+        margin + 4,
+        y + 15,
+        9,
+        colors.text,
+      );
+
+      let priceY = y + 22;
+      if (order.service?.offer?.price) {
+        drawText(
+          `Offer Price: $${order.service.offer.price}`,
+          margin + 4,
+          priceY,
+          9,
+          "#15803D",
+          "bold",
+        );
+        priceY += 6;
+      }
+
+      if (order.coupon?.code) {
+        drawText(
+          `Coupon (${order.coupon.code}): -$${order.coupon.discountAmount}`,
+          margin + 4,
+          priceY,
+          9,
+          "#2563EB",
+        );
+        priceY += 6;
+      }
+
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        margin + 4,
+        y + 37,
+        11,
+        colors.dark,
+        "bold",
+      );
+
+      drawBox(serviceX, y, boxWidth, lowerBoxHeight, colors.lightBg, "#E5E7EB");
+      drawText(
+        "PAYMENT DETAILS",
+        serviceX + 4,
+        y + 7,
+        10,
+        colors.primary,
+        "bold",
+      );
+      drawText(
+        `Method: ${order.payment?.method?.toUpperCase() || "N/A"}`,
+        serviceX + 4,
+        y + 15,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Transaction ID: ${order.payment?.transactionId || "N/A"}`,
+        serviceX + 4,
+        y + 22,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Payment Status: ${order.payment?.status?.toUpperCase() || "N/A"}`,
+        serviceX + 4,
+        y + 29,
+        9,
+        colors.text,
+      );
+      drawText(
+        `Customer: ${order.user?.name || "N/A"}`,
+        serviceX + 4,
+        y + 36,
+        9,
+        colors.text,
+      );
+
       const stamp = new Image();
       stamp.src = getStamp(order.order_status);
-      stamp.onload = () => {
-        doc.addImage(stamp, "PNG", pageWidth - 70, 120, 25, 25);
 
-        // Final border
-        doc.setDrawColor(lightBorder);
-        doc.rect(10, 10, pageWidth - 20, 280);
+      stamp.onload = () => {
+        doc.addImage(stamp, "PNG", pageWidth - 52, y + 3, 24, 24);
+
+        y += lowerBoxHeight + 12;
+
+        drawBox(margin, y, pageWidth - margin * 2, 24, "#F0FDF4", "#BBF7D0");
+        drawText("NOTE", margin + 4, y + 7, 10, colors.primary, "bold");
+        addWrappedText(
+          "This invoice confirms the order details, payment state, and work status from the admin dashboard. Please retain this document for billing and support reference.",
+          margin + 4,
+          y + 14,
+          pageWidth - margin * 2 - 8,
+          8.5,
+          colors.text,
+        );
+
+        drawText(
+          "Thank you for managing your service orders with us.",
+          pageWidth / 2,
+          285,
+          10,
+          colors.muted,
+          "italic",
+          "center",
+        );
+
+        doc.setDrawColor("#E5E7EB");
+        doc.roundedRect(8, 8, pageWidth - 16, pageHeight - 16, 4, 4);
+
+        doc.save(`Invoice_${order._id}.pdf`);
+      };
+
+      stamp.onerror = () => {
+        drawBox(
+          margin,
+          y + 46,
+          pageWidth - margin * 2,
+          24,
+          "#F0FDF4",
+          "#BBF7D0",
+        );
+        drawText("NOTE", margin + 4, y + 53, 10, colors.primary, "bold");
+        addWrappedText(
+          "This invoice confirms the order details, payment state, and work status from the admin dashboard. Please retain this document for billing and support reference.",
+          margin + 4,
+          y + 60,
+          pageWidth - margin * 2 - 8,
+          8.5,
+          colors.text,
+        );
+
+        drawText(
+          "Thank you for managing your service orders with us.",
+          pageWidth / 2,
+          285,
+          10,
+          colors.muted,
+          "italic",
+          "center",
+        );
+
+        doc.setDrawColor("#E5E7EB");
+        doc.roundedRect(8, 8, pageWidth - 16, pageHeight - 16, 4, 4);
 
         doc.save(`Invoice_${order._id}.pdf`);
       };
     };
 
-    // Helper function for status colors
-    function getStatusColor(status) {
-      const colors = {
-        pending: "#FF9800",
-        "in progress": "#2196F3",
-        completed: "#4CAF50",
-        cancelled: "#F44336",
-      };
-      return colors[status.toLowerCase()] || "#9E9E9E";
-    }
+    logo.onerror = () => {
+      const fallbackDoc = new jsPDF("p", "mm", "a4");
+      fallbackDoc.text("Logo failed to load.", 20, 20);
+      fallbackDoc.save(`Invoice_${order._id}.pdf`);
+    };
   };
 
   if (error) return <p className="text-red-500 p-6">{error}</p>;
