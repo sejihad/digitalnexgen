@@ -81,6 +81,7 @@ export const createOrGetConversation = async (req, res, next) => {
 
     return res.status(200).json(conv);
   } catch (error) {
+    console.error("createOrGetConversation error:", error);
     next(error);
   }
 };
