@@ -25,11 +25,12 @@ export const getOrderById = async (req, res, next) => {
 
 export const getOrdersCount = async (req, res, next) => {
   try {
-    const ordersCount = await Order.countDocuments({
-      ...(req.isAdmin ? { adminId: req.userId } : { buyerId: req.userId }),
-      isCompleted: true,
-    });
-
+    // const ordersCount = await Order.countDocuments({
+    //   ...(req.isAdmin ? { adminId: req.userId } : { buyerId: req.userId }),
+    //   isCompleted: true,
+    // });
+    const ordersCount = await Order.countDocuments();
+    console.log(ordersCount);
     res.status(200).json({ ordersCount });
   } catch (error) {
     next(error);

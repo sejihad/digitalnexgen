@@ -97,6 +97,8 @@ export const SocketProvider = ({ children }) => {
     };
 
     s.on("message:receive", handleIncoming);
+    s.on("offer:receive", handleIncoming);
+    s.on("offer:update", handleIncoming);
     s.on("admin:conversation:update", handleIncoming);
 
     setSocket(s);
@@ -108,6 +110,8 @@ export const SocketProvider = ({ children }) => {
       s.off("disconnect");
       s.off("users:online");
       s.off("message:receive", handleIncoming);
+      s.off("offer:receive", handleIncoming);
+      s.off("offer:update", handleIncoming);
       s.off("admin:conversation:update", handleIncoming);
       s.disconnect();
     };

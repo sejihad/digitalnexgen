@@ -1,18 +1,20 @@
 import axios from "axios";
-import { Gift, Send, X } from "lucide-react";
+import { Gift, Search, Send, X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useSocket } from "../context/SocketContext.jsx";
 
 const safeStr = (v) => String(v ?? "");
+const asArray = (v) => (Array.isArray(v) ? v : []);
 
 const Message = ({ conversationId }) => {
   const location = useLocation();
-  const stateServiceTitle = location.state?.serviceTitle;
-  const stateServiceId = location.state?.serviceId;
   const { id: routeId } = useParams();
   const convId = conversationId || routeId;
+
+  const stateServiceTitle = location.state?.serviceTitle;
+  const stateServiceId = location.state?.serviceId;
 
   const {
     socket,
@@ -20,13 +22,13 @@ const Message = ({ conversationId }) => {
     leaveConversation,
     startTyping,
     stopTyping,
-    sendMessage,
     isConnected,
   } = useSocket();
 
   const [conversation, setConversation] = useState({ messages: [] });
   const [offers, setOffers] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+
   const [newOffer, setNewOffer] = useState({
     gigId: "",
     gigTitle: "",
@@ -48,9 +50,13 @@ const Message = ({ conversationId }) => {
   const [payOffer, setPayOffer] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
 
+  const [gigQuery, setGigQuery] = useState("");
+  const [gigResults, setGigResults] = useState([]);
+  const [gigSearchLoading, setGigSearchLoading] = useState(false);
+
   const typingHideTimerRef = useRef(null);
   const typingStopTimerRef = useRef(null);
-  const messagesEndRef = useRef(null);
+
   const messagesContainerRef = useRef(null);
   const messageTimeoutsRef = useRef(new Map());
 
@@ -59,43 +65,127 @@ const Message = ({ conversationId }) => {
   const meId = safeStr(currentUser.id || currentUser._id || "");
   const meIsAdmin = Boolean(currentUser?.isAdmin);
 
-  const buyerId = conversation?.buyerId ? safeStr(conversation.buyerId) : "";
-  const sellerId = conversation?.sellerId ? safeStr(conversation.sellerId) : "";
-  const adminId = conversation?.adminId ? safeStr(conversation.adminId) : "";
+  const customerValue = conversation?.customerId;
+  const customerId =
+    customerValue && typeof customerValue === "object"
+      ? safeStr(customerValue?._id)
+      : safeStr(customerValue || "");
 
-  const counterpartId = meIsAdmin
-    ? buyerId || ""
-    : adminId && adminId !== meId
-      ? adminId
-      : sellerId && sellerId !== meId
-        ? sellerId
-        : buyerId || "";
+  const customerDisplayName =
+    typeof customerValue === "object"
+      ? customerValue?.name ||
+        customerValue?.username ||
+        customerValue?.email ||
+        ""
+      : "";
+
+  const firstAdminValue = asArray(conversation?.adminIds)[0];
+  const firstAdminId =
+    firstAdminValue && typeof firstAdminValue === "object"
+      ? safeStr(firstAdminValue?._id)
+      : safeStr(firstAdminValue || "");
+
+  const firstAdminDisplayName =
+    firstAdminValue && typeof firstAdminValue === "object"
+      ? firstAdminValue?.name ||
+        firstAdminValue?.username ||
+        firstAdminValue?.email ||
+        ""
+      : "";
+
+  const counterpartId = meIsAdmin ? customerId : firstAdminId;
+
+  const primaryLinkedService = asArray(conversation?.linkedServices)[0] || null;
+  const headerServiceTitle =
+    stateServiceTitle ||
+    primaryLinkedService?.title ||
+    conversation?.service?.title ||
+    "";
 
   const getDisplayName = (msg) => {
-    if (meIsAdmin) return msg.userId?.name || msg.userId?.username || "User";
-    if (msg.userId?.isAdmin)
-      return msg.userId?.name || msg.userId?.username || "Admin";
-    return msg.userId?.name || msg.userId?.username || "User";
+    if (meIsAdmin) {
+      return msg?.userId?.name || msg?.userId?.username || "User";
+    }
+    if (msg?.userId?.isAdmin) {
+      return msg?.userId?.name || msg?.userId?.username || "Admin";
+    }
+    return msg?.userId?.name || msg?.userId?.username || "User";
+  };
+
+  const persistSavedGig = (item) => {
+    if (!convId || !item?.serviceId) return;
+
+    const normalized = {
+      serviceId: safeStr(item.serviceId),
+      title: item.title || "",
+      subCategory: item.subCategory || "",
+      coverImage: item.coverImage || "",
+      savedAt: item.savedAt || Date.now(),
+    };
+
+    const key = `conv_gigs_${convId}`;
+
+    try {
+      const prev = JSON.parse(localStorage.getItem(key) || "[]");
+      const merged = [
+        normalized,
+        ...asArray(prev).filter(
+          (g) => safeStr(g.serviceId) !== safeStr(normalized.serviceId),
+        ),
+      ];
+      localStorage.setItem(key, JSON.stringify(merged));
+      setSavedGigs(merged);
+    } catch {
+      setSavedGigs((prev) => [
+        normalized,
+        ...prev.filter(
+          (g) => safeStr(g.serviceId) !== safeStr(normalized.serviceId),
+        ),
+      ]);
+    }
+  };
+
+  const selectGig = (gig) => {
+    if (!gig?._id) return;
+
+    const selected = {
+      serviceId: gig._id,
+      title: gig.title || "",
+      subCategory: gig.subCategory || "",
+      coverImage: gig.coverImage?.url || gig.coverImage || "",
+      savedAt: Date.now(),
+    };
+
+    setNewOffer((prev) => ({
+      ...prev,
+      gigId: safeStr(selected.serviceId),
+      gigTitle: selected.title,
+      gigSubCategory: selected.subCategory,
+      gigCoverImage: selected.coverImage,
+    }));
+
+    persistSavedGig(selected);
+    setGigQuery(selected.title || "");
+    setGigResults([]);
   };
 
   useEffect(() => {
     setIsAdmin(meIsAdmin);
   }, [meIsAdmin]);
 
-  // Join conversation
   useEffect(() => {
     if (!convId) return;
-    console.log("📌 Joining conversation:", convId);
+
     joinConversation(convId);
+
     return () => {
-      console.log("🔇 Leaving conversation:", convId);
       leaveConversation(convId);
     };
   }, [convId, joinConversation, leaveConversation]);
 
-  // Mark read
   useEffect(() => {
     if (!convId) return;
+
     axios
       .put(
         `${apiBase}/api/conversations/${convId}/read`,
@@ -105,16 +195,10 @@ const Message = ({ conversationId }) => {
       .catch(() => {});
   }, [apiBase, convId]);
 
-  // Socket listeners - FIXED: Removed the duplicate handleSendMessage
-  // Message.jsx - Update socket listeners useEffect (around line 180)
-
   useEffect(() => {
     if (!socket || !convId) return;
 
-    // ✅ Message receive handler
     const handleMessage = (payload) => {
-      console.log("📨 message:receive payload:", payload);
-
       if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
 
       const incoming = payload?.message;
@@ -123,20 +207,29 @@ const Message = ({ conversationId }) => {
       setConversation((prev) => {
         const prevMsgs = Array.isArray(prev.messages) ? prev.messages : [];
 
-        // Check for duplicate
-        if (prevMsgs.some((m) => safeStr(m?._id) === safeStr(incoming._id))) {
-          console.log("⚠️ Duplicate message ignored");
-          return prev;
+        const withoutTemp = prevMsgs.filter((m) => {
+          const isTemp = safeStr(m?._id).startsWith("temp-");
+          const sameSender =
+            safeStr(m?.userId?._id || m?.userId) ===
+            safeStr(incoming?.userId?._id || incoming?.userId);
+          const sameText =
+            safeStr(m?.message).trim() === safeStr(incoming?.message).trim();
+
+          return !(isTemp && sameSender && sameText);
+        });
+
+        if (
+          withoutTemp.some((m) => safeStr(m?._id) === safeStr(incoming?._id))
+        ) {
+          return { ...prev, messages: withoutTemp };
         }
 
-        console.log("✅ Adding new message to UI:", incoming);
         return {
           ...prev,
-          messages: [...prevMsgs, incoming],
+          messages: [...withoutTemp, incoming],
         };
       });
 
-      // Mark as read
       axios
         .put(
           `${apiBase}/api/conversations/${convId}/read`,
@@ -152,32 +245,78 @@ const Message = ({ conversationId }) => {
 
       if (data?.isTyping) {
         setIsTypingVisible(true);
-        if (typingHideTimerRef.current)
+        if (typingHideTimerRef.current) {
           clearTimeout(typingHideTimerRef.current);
+        }
         typingHideTimerRef.current = setTimeout(() => {
           setIsTypingVisible(false);
         }, 2500);
       } else {
         setIsTypingVisible(false);
-        if (typingHideTimerRef.current)
+        if (typingHideTimerRef.current) {
           clearTimeout(typingHideTimerRef.current);
+        }
       }
     };
 
-    // ✅ Attach listeners
+    const handleOfferReceive = (payload) => {
+      if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
+
+      const incoming = payload?.offer;
+      if (!incoming?._id) return;
+
+      setOffers((prev) => {
+        const exists = prev.some(
+          (offer) => safeStr(offer?._id) === safeStr(incoming._id),
+        );
+        if (exists) return prev;
+        return [...prev, incoming];
+      });
+    };
+
+    const handleOfferUpdate = (payload) => {
+      if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
+
+      const updated = payload?.offer;
+      if (!updated?._id) return;
+
+      setOffers((prev) => {
+        const exists = prev.some(
+          (offer) => safeStr(offer?._id) === safeStr(updated._id),
+        );
+
+        if (!exists) return [...prev, updated];
+
+        return prev.map((offer) =>
+          safeStr(offer?._id) === safeStr(updated._id)
+            ? { ...offer, ...updated }
+            : offer,
+        );
+      });
+    };
+
+    socket.off("message:receive", handleMessage);
+    socket.off("typing:update", handleTypingUpdate);
+    socket.off("offer:receive", handleOfferReceive);
+    socket.off("offer:update", handleOfferUpdate);
+
     socket.on("message:receive", handleMessage);
     socket.on("typing:update", handleTypingUpdate);
-
-    console.log("👂 Socket listeners attached for conversation:", convId);
+    socket.on("offer:receive", handleOfferReceive);
+    socket.on("offer:update", handleOfferUpdate);
 
     return () => {
-      console.log("🧹 Removing socket listeners");
       socket.off("message:receive", handleMessage);
       socket.off("typing:update", handleTypingUpdate);
-      if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
+      socket.off("offer:receive", handleOfferReceive);
+      socket.off("offer:update", handleOfferUpdate);
+
+      if (typingHideTimerRef.current) {
+        clearTimeout(typingHideTimerRef.current);
+      }
     };
-  }, [socket, convId, apiBase, meId]); // ✅ Dependencies correct
-  // Cleanup timeouts on unmount
+  }, [socket, convId, apiBase, meId]);
+
   useEffect(() => {
     return () => {
       messageTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
@@ -185,8 +324,14 @@ const Message = ({ conversationId }) => {
     };
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior = "smooth") => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
   };
 
   useEffect(() => {
@@ -200,74 +345,71 @@ const Message = ({ conversationId }) => {
         `${apiBase}/api/offers?conversationId=${convId}`,
         { withCredentials: true },
       );
-      setOffers(offersRes.data || []);
+      setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
     } catch {}
   };
 
-  // Fetch conversation
   useEffect(() => {
     const fetchConversation = async () => {
       if (!convId) return;
+
       try {
         const conversationRes = await axios.get(
           `${apiBase}/api/conversations/single/${convId}`,
           { withCredentials: true },
         );
 
-        if (conversationRes.data) {
-          const messageRes = await axios.get(
-            `${apiBase}/api/messages/${convId}`,
-            { withCredentials: true },
-          );
+        if (!conversationRes.data) return;
 
-          setConversation({
-            ...conversationRes.data,
-            messages: Array.isArray(messageRes.data) ? messageRes.data : [],
-          });
+        const messageRes = await axios.get(
+          `${apiBase}/api/messages/${convId}`,
+          {
+            withCredentials: true,
+          },
+        );
 
-          await fetchOffers();
+        setConversation({
+          ...conversationRes.data,
+          messages: Array.isArray(messageRes.data) ? messageRes.data : [],
+        });
 
-          const serverLinked = Array.isArray(
-            conversationRes.data.linkedServices,
-          )
-            ? conversationRes.data.linkedServices
-            : [];
+        await fetchOffers();
 
-          if (serverLinked.length > 0) {
-            const key = `conv_gigs_${convId}`;
-            try {
-              const prev = JSON.parse(localStorage.getItem(key) || "[]");
-              const normalized = serverLinked.map((s) => ({
+        const serverLinked = asArray(conversationRes.data.linkedServices);
+        if (serverLinked.length > 0) {
+          const key = `conv_gigs_${convId}`;
+          try {
+            const prev = JSON.parse(localStorage.getItem(key) || "[]");
+            const normalized = serverLinked.map((s) => ({
+              serviceId: safeStr(s.serviceId),
+              title: s.title || "",
+              subCategory: s.subCategory || "",
+              coverImage: s.coverImage || "",
+              savedAt: s.savedAt ? new Date(s.savedAt).getTime() : Date.now(),
+            }));
+
+            const merged = [
+              ...normalized,
+              ...asArray(prev).filter(
+                (g) =>
+                  !normalized.some(
+                    (n) => safeStr(n.serviceId) === safeStr(g.serviceId),
+                  ),
+              ),
+            ];
+
+            localStorage.setItem(key, JSON.stringify(merged));
+            setSavedGigs(merged);
+          } catch {
+            setSavedGigs(
+              serverLinked.map((s) => ({
                 serviceId: safeStr(s.serviceId),
-                title: s.title,
-                subCategory: s.subCategory,
-                coverImage: s.coverImage,
+                title: s.title || "",
+                subCategory: s.subCategory || "",
+                coverImage: s.coverImage || "",
                 savedAt: s.savedAt ? new Date(s.savedAt).getTime() : Date.now(),
-              }));
-              const merged = [
-                ...normalized,
-                ...prev.filter(
-                  (g) =>
-                    !normalized.some(
-                      (n) => safeStr(n.serviceId) === safeStr(g.serviceId),
-                    ),
-                ),
-              ];
-              localStorage.setItem(key, JSON.stringify(merged));
-              setSavedGigs(merged);
-            } catch {
-              setSavedGigs(
-                serverLinked.map((s) => ({
-                  serviceId: safeStr(s.serviceId),
-                  title: s.title,
-                  subCategory: s.subCategory,
-                  coverImage: s.coverImage,
-                  savedAt: s.savedAt
-                    ? new Date(s.savedAt).getTime()
-                    : Date.now(),
-                })),
-              );
-            }
+              })),
+            );
           }
         }
       } catch {}
@@ -276,27 +418,62 @@ const Message = ({ conversationId }) => {
     fetchConversation();
   }, [apiBase, convId]);
 
-  // Fetch username
   useEffect(() => {
-    const loadName = async () => {
+    const loadHeader = async () => {
       try {
+        if (meIsAdmin) {
+          if (customerDisplayName) {
+            setHeaderName(customerDisplayName);
+            setHeaderUser(
+              typeof customerValue === "object" ? customerValue : null,
+            );
+            return;
+          }
+
+          if (!customerId) return;
+
+          const res = await axios.get(`${apiBase}/api/users/${customerId}`, {
+            withCredentials: true,
+          });
+          const u = res?.data || {};
+          setHeaderName(u.name || u.username || u.email || "User");
+          setHeaderUser(u);
+          return;
+        }
+
+        if (firstAdminDisplayName) {
+          setHeaderName("Admin");
+          setHeaderUser(
+            typeof firstAdminValue === "object" ? firstAdminValue : null,
+          );
+          return;
+        }
+
         if (!counterpartId) return;
+
         const res = await axios.get(`${apiBase}/api/users/${counterpartId}`, {
           withCredentials: true,
         });
         const u = res?.data || {};
-        if (u) {
-          if (meIsAdmin) setHeaderName(u.name || u.username || "User");
-          else
-            setHeaderName(u.isAdmin ? "Admin" : u.name || u.username || "User");
-        }
+        setHeaderName(u.isAdmin ? "Admin" : u.name || u.username || "User");
         setHeaderUser(u);
-      } catch {}
+      } catch {
+        setHeaderName(meIsAdmin ? "User" : "Admin");
+      }
     };
-    loadName();
-  }, [apiBase, counterpartId, meIsAdmin]);
 
-  // Load saved gigs
+    loadHeader();
+  }, [
+    apiBase,
+    counterpartId,
+    meIsAdmin,
+    customerId,
+    customerDisplayName,
+    customerValue,
+    firstAdminDisplayName,
+    firstAdminValue,
+  ]);
+
   useEffect(() => {
     const key = `conv_gigs_${convId}`;
     try {
@@ -305,10 +482,9 @@ const Message = ({ conversationId }) => {
     } catch {}
   }, [convId]);
 
-  // Load gig details
   useEffect(() => {
     const serviceId =
-      stateServiceId || conversation?.serviceId || conversation?.service?._id;
+      stateServiceId || safeStr(primaryLinkedService?.serviceId);
     if (!serviceId) return;
 
     let isMounted = true;
@@ -320,40 +496,53 @@ const Message = ({ conversationId }) => {
         );
         if (!isMounted) return;
 
-        const key = `conv_gigs_${convId}`;
         const item = {
           serviceId: res.data?._id,
-          title: res.data?.title,
-          subCategory: res.data?.subCategory,
-          coverImage: res.data?.coverImage,
+          title: res.data?.title || "",
+          subCategory: res.data?.subCategory || "",
+          coverImage: res.data?.coverImage?.url || res.data?.coverImage || "",
           savedAt: Date.now(),
         };
 
-        try {
-          const prev = JSON.parse(localStorage.getItem(key) || "[]");
-          const merged = [
-            item,
-            ...prev.filter(
-              (g) => safeStr(g.serviceId) !== safeStr(item.serviceId),
-            ),
-          ];
-          localStorage.setItem(key, JSON.stringify(merged));
-          setSavedGigs(merged);
-        } catch {}
+        persistSavedGig(item);
       } catch {}
     };
 
     load();
+
     return () => {
       isMounted = false;
     };
-  }, [
-    apiBase,
-    convId,
-    stateServiceId,
-    conversation?.serviceId,
-    conversation?.service,
-  ]);
+  }, [apiBase, convId, stateServiceId, primaryLinkedService?.serviceId]);
+
+  useEffect(() => {
+    if (!showOfferForm || !isAdmin) return;
+
+    const q = String(gigQuery || "").trim();
+
+    if (!q) {
+      setGigResults([]);
+      setGigSearchLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setGigSearchLoading(true);
+        const res = await axios.get(`${apiBase}/api/services`, {
+          params: { search: q },
+          withCredentials: true,
+        });
+        setGigResults(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setGigResults([]);
+      } finally {
+        setGigSearchLoading(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [apiBase, gigQuery, isAdmin, showOfferForm]);
 
   const handleTypingIndicator = (text) => {
     if (!convId) return;
@@ -361,17 +550,20 @@ const Message = ({ conversationId }) => {
 
     if (hasText) {
       startTyping(convId);
-      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+      if (typingStopTimerRef.current) {
+        clearTimeout(typingStopTimerRef.current);
+      }
       typingStopTimerRef.current = setTimeout(() => {
         stopTyping(convId);
       }, 900);
     } else {
       stopTyping(convId);
-      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+      if (typingStopTimerRef.current) {
+        clearTimeout(typingStopTimerRef.current);
+      }
     }
   };
 
-  // ✅ FIXED HANDLE SEND MESSAGE - Using REST API (more reliable)
   const handleSendMessage = async () => {
     const text = String(newMessage || "").trim();
     if (!text || !convId) return;
@@ -406,34 +598,33 @@ const Message = ({ conversationId }) => {
     handleTypingIndicator("");
 
     try {
-      // ✅ Use REST API (which emits socket events)
       const response = await axios.post(
         `${apiBase}/api/messages`,
         { conversationId: convId, message: text },
         { withCredentials: true },
       );
 
-      console.log("✅ REST response:", response.data);
-
-      // Replace temp message with real one
       setConversation((prev) => {
-        const prevMsgs = prev.messages || [];
-        const withoutTemp = prevMsgs.filter((m) => safeStr(m._id) !== tempId);
+        const withoutTemp = (prev.messages || []).filter(
+          (m) => safeStr(m._id) !== tempId,
+        );
 
-        if (response.data) {
-          return {
-            ...prev,
-            messages: [...withoutTemp, response.data],
-          };
+        const realMsg = response.data;
+
+        if (!realMsg?._id) {
+          return { ...prev, messages: withoutTemp };
         }
-        return { ...prev, messages: withoutTemp };
+
+        if (withoutTemp.some((m) => safeStr(m._id) === safeStr(realMsg._id))) {
+          return { ...prev, messages: withoutTemp };
+        }
+
+        return {
+          ...prev,
+          messages: [...withoutTemp, realMsg],
+        };
       });
-
-      setIsSending(false);
-    } catch (error) {
-      console.error("❌ Send error:", error);
-
-      // Remove temp message on error
+    } catch {
       setConversation((prev) => ({
         ...prev,
         messages: (prev.messages || []).filter(
@@ -441,8 +632,9 @@ const Message = ({ conversationId }) => {
         ),
       }));
 
-      setIsSending(false);
       alert("Failed to send message. Please try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -458,46 +650,31 @@ const Message = ({ conversationId }) => {
       deliveryTime,
     } = newOffer;
 
-    // Validation
     if (!gigId || !gigTitle || !description || !price || !deliveryTime) {
       alert("Please fill all required fields");
       return;
     }
 
-    // Find the buyer ID - check multiple possible field names
-    const buyerId =
-      conversation?.buyerId || conversation?.customerId || conversation?.userId;
-
-    console.log("🔍 Checking for buyer ID:", {
-      buyerId: conversation?.buyerId,
-      customerId: conversation?.customerId,
-      userId: conversation?.userId,
-      found: buyerId,
-    });
+    const buyerId = customerId;
 
     if (!buyerId) {
-      console.error(
-        "❌ No buyer/customer ID found in conversation:",
-        conversation,
+      alert(
+        "Cannot create offer: No customer associated with this conversation",
       );
-      alert("Cannot create offer: No buyer associated with this conversation");
       return;
     }
 
-    // Convert featuresText to array
     const features = String(featuresText || "")
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
     try {
-      console.log("📤 Creating offer with buyerId:", buyerId);
-
       const response = await axios.post(
         `${apiBase}/api/offers`,
         {
           conversationId: convId,
-          buyerId: buyerId, // Use the found buyerId
+          buyerId,
           gig: {
             id: gigId,
             title: gigTitle,
@@ -514,9 +691,22 @@ const Message = ({ conversationId }) => {
         { withCredentials: true },
       );
 
-      console.log("✅ Offer created successfully:", response.data);
+      setOffers((prev) => {
+        const exists = prev.some(
+          (offer) => safeStr(offer?._id) === safeStr(response.data?._id),
+        );
+        if (exists) return prev;
+        return [...prev, response.data];
+      });
 
-      setOffers((prev) => [...prev, response.data]);
+      persistSavedGig({
+        serviceId: gigId,
+        title: gigTitle,
+        subCategory: gigSubCategory,
+        coverImage: gigCoverImage,
+        savedAt: Date.now(),
+      });
+
       setNewOffer({
         gigId: "",
         gigTitle: "",
@@ -527,9 +717,10 @@ const Message = ({ conversationId }) => {
         price: "",
         deliveryTime: "",
       });
+      setGigQuery("");
+      setGigResults([]);
       setShowOfferForm(false);
     } catch (error) {
-      console.error("❌ Error creating offer:", error);
       if (error.response) {
         alert(
           `Error: ${error.response.data.message || "Failed to create offer"}`,
@@ -575,7 +766,6 @@ const Message = ({ conversationId }) => {
 
       if (provider === "paypal" && res?.data?.id) {
         window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${res.data.id}`;
-        return;
       }
     } catch {
     } finally {
@@ -602,6 +792,27 @@ const Message = ({ conversationId }) => {
       .filter((x) => x.createdAt)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   }, [conversation.messages, offers]);
+
+  const selectableGigs = useMemo(() => {
+    const map = new Map();
+
+    for (const g of savedGigs) {
+      if (!g?.serviceId) continue;
+      map.set(safeStr(g.serviceId), {
+        _id: safeStr(g.serviceId),
+        title: g.title || "",
+        subCategory: g.subCategory || "",
+        coverImage: g.coverImage || "",
+      });
+    }
+
+    for (const g of gigResults) {
+      if (!g?._id) continue;
+      map.set(safeStr(g._id), g);
+    }
+
+    return Array.from(map.values());
+  }, [savedGigs, gigResults]);
 
   const renderOfferCard = (offer) => {
     const features = Array.isArray(offer?.offerDetails?.features)
@@ -719,19 +930,19 @@ const Message = ({ conversationId }) => {
   return (
     <div className="h-[100vh] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden container mx-auto">
       <div className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm">
-        {/* Header */}
         <div className="flex-shrink-0 px-4 md:px-6 py-3 md:py-4 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => window.history.back()}
                 className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-slate-500 text-gray-300 hover:text-white rounded-full shadow-md hover:bg-slate-600 transition-all duration-200"
               >
                 ←
               </button>
+
               <div className="min-w-0">
                 <h1 className="text-lg md:text-2xl font-bold text-[#00DCEE] truncate">
-                  {headerName || "Conversation"}
+                  {headerName || (isAdmin ? "User" : "Admin")}
                 </h1>
                 {isTypingVisible && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 italic">
@@ -740,10 +951,11 @@ const Message = ({ conversationId }) => {
                 )}
               </div>
             </div>
+
             <div className="flex items-center gap-3">
               {!conversationId && (
                 <Link
-                  to="/messages"
+                  to={isAdmin ? "/admin/messages" : "/messages"}
                   className="text-sm text-slate-700 dark:text-yellow-50 hover:underline"
                 >
                   Back
@@ -752,14 +964,13 @@ const Message = ({ conversationId }) => {
             </div>
           </div>
 
-          {(stateServiceTitle || conversation?.service?.title) && (
+          {headerServiceTitle && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
-              {stateServiceTitle || conversation?.service?.title}
+              {headerServiceTitle}
             </div>
           )}
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div
             ref={messagesContainerRef}
@@ -770,6 +981,7 @@ const Message = ({ conversationId }) => {
                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Saved Gigs
                 </div>
+
                 <div className="flex overflow-x-auto gap-3 pb-2 -mx-2 px-2 scrollbar-hide">
                   {savedGigs.map((g) => (
                     <div
@@ -790,6 +1002,7 @@ const Message = ({ conversationId }) => {
                             </div>
                           )}
                         </div>
+
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
                             {g.subCategory}
@@ -797,12 +1010,14 @@ const Message = ({ conversationId }) => {
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                             {g.title}
                           </div>
-                          <Link
-                            to={`/${g.subCategory}/${g.serviceId}`}
-                            className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
-                          >
-                            View
-                          </Link>
+                          {g.subCategory && g.serviceId && (
+                            <Link
+                              to={`/${g.subCategory}/${g.serviceId}`}
+                              className="inline-block mt-1 text-xs bg-pink-500 hover:bg-colorNeonPink text-white px-2 py-1 rounded"
+                            >
+                              View
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -831,7 +1046,9 @@ const Message = ({ conversationId }) => {
                     return (
                       <div
                         key={`m-${item._id}`}
-                        className={`flex gap-3 ${isSender ? "justify-end" : "justify-start"}`}
+                        className={`flex gap-3 ${
+                          isSender ? "justify-end" : "justify-start"
+                        }`}
                       >
                         {!isSender && (
                           <div className="flex flex-col items-center">
@@ -893,49 +1110,97 @@ const Message = ({ conversationId }) => {
                     </div>
                   );
                 })}
-
-                <div ref={messagesEndRef} />
               </>
             )}
           </div>
 
-          {/* Input Area */}
           <div className="flex-shrink-0 bg-white p-3 md:p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
               {isAdmin && showOfferForm && (
-                <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-3">
-                    <select
-                      value={newOffer.gigId}
-                      onChange={(e) => {
-                        const gid = e.target.value;
-                        const selected = savedGigs.find(
-                          (g) => safeStr(g.serviceId) === safeStr(gid),
-                        );
-                        setNewOffer((p) => ({
-                          ...p,
-                          gigId: gid,
-                          gigTitle: selected?.title || "",
-                          gigSubCategory: selected?.subCategory || "",
-                          gigCoverImage:
-                            selected?.coverImage?.url ||
-                            selected?.coverImage ||
-                            "",
-                        }));
-                      }}
-                      className="p-2 bg-gray-700 rounded text-sm md:text-base"
-                    >
-                      <option value="">Select a gig</option>
-                      {savedGigs.map((g) => (
-                        <option
-                          key={safeStr(g.serviceId)}
-                          value={safeStr(g.serviceId)}
-                        >
-                          {g.title}
-                        </option>
-                      ))}
-                    </select>
+                <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg max-h-[55vh] md:max-h-[60vh] overflow-y-auto">
+                  <div className="mb-3">
+                    <label className="block text-sm text-gray-200 mb-2">
+                      Search Gig
+                    </label>
 
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search services by title, category, subcategory..."
+                        value={gigQuery}
+                        onChange={(e) => setGigQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-gray-700 rounded text-sm md:text-base text-white"
+                      />
+                    </div>
+
+                    {(gigSearchLoading ||
+                      gigResults.length > 0 ||
+                      selectableGigs.length > 0) && (
+                      <div className="mt-2 max-h-56 overflow-y-auto rounded border border-gray-700 bg-gray-900">
+                        {gigSearchLoading ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">
+                            Searching...
+                          </div>
+                        ) : selectableGigs.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">
+                            No gigs found
+                          </div>
+                        ) : (
+                          selectableGigs.map((gig) => {
+                            const selected =
+                              safeStr(newOffer.gigId) === safeStr(gig._id);
+
+                            return (
+                              <button
+                                key={safeStr(gig._id)}
+                                type="button"
+                                onClick={() => selectGig(gig)}
+                                className={`w-full text-left px-3 py-2 border-b border-gray-800 last:border-b-0 hover:bg-gray-800 ${
+                                  selected ? "bg-gray-800" : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-10 rounded overflow-hidden bg-gray-700 flex-shrink-0">
+                                    {gig.coverImage ? (
+                                      <img
+                                        src={
+                                          gig.coverImage?.url || gig.coverImage
+                                        }
+                                        alt={gig.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                                        No image
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <div className="text-sm text-white truncate">
+                                      {gig.title}
+                                    </div>
+                                    <div className="text-xs text-gray-400 truncate">
+                                      {gig.subCategory || gig.category || "—"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {newOffer.gigId && (
+                      <div className="mt-2 text-xs text-green-400">
+                        Selected: {newOffer.gigTitle}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-3">
                     <input
                       type="number"
                       placeholder="Price"
@@ -1000,7 +1265,11 @@ const Message = ({ conversationId }) => {
                       Send Offer
                     </button>
                     <button
-                      onClick={() => setShowOfferForm(false)}
+                      onClick={() => {
+                        setShowOfferForm(false);
+                        setGigQuery("");
+                        setGigResults([]);
+                      }}
                       className="flex-1 bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-gray-900 dark:text-white text-sm md:text-base"
                     >
                       Cancel
@@ -1062,7 +1331,6 @@ const Message = ({ conversationId }) => {
             </div>
           </div>
 
-          {/* Payment modal */}
           {payOffer && (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
               <div className="bg-gray-900 text-gray-100 rounded-2xl p-6 shadow-2xl w-full max-w-md">

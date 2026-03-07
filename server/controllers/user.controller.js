@@ -98,7 +98,8 @@ export const getUser = async (req, res, next) => {
     if (req.userId !== req.params.id && !req.isAdmin) {
       return next(createError(403, "You can access only your account!"));
     }
-    const user = await User.findById(req.userId);
+
+    const user = await User.findById(req.params.id);
 
     if (!user) return res.status(404).send("User not found");
     res.status(200).json(user);
@@ -258,7 +259,9 @@ export const getUsers = async (req, res) => {
       });
     }
 
-    const users = await User.find();
+    const users = await User.find().select(
+      "-password -resetPasswordToken -resetPasswordExpiry",
+    );
 
     res.status(200).json({
       success: true,

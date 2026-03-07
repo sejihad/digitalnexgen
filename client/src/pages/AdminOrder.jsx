@@ -160,7 +160,7 @@ const AdminOrder = () => {
       doc.rect(0, 0, pageWidth, 10, "F");
 
       // logo
-      doc.addImage(logo, "PNG", margin, y, 32, 16);
+      doc.addImage(logo, "PNG", margin, y, 44, 20);
 
       // heading
       drawText(

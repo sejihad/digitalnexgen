@@ -78,26 +78,26 @@ const AdminConversation = () => {
     if (!socket) return;
 
     const handleReceive = (payload) => {
-      console.log("📩 ADMIN UPDATE EVENT:", payload);
       const cid = safeStr(payload?.conversationId);
+      if (!cid) return;
+
+      const isReadEvent =
+        payload?.type === "read" || payload?.readByAdmins === true;
       const msgObj = payload?.message;
       const senderId = safeStr(payload?.senderId);
 
-      if (!cid) return;
-
-      // মেসেজ টেক্সট বের করা
       const msgText =
         typeof msgObj === "string"
           ? msgObj
           : safeStr(msgObj?.message || msgObj?.text || msgObj?.content || "");
 
-      const msgCreatedAt = msgObj?.createdAt || new Date().toISOString();
+      const msgCreatedAt =
+        msgObj?.createdAt || payload?.updatedAt || new Date().toISOString();
       const fromMe = senderId && safeStr(user?._id || user?.id) === senderId;
 
       setConversations((prev) => {
         const idx = prev.findIndex((c) => safeStr(c?._id) === cid);
 
-        // যদি কনভারসেশন লিস্টে না থাকে (নতুন কাস্টমার মেসেজ দিলে)
         if (idx === -1) {
           if (!refreshCooldownRef.current) {
             refreshCooldownRef.current = true;
@@ -110,16 +110,29 @@ const AdminConversation = () => {
         }
 
         const existing = prev[idx];
+
+        if (isReadEvent) {
+          const updated = {
+            ...existing,
+            readByAdmins: true,
+            updatedAt: payload?.updatedAt || existing?.updatedAt,
+          };
+
+          const next = [...prev];
+          next[idx] = updated;
+          return next;
+        }
+
         const updated = {
           ...existing,
           lastMessage: msgText,
           updatedAt: msgCreatedAt,
-          readByAdmins: fromMe ? true : false, // যদি আমি না পাঠাই, তবে আনরিড (ডট দেখাবে)
+          readByAdmins: fromMe ? true : false,
         };
 
         const next = [...prev];
-        next.splice(idx, 1); // পুরোনো পজিশন থেকে সরাও
-        return [updated, ...next]; // সবার উপরে দাও
+        next.splice(idx, 1);
+        return [updated, ...next];
       });
     };
 

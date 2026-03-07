@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import Conversation from "../models/conversation.model.js";
 import Offer from "../models/offer.model.js";
 import ServiceOrder from "../models/order.model.js";
 import User from "../models/user.model.js";
-
+import { getIO } from "../socketInstance.js";
 // Stripe
 import Stripe from "stripe";
 
@@ -78,6 +79,26 @@ export const createOffer = async (req, res, next) => {
     });
 
     const savedOffer = await newOffer.save();
+
+    // realtime emit
+    const io = getIO();
+
+    io.to(String(savedOffer.conversationId)).emit("offer:receive", {
+      conversationId: String(savedOffer.conversationId),
+      offer: savedOffer,
+    });
+
+    // buyer personal push
+    io.to(`user:${savedOffer.buyerId}`).emit("offer:receive", {
+      conversationId: String(savedOffer.conversationId),
+      offer: savedOffer,
+    });
+
+    // admin panel update
+    io.to("admins").emit("admin:conversation:update", {
+      conversationId: String(savedOffer.conversationId),
+    });
+
     res.status(201).json(savedOffer);
   } catch (error) {
     console.log(error);
@@ -88,17 +109,42 @@ export const createOffer = async (req, res, next) => {
 /* -------------------- EXISTING: GET OFFERS -------------------- */
 export const getOffers = async (req, res, next) => {
   try {
-    const filters = req.isAdmin
-      ? { adminId: req.userId }
-      : { buyerId: req.userId };
+    const { conversationId } = req.query;
 
-    if (req.query.conversationId) {
-      filters.conversationId = req.query.conversationId;
+    if (conversationId) {
+      if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversationId." });
+      }
+
+      const conversation = await Conversation.findById(conversationId)
+        .select("customerId adminIds")
+        .lean();
+
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found." });
+      }
+
+      const me = String(req.userId || "");
+      const isCustomer = String(conversation.customerId) === me;
+      const isJoinedAdmin =
+        Array.isArray(conversation.adminIds) &&
+        conversation.adminIds.some((a) => String(a) === me);
+
+      if (!isCustomer && !isJoinedAdmin && !req.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const offers = await Offer.find({ conversationId }).sort({
+        createdAt: 1,
+      });
+      return res.status(200).json(offers);
     }
 
-    // ✅ timeline-friendly oldest->newest
+    // fallback list view
+    const filters = req.isAdmin ? {} : { buyerId: req.userId };
+
     const offers = await Offer.find(filters).sort({ createdAt: 1 });
-    res.status(200).json(offers);
+    return res.status(200).json(offers);
   } catch (error) {
     next(error);
   }
@@ -133,6 +179,13 @@ export const respondToOffer = async (req, res, next) => {
         .status(404)
         .json({ message: "Offer not found or already responded." });
     }
+
+    const io = getIO();
+
+    io.to(String(updatedOffer.conversationId)).emit("offer:update", {
+      conversationId: String(updatedOffer.conversationId),
+      offer: updatedOffer,
+    });
 
     res.status(200).json(updatedOffer);
   } catch (error) {
@@ -324,6 +377,12 @@ export const captureOfferPaypalOrder = async (req, res, next) => {
       if (offer.status !== "accepted") {
         offer.status = "accepted";
         await offer.save();
+        const io = getIO();
+
+        io.to(String(offer.conversationId)).emit("offer:update", {
+          conversationId: String(offer.conversationId),
+          offer,
+        });
       }
       return res.status(200).json({ message: "Order already created." });
     }

@@ -3,9 +3,9 @@ import Stripe from "stripe";
 import Offer from "../models/offer.model.js";
 import ServiceOrder from "../models/order.model.js";
 import User from "../models/user.model.js";
+import { getIO } from "../socketInstance.js";
 import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
 dotenv.config();
-
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 let stripe = null;
 if (!stripeSecret) {
@@ -189,6 +189,12 @@ export const stripeWebhook = async (req, res) => {
       if (offer.status !== "accepted") {
         offer.status = "accepted";
         await offer.save();
+        const io = getIO();
+
+        io.to(String(offer.conversationId)).emit("offer:update", {
+          conversationId: String(offer.conversationId),
+          offer,
+        });
       }
 
       return res.status(200).send("Offer order created + offer accepted.");

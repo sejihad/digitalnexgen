@@ -1,5 +1,5 @@
 import "boxicons/css/boxicons.min.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaGoogle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -9,7 +9,6 @@ import countryCodes from "../../data/countryCodes.json";
 import {
   loginUser,
   registerUser,
-  resetError,
   resetOtp,
   verifyOtp,
 } from "../../redux/authSlice";
@@ -51,26 +50,6 @@ const Login = () => {
       navigateAfterLogin();
     }
   }, [isAuthenticated, navigate]);
-  const prevErrorRef = useRef(null);
-  // Show error toast if any
-  useEffect(() => {
-    // Only show toast if error exists and is different from previous
-    if (error && error !== prevErrorRef.current) {
-      toast.error(error, {
-        toastId: error, // Prevent duplicate toasts
-        position: "top-right",
-        autoClose: 5000,
-      });
-
-      // Update the ref
-      prevErrorRef.current = error;
-
-      // Clear error after showing
-      setTimeout(() => {
-        dispatch(resetError());
-      }, 3000);
-    }
-  }, [error, dispatch]);
 
   // Navigate after successful login
   const navigateAfterLogin = (userData) => {

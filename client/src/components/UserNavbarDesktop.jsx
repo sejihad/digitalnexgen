@@ -149,12 +149,12 @@ const UserNavbar = () => {
         <img
           src={Logo}
           alt="Logo"
-          className="w-[180px] cursor-pointer z-50 dark:hidden"
+          className="w-[180px] lg:w-[200px] xl:w-[240px] cursor-pointer z-50 dark:hidden"
         />
         <img
           src={DarkLogo}
           alt="Logo Of Digital NexGen"
-          className="w-[180px] cursor-pointer z-50 dark:block hidden"
+          className="w-[180px] lg:w-[200px] xl:w-[240px] cursor-pointer z-50 dark:block hidden"
         />
       </Link>
 

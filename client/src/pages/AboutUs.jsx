@@ -1,138 +1,213 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { Building2, Mail, MapPin, Phone, Users } from "lucide-react";
+
+const companyDetails = [
+  {
+    icon: Building2,
+    label: "Company Name",
+    value: "Digital NexGen LTD",
+  },
+  {
+    icon: Building2,
+    label: "Company Number",
+    value: "16930063",
+  },
+  {
+    icon: MapPin,
+    label: "Address",
+    value:
+      "Suite A, 82 James Carter Road, Mildenhall, Bury St. Edmunds, United Kingdom, IP28 7DE",
+  },
+  {
+    icon: Mail,
+    label: "Email",
+    value: "info@digitalnexgen.co",
+    href: "mailto:info@digitalnexgen.co",
+  },
+  {
+    icon: Phone,
+    label: "Phone",
+    value: "+44 7482 799 921",
+    href: "tel:+447482799921",
+  },
+  {
+    icon: Users,
+    label: "Team Members",
+    value: "21+",
+  },
+];
 
 const AboutUs = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const handleServiceClick = (payload) => {
-    const { id, category = id, subcategory = null } = payload || {};
-    try {
-      dispatch({
-        type: "services/setActiveService",
-        payload: { id, category, subcategory },
-      });
-    } catch {
-      // ignore if slice is not registered; navigation will still work
-    }
-    navigate(`/services#${category}`);
-  };
   return (
-    <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen container mx-auto bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       {/* Hero */}
-<h1 className="text-4xl font-bold text-center p-14 text-primaryRgb">About Us</h1>
-      {/* Main Content */}
-      <div className="container mx-auto px-5 lg:px-0 py-12 md:py-16 space-y-16">
-        {/* About Digital NexGen */}
-        <section>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="prose dark:prose-invert max-w-none">
-              <h2 className="text-3xl mb-6  font-bold text-primaryRgb">About Digital NexGen</h2>
-              <p>
-                At Digital NexGen, we&apos;re your one-stop solution for all things in Information Technology. With a focus on excellence and innovation, we offer a wide range of services to help your business improve in the digital world.
-              </p>
-              <p>
-                From Digital Marketing to App Development, Web Design to Cybersecurity, and everything in between, we&apos;ve got you covered. Our team of experts is dedicated to delivering top-notch solutions tailored to your unique needs.
-              </p>
+      <section className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" />
+        <div className="absolute -top-10 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/10" />
+        <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-cyan-400/20 blur-3xl dark:bg-cyan-500/10" />
+
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 text-center">
+          <div className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300">
+            About Digital NexGen
+          </div>
+
+          <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Empowering Businesses
+            <span className="block text-emerald-600 dark:text-emerald-400">
+              Through Digital Innovation
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-3xl text-base sm:text-lg leading-8 text-gray-600 dark:text-gray-300">
+            Digital NexGen LTD is a global digital solutions company helping
+            businesses grow faster, smarter, and stronger in the modern digital
+            world.
+          </p>
+        </div>
+      </section>
+
+      {/* Main content */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+          {/* Left content */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm dark:border-gray-800 dark:bg-gray-800/60">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                About Us – Digital NexGen
+              </h2>
+
+              <div className="mt-6 space-y-5 text-gray-700 dark:text-gray-300 leading-8 text-base sm:text-lg">
+                <p>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    Digital NexGen LTD
+                  </span>{" "}
+                  is a global digital solutions company dedicated to helping
+                  businesses grow in the modern digital world. Founded in{" "}
+                  <span className="font-semibold">2022</span> in the{" "}
+                  <span className="font-semibold">United Kingdom</span>, the
+                  company provides innovative and result-driven services to
+                  clients worldwide.
+                </p>
+
+                <p>
+                  At Digital NexGen, we specialize in digital marketing, website
+                  development, app development, graphic design, and technology
+                  solutions. Our mission is to help businesses build a strong
+                  online presence, reach their target audience, and achieve
+                  long-term success.
+                </p>
+
+                <p>
+                  With a talented team of{" "}
+                  <span className="font-semibold">
+                    21+ skilled professionals
+                  </span>
+                  , we combine creativity, technology, and strategy to deliver
+                  high-quality services. Our experts work closely with clients
+                  to understand their goals and create customized solutions that
+                  bring real results.
+                </p>
+
+                <p>
+                  We believe that the future belongs to businesses that embrace
+                  digital transformation. That’s why Digital NexGen focuses on
+                  innovation, reliability, and customer satisfaction in every
+                  project we deliver.
+                </p>
+
+                <p>
+                  Whether you are a startup, entrepreneur, or established
+                  company, Digital NexGen is committed to helping you grow
+                  faster and smarter in the digital era.
+                </p>
+              </div>
             </div>
-            <div className="relative">
-              <div className="absolute -inset-2 bg-gradient-to-tr from-primaryRgb/20 to-emerald-400/20 rounded-2xl blur-lg dark:from-primaryRgb/10 dark:to-emerald-300/10"></div>
-              <img
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop"
-                alt="Digital NexGen team collaborating"
-                className="relative w-full aspect-video object-cover rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10"
-                loading="lazy"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800/60">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Founded
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  2022
+                </h3>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800/60">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Team Size
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  21+
+                </h3>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800/60">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Based In
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  UK
+                </h3>
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* Your Complete Digital Solution */}
-        <section>
-       
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="relative">
-              <div className="absolute -inset-2 bg-gradient-to-tr from-primaryRgb/20 to-emerald-400/20 rounded-2xl blur-lg dark:from-primaryRgb/10 dark:to-emerald-300/10"></div>
-              <img
-                src="https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=1200&auto=format&fit=crop"
-                alt="Comprehensive digital solutions illustration"
-                className="relative w-full aspect-video object-cover rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10"
-                loading="lazy"
-              />
-            </div>
-            <div>
-                 <h2 className="text-3xl font-bold mb-6 text-primaryRgb">Your Complete Digital Solution</h2>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                At Digital NexGen, we cover all your digital needs. We provide comprehensive solutions for all your digital needs, ensuring your success across various online platforms. Let us handle your digital journey, so you can focus on growing your business hassle-free.
+          {/* Right details card */}
+          <div className="lg:col-span-5">
+            <div className="sticky top-24 rounded-3xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-6 sm:p-8 shadow-sm dark:border-gray-800 dark:from-gray-800 dark:to-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Company Details
+              </h2>
+              <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                Official company information for Digital NexGen LTD.
               </p>
+
+              <div className="mt-6 space-y-4">
+                {companyDetails.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/80"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                          <Icon className="h-5 w-5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {item.label}
+                          </p>
+
+                          {item.href ? (
+                            <a
+                              href={item.href}
+                              className="mt-1 block break-words text-base font-semibold text-gray-900 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-400"
+                            >
+                              {item.value}
+                            </a>
+                          ) : (
+                            <p className="mt-1 break-words text-base font-semibold text-gray-900 dark:text-white">
+                              {item.value}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+                We are committed to innovation, reliability, and customer
+                satisfaction in every project we deliver.
+              </div>
             </div>
           </div>
-        </section>
-
-        <section>
-          <h2 className="text-3xl font-bold mb-8 text-primaryRgb">Our Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-            <Link to="/services#digital-marketing" onClick={() => handleServiceClick({ id: "digital-marketing", category: "digital-marketing" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Digital Marketing">
-              <h3 className="text-xl font-semibold mb-3">Digital Marketing</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                In the 21st century, Digital Marketing is essential for your business. It must be strategic, data-driven, engaging, and cost-effective to boost your online presence. Our digital marketing package offers comprehensive solutions, including SEO, social media, and email campaigns, ensuring you get maximum ROI without extra costs.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#graphics-design" onClick={() => handleServiceClick({ id: "graphics-design", category: "graphics-design", subcategory: "graphics-design" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Graphics Design">
-              <h3 className="text-xl font-semibold mb-3">Graphics Design</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                At our IT agency, we&apos;re the wizards of making things look great! We specialize in graphic design, which is all about creating eye-catching images and visuals. From logos to posters to digital artwork, we&apos;ve got the magic touch to make your brand shine. Our team of creative geniuses will work closely with you to turn your ideas into stunning visuals that grab attention and leave a lasting impression. Let&apos;s sprinkle some magic on your brand!
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#graphics-design" onClick={() => handleServiceClick({ id: "web-design", category: "graphics-design", subcategory: "web-design" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Web Design">
-              <h3 className="text-xl font-semibold mb-3">Web Design</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                At our IT agency, we&apos;re here to make your online presence shine! We specialize in web design, crafting websites that captivate attention and inspire trust. Our team is dedicated to creating visually stunning designs that not only catch the eye but also build trust with your visitors. With user-friendly layouts and seamless navigation, we ensure that every interaction with your website leaves a lasting impression.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#programming-tech" onClick={() => handleServiceClick({ id: "web-development", category: "programming-tech", subcategory: "website-development" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Web Development">
-              <h3 className="text-xl font-semibold mb-3">Web Development</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                In the 21st century, most activities are now conducted online. Establishing a strong online presence is important to have a website showcasing your work and business. The website should be mobile-friendly, easy to navigate, and offer a great user experience. At Digital NexGen, we specialize in building modern and high-quality websites for individuals, businesses, and enterprises using the latest technologies and best practices.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#programming-tech" onClick={() => handleServiceClick({ id: "app-development", category: "programming-tech", subcategory: "mobile-app-development" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="App Development">
-              <h3 className="text-xl font-semibold mb-3">App Development</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                At our IT agency, we make phone apps. We take your ideas and turn them into cool apps you can use on your phone or tablet. Our team knows all the latest tricks to make sure your app looks great and works smoothly. Whether it&apos;s a game, a tool, or something fun, we&apos;re here to help you bring it to life. We&apos;ll work closely with you to make sure the app is just the way you want it. Let&apos;s make something awesome together! We trust that we are perfect.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#programming-tech" onClick={() => handleServiceClick({ id: "cyber-security", category: "programming-tech", subcategory: "cyber-security" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Cyber Security">
-              <h3 className="text-xl font-semibold mb-3">Cyber Security</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                At our IT agency, we specialize in keeping your digital world safe from cyber threats through our cybersecurity and ethical hacking services. We understand the importance of protecting your sensitive information and systems from malicious attacks. Our team of experts employs advanced techniques to identify vulnerabilities in your network and applications, just like ethical hackers would, but with the sole intention of strengthening your defenses. By proactively addressing weaknesses, we help prevent cyber-attacks and safeguard your valuable assets. With our cybersecurity and ethical hacking expertise, you can rest assured that your digital assets are in safe hands.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-
-            <Link to="/services#writing-translation" onClick={() => handleServiceClick({ id: "book-formatting", category: "writing-translation", subcategory: "book-formatting" })} className="group h-full flex flex-col bg-white/70 dark:bg-gray-800/70 backdrop-blur p-6 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[rgb(12,187,20)]/60" aria-label="Book Formatting">
-              <h3 className="text-xl font-semibold mb-3">Book Formatting</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                Book formatting is the process of making a book look good and easy to read. It involves things like choosing the right font and size for the text, setting margins and spacing between lines and paragraphs, adding headers and footers with page numbers, and making sure chapter titles stand out. Good formatting makes a book look professional and helps readers enjoy the content without distractions.
-              </p>
-              <span className="mt-auto inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md bg-[rgb(12,187,20)] text-white/90 group-hover:text-white transition">Read more</span>
-            </Link>
-          </div>
-        </section>
-
-      
-      </div>
+        </div>
+      </section>
     </div>
   );
 };

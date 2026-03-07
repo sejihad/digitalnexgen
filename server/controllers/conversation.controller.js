@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
+import { getIO } from "../socketInstance.js";
 dotenv.config();
-
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id));
 
 /**
@@ -191,13 +191,18 @@ export const getSingleConversation = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid conversation id" });
     }
 
-    const conv = await Conversation.findById(convId);
+    const conv = await Conversation.findById(convId)
+      .populate("customerId", "username name email img")
+      .populate("adminIds", "username name email img");
+
     if (!conv)
       return res.status(404).json({ message: "Conversation not found" });
 
     const me = String(req.userId || "");
-    const isCustomer = String(conv.customerId) === me;
-    const isJoinedAdmin = (conv.adminIds || []).some((a) => String(a) === me);
+    const isCustomer = String(conv.customerId?._id || conv.customerId) === me;
+    const isJoinedAdmin = (conv.adminIds || []).some(
+      (a) => String(a?._id || a) === me,
+    );
 
     if (!isCustomer && !isJoinedAdmin && !req.isAdmin) {
       return res.status(403).json({ message: "Forbidden" });
@@ -237,6 +242,27 @@ export const markConversationRead = async (req, res, next) => {
     if (req.isAdmin || isJoinedAdmin) conv.readByAdmins = true;
 
     await conv.save();
+    const io = getIO();
+
+    if (req.isAdmin || isJoinedAdmin) {
+      io.to("admins").emit("admin:conversation:update", {
+        conversationId: String(conv._id),
+        readByAdmins: true,
+        updatedAt: conv.updatedAt,
+        type: "read",
+        readerId: me,
+      });
+    }
+
+    if (isCustomer && !req.isAdmin) {
+      io.to(`user:${conv.customerId}`).emit("conversation:read", {
+        conversationId: String(conv._id),
+        readByCustomer: true,
+        updatedAt: conv.updatedAt,
+        type: "read",
+        readerId: me,
+      });
+    }
     return res.status(200).json(conv);
   } catch (error) {
     next(error);

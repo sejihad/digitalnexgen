@@ -144,7 +144,7 @@ const Order = () => {
       doc.rect(0, 0, pageWidth, 10, "F");
 
       // Logo
-      doc.addImage(logo, "PNG", margin, y, 32, 16);
+      doc.addImage(logo, "PNG", margin, y, 44, 20);
 
       // Company / document heading
       drawText(
