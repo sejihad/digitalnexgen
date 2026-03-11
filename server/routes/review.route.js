@@ -1,24 +1,30 @@
 import express from "express";
 import {
+  adminCreateReview,
+  adminDeleteReview,
+  adminGetAllReviews,
+  adminGetReviewsByService,
+  adminGetSingleReviewById,
+  adminUpdateReview,
   createReview,
-  deleteReview,
-  getReviews,
-  updateReview,
-  adminListReviews,
-  approveReview,
-  rejectReview,
+  getReviewsByService,
 } from "../controllers/review.controller.js";
 import { verifyToken } from "../middleware/jwt.js";
 
 const router = express.Router();
 
+// user
 router.post("/", verifyToken, createReview);
-router.get("/:serviceId", getReviews);
-router.delete("/:id",verifyToken, deleteReview);
-router.put("/:id", verifyToken, updateReview);
-// Admin list and moderation
-router.get("/", verifyToken, adminListReviews);
-router.patch("/:id/approve", verifyToken, approveReview);
-router.patch("/:id/reject", verifyToken, rejectReview);
+
+// admin
+router.post("/admin", verifyToken, adminCreateReview);
+router.get("/all", verifyToken, adminGetAllReviews);
+router.get("/admin/service/:serviceId", verifyToken, adminGetReviewsByService);
+router.get("/single/:id", verifyToken, adminGetSingleReviewById);
+router.put("/:id", verifyToken, adminUpdateReview);
+router.delete("/:id", verifyToken, adminDeleteReview);
+
+// public service reviews
+router.get("/:serviceId", getReviewsByService);
 
 export default router;

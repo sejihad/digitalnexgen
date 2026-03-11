@@ -3,6 +3,36 @@ import uploadToS3 from "../config/uploadToS3.js";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 
+export const saveFcmToken = async (req, res, next) => {
+  try {
+    const { fcmToken } = req.body || {};
+
+    if (!fcmToken || !String(fcmToken).trim()) {
+      return next(createError(400, "FCM token required"));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $addToSet: {
+          fcmTokens: String(fcmToken).trim(),
+        },
+      },
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      return next(createError(404, "User not found"));
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "FCM token updated",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 export const deleteUser = async (req, res) => {
   try {
     // 🔐 Admin check

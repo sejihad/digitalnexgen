@@ -4,43 +4,101 @@ const { Schema } = mongoose;
 const reviewSchema = new Schema(
   {
     serviceId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
       required: true,
     },
+
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: false,
+    },
+
     userId: {
-      type: String,
-      required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
     },
-    username: {
-      type: String,
-      required: true,
+
+    sellerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
     },
+
+    name: {
+      type: String,
+
+      trim: true,
+      default: "",
+    },
+
     userImage: {
-      type: String,
-      required: false,
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: "",
+        required: false,
+      },
     },
-    country: {
-      type: String,
-      required: false,
-    },
+
     star: {
       type: Number,
       required: true,
-      enum: [1, 2, 3, 4, 5],
+      min: 1,
+      max: 5,
     },
+
     desc: {
       type: String,
       required: true,
+      trim: true,
     },
-    approved: {
+
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
+
+    createdSource: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      select: false,
+    },
+
+    isAdminEdited: {
       type: Boolean,
       default: false,
-      required: false,
+      select: false,
+    },
+
+    editedByAdminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      select: false,
+      default: null,
+    },
+
+    adminEditedAt: {
+      type: Date,
+      default: null,
+      select: false,
     },
   },
+  { timestamps: true },
+);
+
+reviewSchema.index(
+  { orderId: 1 },
   {
-    timestamps: true,
-  }
+    unique: true,
+    partialFilterExpression: { orderId: { $exists: true, $ne: null } },
+  },
 );
 
 export default mongoose.model("Review", reviewSchema);

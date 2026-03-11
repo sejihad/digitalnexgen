@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Gift, Search, Send, X } from "lucide-react";
+import { Gift, Search, Send, Star, X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -27,6 +27,18 @@ const Message = ({ conversationId }) => {
 
   const [conversation, setConversation] = useState({ messages: [] });
   const [offers, setOffers] = useState([]);
+  // review
+  const [reviewRequests, setReviewRequests] = useState([]);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [showReviewRequestPanel, setShowReviewRequestPanel] = useState(false);
+  const [selectedReviewRequest, setSelectedReviewRequest] = useState(null);
+  const [reviewStar, setReviewStar] = useState(1);
+  const [reviewDesc, setReviewDesc] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitMessage, setReviewSubmitMessage] = useState("");
+  // review
+  const [eligibleOrders, setEligibleOrders] = useState([]);
+  const [eligibleOrdersLoading, setEligibleOrdersLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
 
   const [newOffer, setNewOffer] = useState({
@@ -294,22 +306,62 @@ const Message = ({ conversationId }) => {
         );
       });
     };
+    const handleReviewRequestReceive = (payload) => {
+      if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
 
+      const incoming = payload?.reviewRequest;
+      if (!incoming?._id) return;
+
+      setReviewRequests((prev) => {
+        const exists = prev.some(
+          (item) => safeStr(item?._id) === safeStr(incoming._id),
+        );
+        if (exists) return prev;
+        return [...prev, incoming];
+      });
+    };
+
+    const handleReviewRequestUpdate = (payload) => {
+      if (safeStr(payload?.conversationId) !== safeStr(convId)) return;
+
+      const updated = payload?.reviewRequest;
+      if (!updated?._id) return;
+
+      setReviewRequests((prev) => {
+        const exists = prev.some(
+          (item) => safeStr(item?._id) === safeStr(updated._id),
+        );
+
+        if (!exists) return [...prev, updated];
+
+        return prev.map((item) =>
+          safeStr(item?._id) === safeStr(updated._id)
+            ? { ...item, ...updated }
+            : item,
+        );
+      });
+    };
     socket.off("message:receive", handleMessage);
     socket.off("typing:update", handleTypingUpdate);
     socket.off("offer:receive", handleOfferReceive);
     socket.off("offer:update", handleOfferUpdate);
+    socket.off("reviewRequest:receive", handleReviewRequestReceive);
+    socket.off("reviewRequest:update", handleReviewRequestUpdate);
 
     socket.on("message:receive", handleMessage);
     socket.on("typing:update", handleTypingUpdate);
     socket.on("offer:receive", handleOfferReceive);
     socket.on("offer:update", handleOfferUpdate);
+    socket.on("reviewRequest:receive", handleReviewRequestReceive);
+    socket.on("reviewRequest:update", handleReviewRequestUpdate);
 
     return () => {
       socket.off("message:receive", handleMessage);
       socket.off("typing:update", handleTypingUpdate);
       socket.off("offer:receive", handleOfferReceive);
       socket.off("offer:update", handleOfferUpdate);
+      socket.off("reviewRequest:receive", handleReviewRequestReceive);
+      socket.off("reviewRequest:update", handleReviewRequestUpdate);
 
       if (typingHideTimerRef.current) {
         clearTimeout(typingHideTimerRef.current);
@@ -336,7 +388,7 @@ const Message = ({ conversationId }) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [conversation.messages, offers, isTypingVisible]);
+  }, [conversation.messages, offers, reviewRequests, isTypingVisible]);
 
   const fetchOffers = async () => {
     if (!convId) return;
@@ -348,7 +400,49 @@ const Message = ({ conversationId }) => {
       setOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
     } catch {}
   };
+  const fetchReviewRequests = async () => {
+    if (!convId) return;
 
+    try {
+      const res = await axios.get(
+        `${apiBase}/api/review-requests?conversationId=${convId}`,
+        { withCredentials: true },
+      );
+
+      setReviewRequests(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setReviewRequests([]);
+    }
+  };
+  const fetchEligibleOrders = async () => {
+    if (!convId || !isAdmin || !customerId) return;
+
+    try {
+      setEligibleOrdersLoading(true);
+
+      const ordersRes = await axios.get(`${apiBase}/api/orders/admin`, {
+        withCredentials: true,
+      });
+
+      const allOrders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+
+      const filtered = allOrders.filter((order) => {
+        const orderBuyerId = safeStr(order?.user?.id || "");
+        return (
+          orderBuyerId === safeStr(customerId) &&
+          order?.order_status === "completed" &&
+          order?.isReviewEligible === true &&
+          order?.isReviewed === false
+        );
+      });
+
+      setEligibleOrders(filtered);
+    } catch {
+      setEligibleOrders([]);
+    } finally {
+      setEligibleOrdersLoading(false);
+    }
+  };
   useEffect(() => {
     const fetchConversation = async () => {
       if (!convId) return;
@@ -374,7 +468,7 @@ const Message = ({ conversationId }) => {
         });
 
         await fetchOffers();
-
+        await fetchReviewRequests();
         const serverLinked = asArray(conversationRes.data.linkedServices);
         if (serverLinked.length > 0) {
           const key = `conv_gigs_${convId}`;
@@ -417,7 +511,10 @@ const Message = ({ conversationId }) => {
 
     fetchConversation();
   }, [apiBase, convId]);
-
+  useEffect(() => {
+    if (!isAdmin || !customerId) return;
+    fetchEligibleOrders();
+  }, [isAdmin, customerId]);
   useEffect(() => {
     const loadHeader = async () => {
       try {
@@ -746,7 +843,40 @@ const Message = ({ conversationId }) => {
       );
     } catch {}
   };
+  const handleSendReviewRequest = async (order) => {
+    if (!order?._id || !convId) return;
 
+    try {
+      const res = await axios.post(
+        `${apiBase}/api/review-requests`,
+        {
+          conversationId: convId,
+          orderId: order._id,
+        },
+        { withCredentials: true },
+      );
+
+      const incoming = res.data;
+
+      setReviewRequests((prev) => {
+        const exists = prev.some(
+          (item) => safeStr(item?._id) === safeStr(incoming?._id),
+        );
+
+        if (!exists) return [...prev, incoming];
+
+        return prev.map((item) =>
+          safeStr(item?._id) === safeStr(incoming?._id)
+            ? { ...item, ...incoming }
+            : item,
+        );
+      });
+      fetchEligibleOrders();
+      setShowReviewRequestPanel(false);
+    } catch (error) {
+      alert(error?.response?.data?.message || "Failed to send review request.");
+    }
+  };
   const startOfferPayment = async (offer, provider) => {
     if (!offer?._id) return;
     setIsPaying(true);
@@ -765,7 +895,7 @@ const Message = ({ conversationId }) => {
       }
 
       if (provider === "paypal" && res?.data?.id) {
-        window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${res.data.id}`;
+        window.location.href = `https://www.paypal.com/checkoutnow?token=${res.data.id}`;
       }
     } catch {
     } finally {
@@ -773,7 +903,10 @@ const Message = ({ conversationId }) => {
       setPayOffer(null);
     }
   };
-
+  const canReviewFromRequest = (request) => {
+    if (!request) return false;
+    return request.status === "pending";
+  };
   const timeline = useMemo(() => {
     return [
       ...(conversation.messages || []).map((m) => ({
@@ -788,10 +921,16 @@ const Message = ({ conversationId }) => {
         createdAt: o.createdAt || o.updatedAt,
         data: o,
       })),
+      ...(reviewRequests || []).map((r) => ({
+        kind: "reviewRequest",
+        _id: safeStr(r._id),
+        createdAt: r.requestedAt || r.updatedAt || r.createdAt,
+        data: r,
+      })),
     ]
       .filter((x) => x.createdAt)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  }, [conversation.messages, offers]);
+  }, [conversation.messages, offers, reviewRequests]);
 
   const selectableGigs = useMemo(() => {
     const map = new Map();
@@ -907,14 +1046,17 @@ const Message = ({ conversationId }) => {
           days
         </div>
 
-        {!isAdmin && offer.status === "pending" && (
+        {offer.status === "pending" && (
           <div className="mt-4 flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => setPayOffer(offer)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
-            >
-              Accept & Pay
-            </button>
+            {!isAdmin && (
+              <button
+                onClick={() => setPayOffer(offer)}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
+              >
+                Accept & Pay
+              </button>
+            )}
+
             <button
               onClick={() => handleDeclineOffer(offer._id)}
               className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
@@ -926,7 +1068,114 @@ const Message = ({ conversationId }) => {
       </div>
     );
   };
+  const handleSubmitReviewFromModal = async () => {
+    if (!selectedReviewRequest?.orderId) return;
 
+    try {
+      setSubmittingReview(true);
+      setReviewSubmitMessage("");
+
+      await axios.post(
+        `${apiBase}/api/reviews`,
+        {
+          orderId: selectedReviewRequest.orderId,
+          star: reviewStar,
+          desc: reviewDesc,
+        },
+        { withCredentials: true },
+      );
+
+      setReviewSubmitMessage("Review submitted successfully.");
+
+      setReviewRequests((prev) =>
+        prev.map((item) =>
+          safeStr(item?._id) === safeStr(selectedReviewRequest?._id)
+            ? {
+                ...item,
+                status: "reviewed",
+                reviewedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+
+      setTimeout(() => {
+        setReviewModalOpen(false);
+        setSelectedReviewRequest(null);
+        setReviewStar(1);
+        setReviewDesc("");
+        setReviewSubmitMessage("");
+      }, 800);
+    } catch (err) {
+      setReviewSubmitMessage(
+        err?.response?.data?.message || "Failed to submit review.",
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+  const renderReviewRequestCard = (request) => {
+    const canReview = canReviewFromRequest(request);
+    const isReviewed = request?.status === "reviewed";
+
+    return (
+      <div className="max-w-[85%] mx-auto p-3 md:p-4 rounded-lg shadow-md bg-white border border-gray-200 text-gray-900 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:border-0 dark:text-white">
+        <div className="flex items-center justify-between gap-3">
+          <div className="font-semibold">Review Request</div>
+
+          <div className="text-sm">
+            Status:{" "}
+            <span
+              className={`font-medium ${
+                isReviewed ? "text-green-500" : "text-yellow-500"
+              }`}
+            >
+              {request?.status || "pending"}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="text-sm font-semibold break-words">
+            {request?.service?.name || "Service"}
+          </div>
+
+          <div className="mt-2 text-sm text-gray-700 dark:text-gray-200">
+            {request?.requestMessage || "Share your honest feedback"}
+          </div>
+
+          {isAdmin && (
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Requested {request?.requestCount || 1} time(s)
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+          {!isAdmin && (
+            <button
+              onClick={() => {
+                if (!canReview) return;
+                setSelectedReviewRequest(request);
+                setReviewStar(1);
+                setReviewDesc("");
+                setReviewSubmitMessage("");
+                setReviewModalOpen(true);
+              }}
+              disabled={!canReview}
+              className={`flex-1 px-3 py-2 rounded text-sm text-white ${
+                canReview
+                  ? "bg-pink-500 hover:bg-colorNeonPink"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {isReviewed ? "Review Submitted" : "Leave Review"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="h-[100vh] bg-slate-50 text-gray-900 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 dark:text-gray-100 overflow-hidden container mx-auto">
       <div className="h-full flex flex-col bg-white dark:bg-white/5 backdrop-blur-sm">
@@ -1104,11 +1353,23 @@ const Message = ({ conversationId }) => {
                     );
                   }
 
-                  return (
-                    <div key={`o-${item._id}`}>
-                      {renderOfferCard(item.data)}
-                    </div>
-                  );
+                  if (item.kind === "offer") {
+                    return (
+                      <div key={`o-${item._id}`}>
+                        {renderOfferCard(item.data)}
+                      </div>
+                    );
+                  }
+
+                  if (item.kind === "reviewRequest") {
+                    return (
+                      <div key={`r-${item._id}`}>
+                        {renderReviewRequestCard(item.data)}
+                      </div>
+                    );
+                  }
+
+                  return null;
                 })}
               </>
             )}
@@ -1116,6 +1377,66 @@ const Message = ({ conversationId }) => {
 
           <div className="flex-shrink-0 bg-white p-3 md:p-4 border-t border-gray-200 dark:bg-gray-900 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
+              {isAdmin && showReviewRequestPanel && (
+                <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg max-h-[50vh] overflow-y-auto">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <div className="text-sm md:text-base font-semibold text-white">
+                        Eligible Orders
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Send review request for completed eligible orders
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowReviewRequestPanel(false)}
+                      className="text-gray-400 hover:text-white"
+                      title="Close"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {eligibleOrdersLoading ? (
+                    <div className="text-sm text-gray-400">
+                      Loading eligible orders...
+                    </div>
+                  ) : eligibleOrders.length === 0 ? (
+                    <div className="text-sm text-gray-400">
+                      No eligible completed orders found for this user.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {eligibleOrders.map((order) => (
+                        <div
+                          key={safeStr(order._id)}
+                          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border border-gray-700 bg-gray-900 p-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-white truncate">
+                              {order?.service?.name || "Service"}
+                            </div>
+                            <div className="text-xs text-gray-400 break-all">
+                              Order ID: {order?._id}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Price: ${order?.finalPrice}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleSendReviewRequest(order)}
+                            className="bg-pink-500 hover:bg-colorNeonPink text-white px-3 py-2 rounded text-sm"
+                          >
+                            Send
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {isAdmin && showOfferForm && (
                 <div className="mb-3 bg-gray-800 p-3 md:p-4 rounded-lg max-h-[55vh] md:max-h-[60vh] overflow-y-auto">
                   <div className="mb-3">
@@ -1314,17 +1635,45 @@ const Message = ({ conversationId }) => {
                   </button>
 
                   {isAdmin && (
-                    <button
-                      onClick={() => setShowOfferForm((p) => !p)}
-                      className={`px-4 py-2 md:py-3 rounded-lg transition-colors flex items-center justify-center ${
-                        showOfferForm
-                          ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
-                          : "bg-pink-500 hover:bg-colorNeonPink text-white"
-                      }`}
-                      title={showOfferForm ? "Close offer" : "Send offer"}
-                    >
-                      {showOfferForm ? <X size={18} /> : <Gift size={18} />}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowReviewRequestPanel((p) => !p);
+                          setShowOfferForm(false);
+                        }}
+                        className={`px-4 py-2 md:py-3 rounded-lg transition-colors flex items-center justify-center ${
+                          showReviewRequestPanel
+                            ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
+                            : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                        }`}
+                        title={
+                          showReviewRequestPanel
+                            ? "Close review request panel"
+                            : "Open review request panel"
+                        }
+                      >
+                        {showReviewRequestPanel ? (
+                          <X size={18} />
+                        ) : (
+                          <Star size={18} />
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowOfferForm((p) => !p);
+                          setShowReviewRequestPanel(false);
+                        }}
+                        className={`px-4 py-2 md:py-3 rounded-lg transition-colors flex items-center justify-center ${
+                          showOfferForm
+                            ? "bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white"
+                            : "bg-pink-500 hover:bg-colorNeonPink text-white"
+                        }`}
+                        title={showOfferForm ? "Close offer" : "Send offer"}
+                      >
+                        {showOfferForm ? <X size={18} /> : <Gift size={18} />}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1387,6 +1736,104 @@ const Message = ({ conversationId }) => {
                   >
                     Cancel
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {reviewModalOpen && selectedReviewRequest && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+              <div className="bg-gray-900 text-gray-100 rounded-2xl p-6 shadow-2xl w-full max-w-md">
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div>
+                    <div className="text-lg font-bold">Leave a Review</div>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {selectedReviewRequest?.service?.name || "Service"}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (submittingReview) return;
+                      setReviewModalOpen(false);
+                      setSelectedReviewRequest(null);
+                      setReviewStar(1);
+                      setReviewDesc("");
+                      setReviewSubmitMessage("");
+                    }}
+                    className="text-gray-400 hover:text-white"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-300 mb-2">
+                      Rating
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setReviewStar(value)}
+                          className={`text-2xl transition ${
+                            reviewStar >= value
+                              ? "text-yellow-400"
+                              : "text-gray-500 hover:text-yellow-400"
+                          }`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-medium text-gray-300 mb-2">
+                      Feedback
+                    </div>
+
+                    <textarea
+                      value={reviewDesc}
+                      onChange={(e) => setReviewDesc(e.target.value)}
+                      rows={4}
+                      placeholder="Write your honest feedback..."
+                      className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-pink-500"
+                    />
+                  </div>
+
+                  {reviewSubmitMessage && (
+                    <div className="text-sm text-gray-300">
+                      {reviewSubmitMessage}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSubmitReviewFromModal}
+                      disabled={submittingReview || !reviewDesc.trim()}
+                      className="flex-1 bg-pink-500 hover:bg-colorNeonPink text-white py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {submittingReview ? "Submitting..." : "Submit Review"}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (submittingReview) return;
+                        setReviewModalOpen(false);
+                        setSelectedReviewRequest(null);
+                        setReviewStar(1);
+                        setReviewDesc("");
+                        setReviewSubmitMessage("");
+                      }}
+                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

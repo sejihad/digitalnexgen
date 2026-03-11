@@ -23,6 +23,7 @@ export const calculateFinalPrice = async ({
   let offerTitle = null;
   let offerPrice = null;
   let offerFeatures = [];
+  let offerDescription = "";
   // 4️⃣ OFFER CHECK
   if (offerId) {
     const offer = await PromotionalOffer.findById(offerId);
@@ -34,6 +35,7 @@ export const calculateFinalPrice = async ({
 
       if (notExpired) {
         offerTitle = offer.title;
+        offerDescription = offer.description || "";
         // ✅ take offer features
         offerFeatures = Array.isArray(offer.features) ? offer.features : [];
         // ✅ Priority: package-wise offer price
@@ -85,6 +87,7 @@ export const calculateFinalPrice = async ({
       offerTitle,
       offerPrice, // null if no offer
       offerFeatures,
+      offerDescription,
     },
   };
 };

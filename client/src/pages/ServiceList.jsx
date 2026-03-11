@@ -159,7 +159,6 @@ const ServiceList = () => {
       <main className="flex-1 px-4 md:px-8 pb-20">
         <div className="pt-6">
           <h2 className="flex flex-wrap justify-center items-center gap-2 text-center text-xl md:text-3xl font-bold border-b-2 border-pink-500 pb-2 dark:text-white capitalize font-roboto max-w-full">
-            {/* ক্যাটাগরি নাম */}
             <span className="whitespace-nowrap">
               {selectedCategory.replaceAll("-", " ")}
             </span>

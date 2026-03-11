@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  Bell,
   Gift,
   Home,
   Layers,
@@ -19,11 +20,15 @@ import { setHasUnread } from "../redux/chatSlice";
 import { handleLogout } from "../utils/authUtils";
 const UserNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // desktop dropdown
+
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false); // ✅ mobile dropdown
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(placeholder);
   const [searchQuery, setSearchQuery] = useState("");
   const hasUnread = useSelector((state) => state.chat.hasUnread);
+  const hasUnreadNotifications = useSelector(
+    (state) => state.notify.hasUnreadNotifications,
+  );
   const mobileSearchRef = useRef(null);
   const user = useSelector((state) => state.auth.user);
   const userId = useSelector(
@@ -57,13 +62,13 @@ const UserNavbar = () => {
 
         dispatch(setHasUnread(anyUnread));
       } catch (e) {
-        console.log("unread fetch failed", e?.message);
         dispatch(setHasUnread(false));
       }
     };
 
-    if (userId) loadUnread(); // ✅ token না লাগবে
+    if (userId) loadUnread();
   }, [userId]);
+
   // ✅ outside click => close dropdowns (desktop + mobile)
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -161,6 +166,18 @@ const UserNavbar = () => {
       {/* Mobile Top Controls */}
       <div className="lg:hidden flex items-center gap-3">
         <button
+          onClick={() => handleNavigation("/notifications")}
+          className="relative text-black dark:text-white"
+          title="Notifications"
+        >
+          <Bell size={20} />
+
+          {hasUnreadNotifications && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
+          )}
+        </button>
+
+        <button
           onClick={toggleTheme}
           className="text-primaryText dark:text-white"
         >
@@ -173,8 +190,6 @@ const UserNavbar = () => {
         >
           <Search size={20} />
         </button>
-
-        {/* ✅ remove top profile from mobile (profile now in bottom-right) */}
       </div>
 
       {/* Desktop */}
@@ -295,7 +310,17 @@ const UserNavbar = () => {
               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500" />
             )}
           </button>
+          <button
+            onClick={() => handleNavigation("/notifications")}
+            className="relative text-primaryText dark:text-white hover:text-primaryRgb"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5 md:w-7 md:h-7 lg:w-8 lg:h-8" />
 
+            {hasUnreadNotifications && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500" />
+            )}
+          </button>
           <button
             className="text-green-800 dark:text-white dark:hover:text-white hover:text-green-700"
             onClick={toggleTheme}

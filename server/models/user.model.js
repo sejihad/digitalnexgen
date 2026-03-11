@@ -62,6 +62,10 @@ const userSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    fcmTokens: {
+      type: [String],
+      default: [],
+    },
     twoFactorCode: String,
     twoFactorExpire: Date,
   },

@@ -48,8 +48,29 @@ const serviceOrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    isReviewEligible: {
+      type: Boolean,
+      default: false,
+    },
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
-
+serviceOrderSchema.index(
+  { "payment.transactionId": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      "payment.transactionId": { $exists: true, $type: "string" },
+    },
+  },
+);
 export default mongoose.model("Order", serviceOrderSchema);

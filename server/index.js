@@ -9,9 +9,9 @@ import passport from "passport";
 
 import "./config/passport.js";
 import { initializePassport } from "./config/passport.js";
+import "./services/notifyCleanup.cron.js";
 
 import { stripeWebhook } from "./controllers/stripe.controller.js";
-
 import authRoute from "./routes/auth.route.js";
 import blogRoute from "./routes/blog.route.js";
 import contactRoute from "./routes/contact.route.js";
@@ -20,6 +20,7 @@ import couponRoute from "./routes/coupon.route.js";
 import galleryRoute from "./routes/gallery.route.js";
 import messageRoute from "./routes/message.route.js";
 import newsletterRought from "./routes/newsletter.route.js";
+import notifyRoute from "./routes/notify.route.js";
 import offerRoute from "./routes/offer.route.js";
 import orderRoute from "./routes/order.route.js";
 import partnerRoute from "./routes/partner.route.js";
@@ -27,6 +28,7 @@ import paypalRoute from "./routes/paypal.route.js";
 import projectRoute from "./routes/project.route.js";
 import promotionalOfferRoute from "./routes/promotionalOffer.route.js";
 import reviewRoute from "./routes/review.route.js";
+import reviewRequestRoute from "./routes/reviewRequest.route.js";
 import serviceRoute from "./routes/service.route.js";
 import statisticRoute from "./routes/statistic.route.js";
 import stripeRoute from "./routes/stripe.route.js";
@@ -85,6 +87,8 @@ app.use("/api/partners", partnerRoute);
 app.use("/api/newsletters", newsletterRought);
 app.use("/api/projects", projectRoute);
 app.use("/api/offers", offerRoute);
+app.use("/api/notifies", notifyRoute);
+app.use("/api/review-requests", reviewRequestRoute);
 app.use("/api/promotional-offers", promotionalOfferRoute);
 app.use("/api/galleries", galleryRoute);
 app.use("/api/stripe", stripeRoute);

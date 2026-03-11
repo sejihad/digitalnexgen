@@ -15,20 +15,24 @@ import AddPartner from "../pages/AddPartner";
 import AddProject from "../pages/AddProject";
 import AddPromotionalOffer from "../pages/AddPromotionalOffer";
 import AddService from "../pages/AddService";
+import AdminAddReview from "../pages/AdminAddReview.jsx";
 import AdminBlogs from "../pages/AdminBlogs";
 import AdminConvesation from "../pages/AdminConvesation";
 import AdminGalleries from "../pages/AdminGalleries";
 import AdminNewsLatters from "../pages/AdminNewsLatters";
+import AdminNotifications from "../pages/AdminNotifications.jsx";
 import AdminOrder from "../pages/AdminOrder";
 import AdminOrders from "../pages/AdminOrders";
 import AdminPartners from "../pages/AdminPartners";
 import AdminProfile from "../pages/AdminProfile";
 import AdminProjects from "../pages/AdminProjects";
 import AdminPromotionalOffers from "../pages/AdminPromotionalOffers";
-import AdminReviews from "../pages/AdminReviews";
+import AdminSendNotification from "../pages/AdminSendNotification.jsx";
+import AdminServiceReviews from "../pages/AdminServiceReviews";
 import AdminServices from "../pages/AdminServices";
 import AdminSettings from "../pages/AdminSettings";
 import AdminStatistics from "../pages/AdminStatistics.jsx";
+import AdminUpdateReview from "../pages/AdminUpdateReview";
 import EditUser from "../pages/AdminUserRoleManager.jsx";
 import AdminUsers from "../pages/AdminUsers.jsx";
 import Blog from "../pages/Blog";
@@ -50,6 +54,8 @@ import Home from "../pages/Home";
 import GoogleSuccess from "../pages/Login/GoogleSuccess.jsx";
 import Login from "../pages/Login/Login";
 import NotFound from "../pages/NotFound";
+import NotificationDetails from "../pages/NotificationDetails.jsx";
+import Notifications from "../pages/Notifications.jsx";
 import OfferPage from "../pages/OfferPage";
 import Order from "../pages/Order";
 import Orders from "../pages/Orders";
@@ -189,6 +195,15 @@ const AppRoutes = ({ theme, toggleTheme }) => {
             }
           />
           <Route
+            path="notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="notifications/:id" element={<NotificationDetails />} />
+          <Route
             path="orders/:id"
             element={
               <ProtectedRoute>
@@ -227,12 +242,20 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route index element={<Dashboard />} />
           <Route path="add-service" element={<AddService />} />
           <Route path="services" element={<AdminServices />} />
+          <Route
+            path="services/:serviceId/reviews"
+            element={<AdminServiceReviews />}
+          />
           <Route path="messages/:id" element={<Message />} />
           <Route path="services/edit/:id" element={<EditService />} />
+          <Route path="reviews/add" element={<AdminAddReview />} />
+          <Route path="reviews/edit/:id" element={<AdminUpdateReview />} />
           <Route path="conversations" element={<AdminConvesation />} />
           <Route path="add-project" element={<AddProject />} />
           <Route path="add-gallery" element={<AddGallery />} />
           <Route path="galleries" element={<AdminGalleries />} />
+          <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="notifies" element={<AdminSendNotification />} />
           <Route path="add-blog" element={<AddBlog />} />
           <Route path="blogs" element={<AdminBlogs />} />
           <Route path="blogs/edit/:id" element={<EditBlog />} />
@@ -252,7 +275,6 @@ const AppRoutes = ({ theme, toggleTheme }) => {
           <Route path="profile/:id" element={<AdminProfile />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="coupons" element={<Coupons />} />
-          <Route path="review" element={<AdminReviews />} />
 
           <Route
             path="promotional-offers"
@@ -266,7 +288,6 @@ const AppRoutes = ({ theme, toggleTheme }) => {
             path="promotional-offers/edit/:id"
             element={<EditPromotionalOffer />}
           />
-          <Route path="reviews" element={<AdminReviews />} />
         </Route>
         <Route path="/google/callback" element={<GoogleCallbackHandler />} />
         <Route

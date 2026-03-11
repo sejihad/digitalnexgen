@@ -25,6 +25,7 @@ const AddService = () => {
       coverImage: null,
       otherImages: [],
       desc: "",
+      sales: 0,
       shortTitle: "",
       shortDesc: "",
       features: ["", "", "", ""],
@@ -227,6 +228,7 @@ const AddService = () => {
         "shortTitle",
         "shortDesc",
         "videoUrl",
+        "sales",
       ].forEach((key) => formData.append(key, data[key] || ""));
 
       // cover image
@@ -362,7 +364,16 @@ const AddService = () => {
         {errors.shortTitle && (
           <p className="text-red-500">{errors.shortTitle.message}</p>
         )}
-
+        <input
+          {...register("sales", {
+            valueAsNumber: true,
+            min: { value: 0, message: "Sales cannot be negative" },
+          })}
+          type="number"
+          placeholder="Sales"
+          className="w-full p-2 rounded bg-gray-700"
+        />
+        {errors.sales && <p className="text-red-500">{errors.sales.message}</p>}
         <div>
           <label className="block font-bold mb-2">Features</label>
           {watch("features")?.map((feature, index) => (

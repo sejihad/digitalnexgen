@@ -53,6 +53,7 @@ export const createService = async (req, res, next) => {
       packages: req.body.packages ? JSON.parse(req.body.packages) : [],
       videoUrl: req.body.videoUrl || "", // ✅ Video URL add
       coverImage,
+      sales: Number(req.body.sales) || 0,
       otherImages,
     });
 
@@ -63,6 +64,7 @@ export const createService = async (req, res, next) => {
       service: savedService,
     });
   } catch (error) {
+    console.log(error);
     next(createError(500, "Internal server error"));
   }
 };

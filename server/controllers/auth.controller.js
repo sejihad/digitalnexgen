@@ -224,7 +224,6 @@ export const login = async (req, res, next) => {
       .status(200)
       .json(info);
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

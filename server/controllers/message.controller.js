@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
+import { sendNotify } from "../services/notify.service.js";
+import { isUserActiveInConversation } from "../socket.js";
 import { getIO } from "../socketInstance.js";
 export const createMessage = async (req, res) => {
   try {
@@ -102,6 +104,43 @@ export const createMessage = async (req, res) => {
         senderId: meId,
       });
     }
+
+    // ✅ conditional notification
+    if (isCustomer) {
+      // user -> admin notification (only if no admin is active in this conversation)
+      const adminIds = Array.isArray(conv.adminIds)
+        ? conv.adminIds.map((a) => String(a))
+        : [];
+
+      const isAnyAdminActive = adminIds.some((adminId) =>
+        isUserActiveInConversation(conv._id, adminId),
+      );
+
+      if (!isAnyAdminActive && adminIds.length > 0) {
+        await sendNotify({
+          title: "New Message",
+          message: `You received a new message from ${populatedMessage?.userId?.name || populatedMessage?.userId?.username || "a user"}`,
+          users: adminIds,
+          type: "message",
+          link: "/admin/conversations",
+        });
+      }
+    } else {
+      // admin -> user notification (only if user is not active in this conversation)
+      const customerId = String(conv.customerId);
+      const isCustomerActive = isUserActiveInConversation(conv._id, customerId);
+
+      if (!isCustomerActive) {
+        await sendNotify({
+          title: "New Message",
+          message: `You received a new message from Admin`,
+          users: [customerId],
+          type: "message",
+          link: "/chat",
+        });
+      }
+    }
+
     return res.status(201).json(populatedMessage);
   } catch (error) {
     console.error("createMessage error:", error);

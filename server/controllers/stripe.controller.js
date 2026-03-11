@@ -5,13 +5,24 @@ import ServiceOrder from "../models/order.model.js";
 import User from "../models/user.model.js";
 import { getIO } from "../socketInstance.js";
 import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
+import { sendOrderCreatedUpdates } from "../utils/orderEventNotifications.js";
+
 dotenv.config();
+
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 let stripe = null;
-if (!stripeSecret) {
-} else {
+
+if (stripeSecret) {
   stripe = new Stripe(stripeSecret);
 }
+
+const parseJsonSafe = (value, fallback = null) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
 
 export const createCheckoutSession = async (req, res, next) => {
   try {
@@ -20,18 +31,22 @@ export const createCheckoutSession = async (req, res, next) => {
         .status(503)
         .json({ message: "Stripe not configured on server" });
     }
+
     const { title, couponCode, offerId, name, serviceId } = req.body;
+
     if (!serviceId || !name || !title) {
       return res
         .status(400)
         .json({ message: "serviceId, name, and title are required" });
     }
+
     const pricing = await calculateFinalPrice({
       serviceId,
       name,
       couponCode,
       offerId,
     });
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       success_url: `${process.env.CLIENT_BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
@@ -40,36 +55,25 @@ export const createCheckoutSession = async (req, res, next) => {
         {
           price_data: {
             currency: "usd",
-            product_data: { name: `${title} - ${name}` },
+            product_data: {
+              name: `${title} - ${name}`,
+            },
             unit_amount: pricing.finalPrice * 100,
           },
           quantity: 1,
         },
       ],
       metadata: {
-        serviceId,
-        userId: req.userId,
-        name,
-        title,
-        servicePrice: pricing.servicePrice,
-        offerId: offerId || "",
-        offerPrice: pricing.offer ? pricing.offer.offerPrice : "",
-        offerTitle: pricing.offer ? pricing.offer.offerTitle : "",
-        offerFeatures: pricing.offer
-          ? JSON.stringify(pricing.offer.offerFeatures)
-          : "",
-        couponCode: couponCode || "",
-        couponDiscountPercent: pricing.coupon
-          ? pricing.coupon.discountPercent
-          : "",
-        couponDiscountAmount: pricing.coupon
-          ? pricing.coupon.discountAmount
-          : "",
-        finalPrice: pricing.finalPrice,
+        serviceId: String(serviceId),
+        userId: String(req.userId),
+        name: String(name),
+        title: String(title),
+        offerId: offerId ? String(offerId) : "",
+        couponCode: couponCode ? String(couponCode) : "",
       },
     });
 
-    res.status(200).json({ url: session.url });
+    return res.status(200).json({ url: session.url });
   } catch (err) {
     next(err);
   }
@@ -86,6 +90,7 @@ export const stripeWebhook = async (req, res) => {
   }
 
   let event;
+
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -93,10 +98,10 @@ export const stripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
+    console.error("Stripe webhook signature error:", err?.message || err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Only successful payment event
   if (event.type !== "checkout.session.completed") {
     return res.status(200).send("Ignored");
   }
@@ -104,23 +109,31 @@ export const stripeWebhook = async (req, res) => {
   const session = event.data.object;
 
   try {
-    // ✅ shared duplicate protection (normal + offer)
+    if (session.payment_status !== "paid") {
+      return res.status(400).send("Payment not completed.");
+    }
+
+    const paymentIntentId = session.payment_intent;
+    if (!paymentIntentId) {
+      return res.status(400).send("Missing payment intent.");
+    }
+
     const existingOrder = await ServiceOrder.findOne({
-      "payment.transactionId": session.payment_intent,
+      "payment.transactionId": paymentIntentId,
     });
 
     if (existingOrder) {
-      // If offer flow and offer not accepted yet -> accept it
       if (session?.metadata?.flow === "offer" && session?.metadata?.offerId) {
         await Offer.findByIdAndUpdate(session.metadata.offerId, {
           $set: { status: "accepted" },
         }).catch(() => {});
       }
+
       return res.status(200).send("Order already created.");
     }
 
     /* =========================
-       ✅ 1) OFFER FLOW
+       1) OFFER FLOW
     ========================= */
     if (session?.metadata?.flow === "offer") {
       const offerId = session.metadata.offerId;
@@ -131,43 +144,54 @@ export const stripeWebhook = async (req, res) => {
       }
 
       const offer = await Offer.findById(offerId);
-      if (!offer) return res.status(404).send("Offer not found");
+      if (!offer) {
+        return res.status(404).send("Offer not found");
+      }
 
-      // ✅ security: ensure payer is offer buyer
       if (String(offer.buyerId) !== String(buyerUserId)) {
         return res.status(403).send("Not your offer");
       }
 
-      // declined হলে create করবে না
       if (offer.status === "declined") {
         return res.status(200).send("Offer declined previously.");
       }
 
       const user = await User.findById(buyerUserId);
-      if (!user) return res.status(404).send("User not found");
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
 
-      const amount = Number(
-        session.metadata.finalPrice || offer.offerDetails?.price || 0,
-      );
+      const offerAmount = Number(offer.offerDetails?.price || 0);
+      const paidAmount = Number(session.amount_total || 0) / 100;
+
+      if (!Number.isFinite(offerAmount) || offerAmount <= 0) {
+        return res.status(400).send("Invalid offer price.");
+      }
+
+      if (Number(offerAmount.toFixed(2)) !== Number(paidAmount.toFixed(2))) {
+        return res.status(400).send("Paid amount mismatch for offer.");
+      }
 
       const newOrder = new ServiceOrder({
         service: {
-          id: String(offer.gig?.id || session.metadata.gigId || ""),
-          name: String(
-            offer.gig?.title || session.metadata.gigTitle || "Custom Offer",
-          ),
+          id: String(offer.gig?.id || ""),
+          name: String(offer.gig?.title || "Custom Offer"),
           type: "custom",
-          price: amount,
+          price: offerAmount,
           offer: {
             id: String(offer._id),
             title: "Custom Offer",
-            price: amount,
+            price: offerAmount,
             features: offer.offerDetails?.features || [],
             description: offer.offerDetails?.description || "",
           },
         },
-        finalPrice: amount,
-        coupon: { code: null, discountPercent: null, discountAmount: null },
+        finalPrice: offerAmount,
+        coupon: {
+          code: null,
+          discountPercent: null,
+          discountAmount: null,
+        },
         user: {
           id: user._id,
           name: user.username,
@@ -176,7 +200,7 @@ export const stripeWebhook = async (req, res) => {
         },
         payment: {
           method: "stripe",
-          transactionId: session.payment_intent,
+          transactionId: paymentIntentId,
           status: "paid",
         },
         order_status: "pending",
@@ -184,49 +208,78 @@ export const stripeWebhook = async (req, res) => {
       });
 
       await newOrder.save();
+      await sendOrderCreatedUpdates(newOrder);
 
-      // ✅ mark accepted ONLY after payment
       if (offer.status !== "accepted") {
         offer.status = "accepted";
         await offer.save();
-        const io = getIO();
 
-        io.to(String(offer.conversationId)).emit("offer:update", {
-          conversationId: String(offer.conversationId),
-          offer,
-        });
+        const io = getIO();
+        if (io) {
+          io.to(String(offer.conversationId)).emit("offer:update", {
+            conversationId: String(offer.conversationId),
+            offer,
+          });
+        }
       }
 
       return res.status(200).send("Offer order created + offer accepted.");
     }
 
     /* =========================
-       ✅ 2) NORMAL SERVICE FLOW
+       2) NORMAL SERVICE FLOW
     ========================= */
-    const user = await User.findById(session.metadata.userId);
-    if (!user) return res.status(404).send("User not found");
+    const userId = session.metadata?.userId;
+    const serviceId = session.metadata?.serviceId;
+    const name = session.metadata?.name;
+    const title = session.metadata?.title;
+    const offerId = session.metadata?.offerId || "";
+    const couponCode = session.metadata?.couponCode || "";
+
+    if (!userId || !serviceId || !name || !title) {
+      return res.status(400).send("Required metadata missing.");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    const pricing = await calculateFinalPrice({
+      serviceId,
+      name,
+      couponCode,
+      offerId,
+    });
+
+    const paidAmount = Number(session.amount_total || 0) / 100;
+    const expectedAmount = Number(pricing.finalPrice || 0);
+
+    if (Number(expectedAmount.toFixed(2)) !== Number(paidAmount.toFixed(2))) {
+      return res.status(400).send("Paid amount mismatch.");
+    }
 
     const newOrder = new ServiceOrder({
       service: {
-        id: session.metadata.serviceId,
-        name: session.metadata.title,
-        type: session.metadata.name,
-        price: Number(session.metadata.servicePrice),
+        id: String(serviceId),
+        name: String(title),
+        type: String(name),
+        price: Number(pricing.servicePrice),
         offer: {
-          id: session.metadata.offerId || null,
-          title: session.metadata.offerTitle || null,
-          price: Number(session.metadata.offerPrice) || null,
-          features: session.metadata.offerFeatures
-            ? JSON.parse(session.metadata.offerFeatures)
+          id: offerId || null,
+          title: pricing.offer?.offerTitle || null,
+          price: Number(pricing.offer?.offerPrice) || null,
+          features: Array.isArray(pricing.offer?.offerFeatures)
+            ? pricing.offer.offerFeatures
             : [],
-          description: session.metadata.offerDescription || undefined,
+          description: pricing.offer?.offerDescription || undefined,
         },
       },
-      finalPrice: Number(session.metadata.finalPrice),
+      finalPrice: Number(pricing.finalPrice),
       coupon: {
-        code: session.metadata.couponCode || null,
-        discountPercent: Number(session.metadata.couponDiscountPercent) || null,
-        discountAmount: Number(session.metadata.couponDiscountAmount) || null,
+        code: couponCode || null,
+        discountPercent: Number(pricing.coupon?.discountPercent) || null,
+        discountAmount: Number(pricing.coupon?.discountAmount) || null,
       },
       user: {
         id: user._id,
@@ -236,7 +289,7 @@ export const stripeWebhook = async (req, res) => {
       },
       payment: {
         method: "stripe",
-        transactionId: session.payment_intent,
+        transactionId: paymentIntentId,
         status: "paid",
       },
       order_status: "pending",
@@ -244,8 +297,11 @@ export const stripeWebhook = async (req, res) => {
     });
 
     await newOrder.save();
+    await sendOrderCreatedUpdates(newOrder);
+
     return res.status(200).send("Order created.");
   } catch (err) {
+    console.error("Stripe webhook order creation failed:", err?.message || err);
     return res.status(500).send("Internal server error");
   }
 };

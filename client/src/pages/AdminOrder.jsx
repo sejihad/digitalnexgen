@@ -218,11 +218,15 @@ const AdminOrder = () => {
       y += 30;
 
       // info boxes
+      // info boxes
       const boxGap = 8;
       const boxWidth = (pageWidth - margin * 2 - boxGap) / 2;
-      const boxHeight = 38;
 
-      drawBox(margin, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      const serviceName = order.service?.name || "N/A";
+      const serviceNameLines = doc.splitTextToSize(serviceName, boxWidth - 8);
+      const dynamicBoxHeight = Math.max(38, 24 + serviceNameLines.length * 5);
+
+      drawBox(margin, y, boxWidth, dynamicBoxHeight, colors.lightBg, "#E5E7EB");
       drawText("BILLED TO", margin + 4, y + 7, 10, colors.primary, "bold");
       drawText(
         order.user?.name || "N/A",
@@ -236,7 +240,14 @@ const AdminOrder = () => {
       drawText(order.user?.phone || "N/A", margin + 4, y + 29, 9, colors.text);
 
       const serviceX = margin + boxWidth + boxGap;
-      drawBox(serviceX, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawBox(
+        serviceX,
+        y,
+        boxWidth,
+        dynamicBoxHeight,
+        colors.lightBg,
+        "#E5E7EB",
+      );
       drawText(
         "SERVICE DETAILS",
         serviceX + 4,
@@ -245,30 +256,35 @@ const AdminOrder = () => {
         colors.primary,
         "bold",
       );
-      drawText(
-        order.service?.name || "N/A",
+
+      const serviceNameEndY = addWrappedText(
+        serviceName,
         serviceX + 4,
         y + 15,
+        boxWidth - 8,
         11,
         colors.dark,
         "bold",
+        5,
       );
+
       drawText(
         `Type: ${order.service?.type || "N/A"}`,
         serviceX + 4,
-        y + 22,
-        9,
-        colors.text,
-      );
-      drawText(
-        `Final Price: $${order.finalPrice}`,
-        serviceX + 4,
-        y + 29,
+        serviceNameEndY + 2,
         9,
         colors.text,
       );
 
-      y += boxHeight + 8;
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        serviceX + 4,
+        serviceNameEndY + 9,
+        9,
+        colors.text,
+      );
+
+      y += dynamicBoxHeight + 8;
 
       // service overview
       drawText("SERVICE OVERVIEW", margin, y, 11, colors.primary, "bold");

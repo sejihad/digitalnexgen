@@ -7,17 +7,25 @@ import User from "../models/user.model.js";
 import { getIO } from "../socketInstance.js";
 // Stripe
 import Stripe from "stripe";
-
+import { sendNotify } from "../services/notify.service.js";
+import { isUserActiveInConversation } from "../socket.js";
+import { sendOrderCreatedUpdates } from "../utils/orderEventNotifications.js";
 // PayPal
 import paypal from "@paypal/checkout-server-sdk";
 
 dotenv.config();
-
+const parseJsonSafe = (value, fallback = {}) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 
 // PayPal client
-const paypalEnv = new paypal.core.SandboxEnvironment(
+const paypalEnv = new paypal.core.LiveEnvironment(
   process.env.PAYPAL_CLIENT_ID,
   process.env.PAYPAL_CLIENT_SECRET,
 );
@@ -25,7 +33,6 @@ const paypalClient = new paypal.core.PayPalHttpClient(paypalEnv);
 
 /* -------------------- EXISTING: CREATE OFFER -------------------- */
 export const createOffer = async (req, res, next) => {
-  console.log("called createOffer with body:", req.body);
   try {
     if (!req.isAdmin) {
       return res
@@ -81,23 +88,39 @@ export const createOffer = async (req, res, next) => {
     const savedOffer = await newOffer.save();
 
     // realtime emit
+    // realtime emit
     const io = getIO();
+    if (io) {
+      io.to(String(savedOffer.conversationId)).emit("offer:receive", {
+        conversationId: String(savedOffer.conversationId),
+        offer: savedOffer,
+      });
 
-    io.to(String(savedOffer.conversationId)).emit("offer:receive", {
-      conversationId: String(savedOffer.conversationId),
-      offer: savedOffer,
-    });
+      // buyer personal push
+      io.to(`user:${savedOffer.buyerId}`).emit("offer:receive", {
+        conversationId: String(savedOffer.conversationId),
+        offer: savedOffer,
+      });
 
-    // buyer personal push
-    io.to(`user:${savedOffer.buyerId}`).emit("offer:receive", {
-      conversationId: String(savedOffer.conversationId),
-      offer: savedOffer,
-    });
+      // admin panel update
+      io.to("admins").emit("admin:conversation:update", {
+        conversationId: String(savedOffer.conversationId),
+      });
+    }
+    const isBuyerActiveInConversation = isUserActiveInConversation(
+      savedOffer.conversationId,
+      savedOffer.buyerId,
+    );
 
-    // admin panel update
-    io.to("admins").emit("admin:conversation:update", {
-      conversationId: String(savedOffer.conversationId),
-    });
+    if (!isBuyerActiveInConversation) {
+      await sendNotify({
+        title: "New Offer",
+        message: `${savedOffer.gig?.title || "A service"} offer has been sent to you`,
+        users: [String(savedOffer.buyerId)],
+        type: "offer",
+        link: "/chat",
+      });
+    }
 
     res.status(201).json(savedOffer);
   } catch (error) {
@@ -153,23 +176,27 @@ export const getOffers = async (req, res, next) => {
 /* -------------------- EXISTING: RESPOND (DECLINE ONLY RECOMMENDED) -------------------- */
 export const respondToOffer = async (req, res, next) => {
   try {
-    if (req.isAdmin) {
-      return res
-        .status(403)
-        .json({ message: "Admins cannot respond to offers." });
-    }
-
     const { offerId } = req.params;
     const { status } = req.body;
 
     if (!["declined"].includes(status)) {
       return res.status(400).json({
-        message: "Only decline is allowed here. Use checkout to accept.",
+        message: "Only decline is allowed here.",
       });
     }
 
+    let query = {
+      _id: offerId,
+      status: "pending",
+    };
+
+    // user হলে নিজের offer decline করবে
+    if (!req.isAdmin) {
+      query.buyerId = req.userId;
+    }
+
     const updatedOffer = await Offer.findOneAndUpdate(
-      { _id: offerId, buyerId: req.userId, status: "pending" },
+      query,
       { $set: { status } },
       { new: true },
     );
@@ -179,14 +206,13 @@ export const respondToOffer = async (req, res, next) => {
         .status(404)
         .json({ message: "Offer not found or already responded." });
     }
-
     const io = getIO();
-
-    io.to(String(updatedOffer.conversationId)).emit("offer:update", {
-      conversationId: String(updatedOffer.conversationId),
-      offer: updatedOffer,
-    });
-
+    if (io) {
+      io.to(String(updatedOffer.conversationId)).emit("offer:update", {
+        conversationId: String(updatedOffer.conversationId),
+        offer: updatedOffer,
+      });
+    }
     res.status(200).json(updatedOffer);
   } catch (error) {
     next(error);
@@ -201,26 +227,35 @@ export const respondToOffer = async (req, res, next) => {
 ================================================================ */
 export const createOfferStripeCheckout = async (req, res, next) => {
   try {
-    if (!stripe)
+    if (!stripe) {
       return res
         .status(503)
         .json({ message: "Stripe not configured on server" });
-    if (req.isAdmin)
+    }
+
+    if (req.isAdmin) {
       return res.status(403).json({ message: "Admin cannot pay offers." });
+    }
 
     const { offerId } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(offerId)) {
       return res.status(400).json({ message: "Invalid offerId." });
     }
 
     const offer = await Offer.findById(offerId);
-    if (!offer) return res.status(404).json({ message: "Offer not found" });
+    if (!offer) {
+      return res.status(404).json({ message: "Offer not found" });
+    }
 
     if (String(offer.buyerId) !== String(req.userId)) {
       return res.status(403).json({ message: "Not your offer" });
     }
+
     if (offer.status !== "pending") {
-      return res.status(400).json({ message: `Offer already ${offer.status}` });
+      return res.status(400).json({
+        message: `Offer already ${offer.status}`,
+      });
     }
 
     const amount = Number(offer.offerDetails?.price || 0);
@@ -239,7 +274,7 @@ export const createOfferStripeCheckout = async (req, res, next) => {
             product_data: {
               name: `Custom Offer - ${offer.gig?.title || "Gig"}`,
             },
-            unit_amount: Math.round(amount * 100),
+            unit_amount: amount * 100,
           },
           quantity: 1,
         },
@@ -249,16 +284,6 @@ export const createOfferStripeCheckout = async (req, res, next) => {
         offerId: String(offer._id),
         conversationId: String(offer.conversationId),
         userId: String(req.userId),
-
-        gigId: String(offer.gig?.id || ""),
-        gigTitle: String(offer.gig?.title || ""),
-        gigSubCategory: String(offer.gig?.subCategory || ""),
-        gigCoverImage: String(offer.gig?.coverImage || ""),
-
-        offerDescription: String(offer.offerDetails?.description || ""),
-        offerFeatures: JSON.stringify(offer.offerDetails?.features || []),
-
-        finalPrice: String(amount),
       },
     });
 
@@ -273,22 +298,29 @@ export const createOfferStripeCheckout = async (req, res, next) => {
 ================================================================ */
 export const createOfferPaypalCheckout = async (req, res, next) => {
   try {
-    if (req.isAdmin)
+    if (req.isAdmin) {
       return res.status(403).json({ message: "Admin cannot pay offers." });
+    }
 
     const { offerId } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(offerId)) {
       return res.status(400).json({ message: "Invalid offerId." });
     }
 
     const offer = await Offer.findById(offerId);
-    if (!offer) return res.status(404).json({ message: "Offer not found" });
+    if (!offer) {
+      return res.status(404).json({ message: "Offer not found" });
+    }
 
     if (String(offer.buyerId) !== String(req.userId)) {
       return res.status(403).json({ message: "Not your offer" });
     }
+
     if (offer.status !== "pending") {
-      return res.status(400).json({ message: `Offer already ${offer.status}` });
+      return res.status(400).json({
+        message: `Offer already ${offer.status}`,
+      });
     }
 
     const amount = Number(offer.offerDetails?.price || 0);
@@ -299,19 +331,20 @@ export const createOfferPaypalCheckout = async (req, res, next) => {
     const request = new paypal.orders.OrdersCreateRequest();
     request.prefer("return=representation");
 
-    // ✅ store minimal metadata in custom_id
     request.requestBody({
       intent: "CAPTURE",
       purchase_units: [
         {
-          amount: { currency_code: "USD", value: amount.toFixed(2) },
+          amount: {
+            currency_code: "USD",
+            value: amount.toFixed(2),
+          },
           description: `Custom Offer - ${offer.gig?.title || "Gig"}`,
           custom_id: JSON.stringify({
             flow: "offer",
             offerId: String(offer._id),
             userId: String(req.userId),
             conversationId: String(offer.conversationId),
-            finalPrice: amount,
           }),
         },
       ],
@@ -322,10 +355,12 @@ export const createOfferPaypalCheckout = async (req, res, next) => {
     });
 
     const order = await paypalClient.execute(request);
-
-    // ✅ approval link
     const approve = (order.result.links || []).find((l) => l.rel === "approve");
-    return res.status(200).json({ url: approve?.href, id: order.result.id });
+
+    return res.status(200).json({
+      url: approve?.href,
+      id: order.result.id,
+    });
   } catch (err) {
     next(err);
   }
@@ -338,62 +373,87 @@ export const createOfferPaypalCheckout = async (req, res, next) => {
 ================================================================ */
 export const captureOfferPaypalOrder = async (req, res, next) => {
   try {
-    if (req.isAdmin)
+    if (req.isAdmin) {
       return res.status(403).json({ message: "Admin cannot capture offers." });
+    }
 
     const { orderID } = req.body;
-    if (!orderID)
+    if (!orderID) {
       return res.status(400).json({ message: "orderID is required." });
+    }
 
     const request = new paypal.orders.OrdersCaptureRequest(orderID);
     request.requestBody({});
     const capture = await paypalClient.execute(request);
 
-    const purchase = capture.result.purchase_units?.[0];
-    const transactionId = purchase?.payments?.captures?.[0]?.id;
+    const purchase = capture?.result?.purchase_units?.[0];
+    const capturedPayment = purchase?.payments?.captures?.[0];
+    const transactionId = capturedPayment?.id;
+    const captureStatus = capturedPayment?.status;
+
     if (!transactionId) {
       return res.status(400).json({ message: "PayPal capture failed." });
     }
 
-    const meta = purchase?.custom_id ? JSON.parse(purchase.custom_id) : {};
+    if (captureStatus !== "COMPLETED") {
+      return res.status(400).json({ message: "PayPal payment not completed." });
+    }
+
+    const meta = purchase?.custom_id
+      ? parseJsonSafe(purchase.custom_id, {})
+      : {};
+
     if (meta.flow !== "offer" || !meta.offerId) {
       return res.status(400).json({ message: "Not an offer payment." });
     }
 
-    // ✅ load offer
     const offer = await Offer.findById(meta.offerId);
-    if (!offer) return res.status(404).json({ message: "Offer not found." });
+    if (!offer) {
+      return res.status(404).json({ message: "Offer not found." });
+    }
 
     if (String(offer.buyerId) !== String(req.userId)) {
       return res.status(403).json({ message: "Not your offer." });
     }
 
-    // ✅ duplicate protection
     const existingOrder = await ServiceOrder.findOne({
       "payment.transactionId": transactionId,
     });
+
     if (existingOrder) {
-      // ensure offer accepted if order already exists
       if (offer.status !== "accepted") {
         offer.status = "accepted";
         await offer.save();
-        const io = getIO();
 
-        io.to(String(offer.conversationId)).emit("offer:update", {
-          conversationId: String(offer.conversationId),
-          offer,
-        });
+        const io = getIO();
+        if (io) {
+          io.to(String(offer.conversationId)).emit("offer:update", {
+            conversationId: String(offer.conversationId),
+            offer,
+          });
+        }
       }
+
       return res.status(200).json({ message: "Order already created." });
     }
 
-    // ✅ find user
     const user = await User.findById(req.userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    const amount = Number(offer.offerDetails?.price || meta.finalPrice || 0);
+    const capturedAmount = Number(purchase?.amount?.value || 0);
+    const expectedAmount = Number(offer.offerDetails?.price || 0);
 
-    // ✅ create order (offer accepted only AFTER payment)
+    if (
+      !Number.isFinite(expectedAmount) ||
+      Number(expectedAmount.toFixed(2)) !== Number(capturedAmount.toFixed(2))
+    ) {
+      return res.status(400).json({ message: "Paid amount mismatch." });
+    }
+
+    const amount = expectedAmount;
+
     const newOrder = new ServiceOrder({
       service: {
         id: String(offer.gig?.id || ""),
@@ -409,7 +469,11 @@ export const captureOfferPaypalOrder = async (req, res, next) => {
         },
       },
       finalPrice: amount,
-      coupon: { code: null, discountPercent: null, discountAmount: null },
+      coupon: {
+        code: null,
+        discountPercent: null,
+        discountAmount: null,
+      },
       user: {
         id: user._id,
         name: user.username,
@@ -426,14 +490,22 @@ export const captureOfferPaypalOrder = async (req, res, next) => {
     });
 
     await newOrder.save();
+    await sendOrderCreatedUpdates(newOrder);
 
-    // ✅ mark offer accepted now
     offer.status = "accepted";
     await offer.save();
 
-    return res
-      .status(200)
-      .json({ message: "✅ Offer paid. Order created + offer accepted." });
+    const io = getIO();
+    if (io) {
+      io.to(String(offer.conversationId)).emit("offer:update", {
+        conversationId: String(offer.conversationId),
+        offer,
+      });
+    }
+
+    return res.status(200).json({
+      message: "✅ Offer paid. Order created + offer accepted.",
+    });
   } catch (err) {
     next(err);
   }

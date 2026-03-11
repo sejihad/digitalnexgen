@@ -1,3 +1,4 @@
+import axios from "axios";
 import PropTypes from "prop-types";
 import {
   createContext,
@@ -10,7 +11,7 @@ import {
 import { useDispatch } from "react-redux";
 import { io } from "socket.io-client";
 import { setHasUnread } from "../redux/chatSlice";
-
+import { setHasUnreadNotifications } from "../redux/notifySlice";
 const SocketContext = createContext(null);
 
 export const useSocket = () => {
@@ -31,7 +32,23 @@ export const SocketProvider = ({ children }) => {
   const dispatch = useDispatch();
   const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8800";
   const pathnameRef = useRef(window.location.pathname);
+  const syncUnreadNotifications = useCallback(async () => {
+    try {
+      const res = await axios.get(`${apiBase}/api/notifies`, {
+        params: { page: 1, limit: 10 },
+        withCredentials: true,
+      });
 
+      const list = Array.isArray(res.data?.notifications)
+        ? res.data.notifications
+        : [];
+
+      const anyUnread = list.some((n) => n?.isRead === false);
+      dispatch(setHasUnreadNotifications(anyUnread));
+    } catch (error) {
+      dispatch(setHasUnreadNotifications(false));
+    }
+  }, [apiBase, dispatch]);
   // Route change tracking
   useEffect(() => {
     const onRouteChange = () => {
@@ -46,8 +63,6 @@ export const SocketProvider = ({ children }) => {
     if (socketInitialized.current) return;
     socketInitialized.current = true;
 
-    console.log("🔌 Initializing socket connection to:", apiBase);
-
     const s = io(apiBase, {
       withCredentials: true,
       transports: ["websocket", "polling"],
@@ -57,15 +72,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     s.on("connect", () => {
-      console.log("✅ Socket connected! ID:", s.id);
       setIsConnected(true);
-
+      syncUnreadNotifications();
       // Process any queued joins
       if (pendingJoins.current.size > 0) {
-        console.log(
-          "🔄 Processing queued joins:",
-          Array.from(pendingJoins.current),
-        );
         pendingJoins.current.forEach((convId) => {
           s.emit("conversation:join", String(convId));
         });
@@ -74,12 +84,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     s.on("connect_error", (error) => {
-      console.log("❌ Socket connection error:", error.message);
       setIsConnected(false);
     });
 
     s.on("disconnect", () => {
-      console.log("⚠️ Socket disconnected");
       setIsConnected(false);
     });
 
@@ -95,16 +103,17 @@ export const SocketProvider = ({ children }) => {
         path.startsWith("/admin/messages");
       if (!isOnChat) dispatch(setHasUnread(true));
     };
-
+    const handleIncomingNotification = () => {
+      dispatch(setHasUnreadNotifications(true));
+    };
     s.on("message:receive", handleIncoming);
     s.on("offer:receive", handleIncoming);
     s.on("offer:update", handleIncoming);
     s.on("admin:conversation:update", handleIncoming);
-
+    s.on("notification:new", handleIncomingNotification);
     setSocket(s);
 
     return () => {
-      console.log("🧹 Cleaning up socket");
       s.off("connect");
       s.off("connect_error");
       s.off("disconnect");
@@ -113,10 +122,13 @@ export const SocketProvider = ({ children }) => {
       s.off("offer:receive", handleIncoming);
       s.off("offer:update", handleIncoming);
       s.off("admin:conversation:update", handleIncoming);
+      s.off("notification:new", handleIncomingNotification);
       s.disconnect();
     };
-  }, [apiBase, dispatch]); // Empty dependency array - runs once
-
+  }, [apiBase, dispatch, syncUnreadNotifications]); // Empty dependency array - runs once
+  useEffect(() => {
+    syncUnreadNotifications();
+  }, [syncUnreadNotifications]);
   const joinConversation = useCallback(
     (conversationId) => {
       if (!conversationId) return;
@@ -124,10 +136,8 @@ export const SocketProvider = ({ children }) => {
       const convId = String(conversationId);
 
       if (socket?.connected) {
-        console.log("🔊 Joining room:", convId);
         socket.emit("conversation:join", convId);
       } else {
-        console.log("⏳ Queuing join for later:", convId);
         pendingJoins.current.add(convId);
       }
     },
@@ -153,14 +163,13 @@ export const SocketProvider = ({ children }) => {
       if (!conversationId || !text?.trim()) return false;
 
       if (socket?.connected) {
-        console.log("📤 Sending message:", { conversationId, text });
         socket.emit("message:send", {
           conversationId: String(conversationId),
           text: String(text).trim(),
         });
         return true;
       }
-      console.log("❌ Cannot send - socket not connected");
+
       return false;
     },
     [socket],

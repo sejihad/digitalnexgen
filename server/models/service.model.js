@@ -34,7 +34,6 @@ const serviceSchema = new mongoose.Schema(
     starNumber: { type: Number, default: 0 },
     averageStars: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 export default mongoose.model("Service", serviceSchema);
-4;

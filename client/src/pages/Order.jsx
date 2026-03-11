@@ -13,8 +13,42 @@ const Order = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
+  // review
+  const [star, setStar] = useState(1);
+  const [desc, setDesc] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState("");
+  // api
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const handleSubmitReview = async () => {
+    try {
+      setSubmittingReview(true);
+      setReviewMessage("");
 
+      await axios.post(
+        `${apiBaseUrl}/api/reviews`,
+        {
+          orderId: order._id,
+          star,
+          desc,
+        },
+        { withCredentials: true },
+      );
+
+      setReviewMessage("Review submitted successfully.");
+      setOrder((prev) => ({
+        ...prev,
+        isReviewed: true,
+        reviewedAt: new Date().toISOString(),
+      }));
+    } catch (err) {
+      setReviewMessage(
+        err.response?.data?.message || "Failed to submit review.",
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -209,12 +243,16 @@ const Order = () => {
       y += 30;
 
       // Two info boxes
+
       const boxGap = 8;
       const boxWidth = (pageWidth - margin * 2 - boxGap) / 2;
-      const boxHeight = 38;
+
+      const serviceName = order.service?.name || "N/A";
+      const serviceNameLines = doc.splitTextToSize(serviceName, boxWidth - 8);
+      const dynamicBoxHeight = Math.max(38, 24 + serviceNameLines.length * 5);
 
       // Billed To
-      drawBox(margin, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawBox(margin, y, boxWidth, dynamicBoxHeight, colors.lightBg, "#E5E7EB");
       drawText("BILLED TO", margin + 4, y + 7, 10, colors.primary, "bold");
       drawText(
         order.user?.name || "N/A",
@@ -229,7 +267,14 @@ const Order = () => {
 
       // Service Details
       const serviceX = margin + boxWidth + boxGap;
-      drawBox(serviceX, y, boxWidth, boxHeight, colors.lightBg, "#E5E7EB");
+      drawBox(
+        serviceX,
+        y,
+        boxWidth,
+        dynamicBoxHeight,
+        colors.lightBg,
+        "#E5E7EB",
+      );
       drawText(
         "SERVICE DETAILS",
         serviceX + 4,
@@ -238,30 +283,35 @@ const Order = () => {
         colors.primary,
         "bold",
       );
-      drawText(
-        order.service?.name || "N/A",
+
+      const serviceNameEndY = addWrappedText(
+        serviceName,
         serviceX + 4,
         y + 15,
+        boxWidth - 8,
         11,
         colors.dark,
         "bold",
+        5,
       );
+
       drawText(
         `Type: ${order.service?.type || "N/A"}`,
         serviceX + 4,
-        y + 22,
-        9,
-        colors.text,
-      );
-      drawText(
-        `Final Price: $${order.finalPrice}`,
-        serviceX + 4,
-        y + 29,
+        serviceNameEndY + 2,
         9,
         colors.text,
       );
 
-      y += boxHeight + 8;
+      drawText(
+        `Final Price: $${order.finalPrice}`,
+        serviceX + 4,
+        serviceNameEndY + 9,
+        9,
+        colors.text,
+      );
+
+      y += dynamicBoxHeight + 8;
 
       // Description / scope section
       drawText("SERVICE OVERVIEW", margin, y, 11, colors.primary, "bold");
@@ -700,7 +750,82 @@ const Order = () => {
               </div>
             </div>
           </div>
+          {order.order_status === "completed" &&
+            order.isReviewEligible &&
+            !order.isReviewed && (
+              <div className="mt-4 rounded-xl border border-black/10 bg-white/70 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-[rgb(12,187,20)]">
+                    Leave a Review
+                  </h2>
 
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Share your honest feedback
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-3">
+                  {/* Rating */}
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Rating
+                    </p>
+
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setStar(value)}
+                          className={`text-xl transition ${
+                            star >= value
+                              ? "text-yellow-400"
+                              : "text-gray-300 hover:text-yellow-400 dark:text-gray-600"
+                          }`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <textarea
+                    value={desc}
+                    onChange={(e) => setDesc(e.target.value)}
+                    rows={3}
+                    placeholder="Write your feedback..."
+                    className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(12,187,20)] dark:border-white/10 dark:bg-black"
+                  />
+
+                  {/* Message */}
+                  {reviewMessage && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {reviewMessage}
+                    </p>
+                  )}
+
+                  {/* Submit */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSubmitReview}
+                      disabled={submittingReview}
+                      className="rounded-lg bg-[rgb(12,187,20)] px-4 py-2 text-sm font-medium text-white transition hover:brightness-95 disabled:opacity-60"
+                    >
+                      {submittingReview ? "Submitting..." : "Submit"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {order.order_status === "completed" && order.isReviewed && (
+            <div className="mt-4 rounded-xl border border-green-200 bg-green-50/80 p-3 dark:border-green-500/20 dark:bg-green-500/10">
+              <p className="text-xs font-medium text-green-700 dark:text-green-300">
+                Review already submitted for this order.
+              </p>
+            </div>
+          )}
           {/* Action */}
           <div className="mt-4">
             <button

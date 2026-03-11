@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Bell,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -29,11 +30,15 @@ import { ThemeContext } from "../context/ThemeContext";
 import { handleLogout } from "../utils/authUtils";
 const AdminNavbar = () => {
   const [isSidebarHidden, setIsSidebarHidden] = useState(false);
+
   const [profileImage, setProfileImage] = useState(placeholder);
   const [activePath, setActivePath] = useState("");
   const [username, setUsername] = useState("");
   const adminId = useSelector(
     (state) => state.auth.user._id || state.auth.user.id,
+  );
+  const hasUnreadNotifications = useSelector(
+    (state) => state.notify.hasUnreadNotifications,
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -95,6 +100,12 @@ const AdminNavbar = () => {
           path: "/admin/add-blog",
           label: "Add Blog",
           icon: <FileText className="w-5 h-5" />,
+          count: null,
+        },
+        {
+          path: "/admin/reviews/add",
+          label: "Add Review",
+          icon: <Star className="w-5 h-5" />,
           count: null,
         },
         {
@@ -173,6 +184,12 @@ const AdminNavbar = () => {
           count: null,
         },
         {
+          path: "/admin/notifies",
+          label: "Notifies",
+          icon: <Bell className="w-5 h-5" />,
+          count: null,
+        },
+        {
           path: "/admin/emails",
           label: "Emails",
           icon: <Mail className="w-5 h-5" />,
@@ -182,12 +199,6 @@ const AdminNavbar = () => {
           path: "/admin/newsletters",
           label: "Newsletters",
           icon: <Mail className="w-5 h-5" />,
-          count: null,
-        },
-        {
-          path: "/admin/review",
-          label: "Reviews",
-          icon: <Star className="w-5 h-5" />,
           count: null,
         },
       ],
@@ -271,17 +282,32 @@ const AdminNavbar = () => {
             </Link>
 
             {/* Right: Theme Toggle Button */}
-            <button
-              className="text-green-800 dark:text-white hover:text-green-700 dark:hover:text-gray-300 transition-colors"
-              onClick={toggleTheme}
-              aria-label="Toggle Theme"
-            >
-              {theme === "light" ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/admin/notifications")}
+                className="relative text-green-800 dark:text-white hover:text-green-700 dark:hover:text-gray-300 transition-colors"
+                aria-label="Notifications"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+
+                {hasUnreadNotifications && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500" />
+                )}
+              </button>
+
+              <button
+                className="text-green-800 dark:text-white hover:text-green-700 dark:hover:text-gray-300 transition-colors"
+                onClick={toggleTheme}
+                aria-label="Toggle Theme"
+              >
+                {theme === "light" ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

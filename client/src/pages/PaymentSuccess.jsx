@@ -56,7 +56,7 @@ const PaymentSuccess = () => {
 
         {error ? (
           <p className="text-sm sm:text-base text-red-500 dark:text-red-400 mb-6">
-            {error}
+            {""}
           </p>
         ) : (
           sessionData && (

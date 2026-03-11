@@ -19,8 +19,21 @@ const EditService = () => {
     watch,
     reset,
     formState: { errors },
-  } = useForm();
-
+  } = useForm({
+    defaultValues: {
+      title: "",
+      category: "",
+      subCategory: "",
+      videoUrl: "",
+      shortTitle: "",
+      shortDesc: "",
+      desc: "",
+      sales: 0,
+      features: ["", "", "", ""],
+      packages: [],
+    },
+  });
+  const categoryRegister = register("category");
   const subCategoryOptions = {
     "programming-tech": [
       "website-development",
@@ -189,10 +202,19 @@ const EditService = () => {
           }/api/services/single-service/${id}`,
           { withCredentials: true },
         );
-        const service = response.data;
+        const service = response.data.service || response.data;
 
-        Object.entries(service).forEach(([key, value]) => {
-          setValue(key, value);
+        reset({
+          title: service.title || "",
+          category: service.category || "",
+          subCategory: service.subCategory || "",
+          videoUrl: service.videoUrl || "",
+          shortTitle: service.shortTitle || "",
+          shortDesc: service.shortDesc || "",
+          desc: service.desc || "",
+          sales: service.sales || 0,
+          features: service.features || ["", "", "", ""],
+          packages: service.packages || [],
         });
       } catch (error) {
         toast.error("Failed to load service");
@@ -218,7 +240,8 @@ const EditService = () => {
         "shortTitle",
         "shortDesc",
         "videoUrl",
-      ].forEach((key) => formData.append(key, data[key] || ""));
+        "sales",
+      ].forEach((key) => formData.append(key, data[key] ?? ""));
 
       // 2️⃣ Cover image: append only if user selected a new file
       if (data.coverImage && data.coverImage.length > 0) {
@@ -270,8 +293,11 @@ const EditService = () => {
           className="w-full p-2 rounded bg-gray-700"
         />
         <select
-          {...register("category")}
-          onChange={(e) => setValue("subCategory", "")}
+          {...categoryRegister}
+          onChange={(e) => {
+            categoryRegister.onChange(e);
+            setValue("subCategory", "");
+          }}
           className="w-full p-2 rounded bg-gray-700"
         >
           <option value="">Select Category</option>
@@ -309,6 +335,12 @@ const EditService = () => {
         <input
           {...register("shortTitle")}
           placeholder="Short Title"
+          className="w-full p-2 rounded bg-gray-700"
+        />
+        <input
+          {...register("sales")}
+          type="number"
+          placeholder="Sales"
           className="w-full p-2 rounded bg-gray-700"
         />
         {["desc", "shortDesc"].map((field) => (

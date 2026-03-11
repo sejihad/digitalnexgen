@@ -43,7 +43,7 @@ const SubCategoryServiceCard = ({ service }) => {
           <div className="flex items-center gap-1 text-yellow-400">
             <Star className="w-5 h-5" />
             <span className="text-base font-medium">
-              {service.averageStars}
+              {Number(service.averageStars || 0).toFixed(1)}
             </span>
             <span className="text-sm text-gray-400">
               ({service.starNumber})

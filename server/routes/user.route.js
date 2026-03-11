@@ -3,6 +3,7 @@ import {
   deleteUser,
   getUser,
   getUsers,
+  saveFcmToken,
   updateUser,
   updateUserRole,
 } from "../controllers/user.controller.js";
@@ -21,6 +22,7 @@ router.delete("/:id", verifyToken, deleteUser);
 router.get("/:id", verifyToken, getUser);
 router.put("/:id", verifyToken, updateUser);
 router.put("/:id/role", verifyToken, updateUserRole);
+router.put("/fcm-token", verifyToken, saveFcmToken);
 // router.put("/me/username", verifyToken, updateUsername);
 
 export default router;

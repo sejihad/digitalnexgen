@@ -193,8 +193,8 @@ export const getSingleConversation = async (req, res, next) => {
     }
 
     const conv = await Conversation.findById(convId)
-      .populate("customerId", "username name email img")
-      .populate("adminIds", "username name email img");
+      .populate("customerId", "username name  img")
+      .populate("adminIds", "username name  img");
 
     if (!conv)
       return res.status(404).json({ message: "Conversation not found" });

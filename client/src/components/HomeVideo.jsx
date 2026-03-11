@@ -16,8 +16,8 @@ const HomeVideo = () => {
       >
         <iframe
           className="absolute top-0 left-0 w-full h-full"
-          src="https://www.youtube.com/embed/GGf1JjSAKP4?autoplay=1&mute=1&loop=1&playlist=GGf1JjSAKP4&controls=1&modestbranding=1&showinfo=0"
-          title="YouTube video"
+          src="https://www.youtube.com/embed/ynrLwZOrsBg?autoplay=1&mute=1&loop=1&playlist=ynrLwZOrsBg&controls=1&modestbranding=1&showinfo=0"
+          title="Digital Nexgen video"
           frameBorder="0"
           allow="autoplay; fullscreen; encrypted-media"
           allowFullScreen

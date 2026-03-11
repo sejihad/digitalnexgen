@@ -11,8 +11,49 @@ import User from "./models/user.model.js";
 // userId -> Set(socketId)
 const activeUsers = new Map();
 
+// conversationId -> Set(userId)
+const activeConversationUsers = new Map();
+
 const safeStr = (v) => String(v ?? "");
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id));
+
+const addUserToConversationPresence = (conversationId, userId) => {
+  const cid = safeStr(conversationId);
+  const uid = safeStr(userId);
+
+  if (!cid || !uid) return;
+
+  if (!activeConversationUsers.has(cid)) {
+    activeConversationUsers.set(cid, new Set());
+  }
+
+  activeConversationUsers.get(cid).add(uid);
+};
+
+const removeUserFromConversationPresence = (conversationId, userId) => {
+  const cid = safeStr(conversationId);
+  const uid = safeStr(userId);
+
+  if (!cid || !uid) return;
+  if (!activeConversationUsers.has(cid)) return;
+
+  const users = activeConversationUsers.get(cid);
+  users.delete(uid);
+
+  if (users.size === 0) {
+    activeConversationUsers.delete(cid);
+  }
+};
+
+export const isUserActiveInConversation = (conversationId, userId) => {
+  const cid = safeStr(conversationId);
+  const uid = safeStr(userId);
+
+  if (!cid || !uid) return false;
+  if (!activeConversationUsers.has(cid)) return false;
+
+  return activeConversationUsers.get(cid).has(uid);
+};
 
 export const initializeSocket = (httpServer, allowedOrigins) => {
   const io = new Server(httpServer, {
@@ -46,14 +87,8 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
   });
 
   io.on("connection", (socket) => {
-    console.log(
-      "[socket] connected:",
-      socket.userId,
-      "isAdmin:",
-      socket.isAdmin,
-    );
-    if (socket.isAdmin)
-      console.log("[socket] joined room admins:", socket.userId);
+    socket.joinedConversationIds = new Set();
+
     // ✅ Personal room
     socket.join(`user:${socket.userId}`);
 
@@ -63,8 +98,9 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
     }
 
     // online tracking
-    if (!activeUsers.has(socket.userId))
+    if (!activeUsers.has(socket.userId)) {
       activeUsers.set(socket.userId, new Set());
+    }
     activeUsers.get(socket.userId).add(socket.id);
 
     // ✅ privacy-safe: don't leak userIds
@@ -79,6 +115,8 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
         // admin can join any conversation
         if (socket.isAdmin) {
           socket.join(cid);
+          socket.joinedConversationIds.add(cid);
+          addUserToConversationPresence(cid, socket.userId);
           return;
         }
 
@@ -96,6 +134,8 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
         if (!isCustomer && !isJoinedAdmin) return;
 
         socket.join(cid);
+        socket.joinedConversationIds.add(cid);
+        addUserToConversationPresence(cid, socket.userId);
       } catch {
         // ignore
       }
@@ -104,16 +144,14 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
     socket.on("conversation:leave", (conversationId) => {
       const cid = safeStr(conversationId);
       if (!cid) return;
+
       socket.leave(cid);
+      socket.joinedConversationIds.delete(cid);
+      removeUserFromConversationPresence(cid, socket.userId);
     });
 
     /* ===== SEND MESSAGE (create in DB + emit) ===== */
     socket.on("message:send", async ({ conversationId, text }) => {
-      console.log("=".repeat(50));
-      console.log("📤 STEP 1: Message send received on server");
-      console.log("   From:", socket.userId);
-      console.log("   To Conversation:", conversationId);
-      console.log("   Text:", text);
       try {
         const cid = safeStr(conversationId);
         const msgText = safeStr(text).trim();
@@ -218,6 +256,7 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
       const cid = safeStr(conversationId);
       if (!cid) return;
       if (!socket.rooms.has(cid)) return; // ✅ prevent spam
+
       socket.to(cid).emit("typing:update", {
         conversationId: cid,
         userId: socket.userId,
@@ -229,6 +268,7 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
       const cid = safeStr(conversationId);
       if (!cid) return;
       if (!socket.rooms.has(cid)) return; // ✅ prevent spam
+
       socket.to(cid).emit("typing:update", {
         conversationId: cid,
         userId: socket.userId,
@@ -241,8 +281,19 @@ export const initializeSocket = (httpServer, allowedOrigins) => {
       if (activeUsers.has(socket.userId)) {
         const sockets = activeUsers.get(socket.userId);
         sockets.delete(socket.id);
-        if (sockets.size === 0) activeUsers.delete(socket.userId);
+
+        if (sockets.size === 0) {
+          activeUsers.delete(socket.userId);
+        }
       }
+
+      if (socket.joinedConversationIds?.size) {
+        for (const cid of socket.joinedConversationIds) {
+          removeUserFromConversationPresence(cid, socket.userId);
+        }
+        socket.joinedConversationIds.clear();
+      }
+
       io.emit("users:online", { count: activeUsers.size });
     });
   });
