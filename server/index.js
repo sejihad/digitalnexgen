@@ -6,10 +6,9 @@ import fileUpload from "express-fileupload";
 import http from "http";
 import mongoose from "mongoose";
 import passport from "passport";
-
 import "./config/passport.js";
 import { initializePassport } from "./config/passport.js";
-import "./services/notifyCleanup.cron.js";
+dotenv.config();
 
 import { stripeWebhook } from "./controllers/stripe.controller.js";
 import authRoute from "./routes/auth.route.js";
@@ -35,9 +34,8 @@ import stripeRoute from "./routes/stripe.route.js";
 import userRoute from "./routes/user.route.js";
 
 // ✅ তোমার socket initializer import করো
+import "./services/notifyCleanup.cron.js";
 import { initializeSocket } from "./socket.js"; // <-- তোমার ফাইল নাম অনুযায়ী path ঠিক করো
-
-dotenv.config();
 
 const app = express();
 

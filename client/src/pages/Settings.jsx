@@ -17,27 +17,107 @@ const Settings = () => {
     isTwoFactorEnabled: authUser?.isTwoFactorEnabled || false,
   });
 
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    country: "",
+    phone: "",
+    img: "",
+  });
+
+  const [formError, setFormError] = useState("");
   const [newImage, setNewImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [twoFactorLoading, setTwoFactorLoading] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const userId = authUser?._id || authUser?.id;
-  const token = authUser?.accessToken || "";
+
+  const validateField = (name, value) => {
+    const trimmedValue = typeof value === "string" ? value.trim() : value;
+
+    switch (name) {
+      case "username":
+        if (!trimmedValue) return "Username is required";
+        if (trimmedValue.length < 3) {
+          return "Username must be at least 3 characters";
+        }
+        return "";
+
+      case "email":
+        if (!trimmedValue) return "Email is required";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+          return "Please enter a valid email address";
+        }
+        return "";
+
+      case "country":
+        if (!trimmedValue) return "Country is required";
+        if (trimmedValue.length < 2) {
+          return "Country name must be at least 2 characters";
+        }
+        return "";
+
+      case "phone":
+        if (!trimmedValue) return "Phone number is required";
+        if (!/^\+?[0-9\s\-()]{7,15}$/.test(trimmedValue)) {
+          return "Please enter a valid phone number";
+        }
+        return "";
+
+      default:
+        return "";
+    }
+  };
+
+  const buildValidationErrors = (data) => ({
+    username: validateField("username", data.username),
+    email: validateField("email", data.email),
+    country: validateField("country", data.country),
+    phone: validateField("phone", data.phone),
+    img: "",
+  });
+
+  const hasAnyError = (errorObject) =>
+    Object.values(errorObject).some((error) => error);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user")) || {};
 
-    setUserState((prev) => ({
-      ...prev,
-      username: storedUser.username || prev.username,
-      email: storedUser.email || prev.email,
-      country: storedUser.country || prev.country,
-      phone: storedUser.phone || prev.phone,
+    const mergedUser = {
+      username: storedUser.username ?? authUser?.username ?? "",
+      email: storedUser.email ?? authUser?.email ?? "",
+      country: storedUser.country ?? authUser?.country ?? "",
+      phone: storedUser.phone ?? authUser?.phone ?? "",
       isTwoFactorEnabled:
-        storedUser.isTwoFactorEnabled || prev.isTwoFactorEnabled,
-    }));
-  }, []);
+        storedUser.isTwoFactorEnabled ?? authUser?.isTwoFactorEnabled ?? false,
+    };
+
+    setUserState(mergedUser);
+
+    const initialErrors = buildValidationErrors(mergedUser);
+    setErrors(initialErrors);
+
+    if (hasAnyError(initialErrors)) {
+      setFormError("Please complete all required fields correctly.");
+      toast.error("Please complete your profile information");
+    }
+  }, [authUser]);
+
+  const validateForm = () => {
+    const newErrors = buildValidationErrors(user);
+    setErrors(newErrors);
+
+    const hasErrors = hasAnyError(newErrors);
+
+    if (hasErrors) {
+      setFormError("Please complete all required fields correctly.");
+    } else {
+      setFormError("");
+    }
+
+    return !hasErrors;
+  };
 
   const handleToggleTwoFactor = async () => {
     if (twoFactorLoading || !userId) return;
@@ -62,6 +142,7 @@ const Settings = () => {
           ...authUser,
           isTwoFactorEnabled: updatedTwoFactorStatus,
         };
+
         dispatch(setUser(updatedUser));
         localStorage.setItem("user", JSON.stringify(updatedUser));
 
@@ -82,16 +163,59 @@ const Settings = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setUserState((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    const fieldError = validateField(name, value);
+
+    setErrors((prev) => {
+      const updatedErrors = {
+        ...prev,
+        [name]: fieldError,
+      };
+
+      if (hasAnyError(updatedErrors)) {
+        setFormError("Please complete all required fields correctly.");
+      } else {
+        setFormError("");
+      }
+
+      return updatedErrors;
+    });
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+
+    setErrors((prev) => {
+      const updatedErrors = {
+        ...prev,
+        [name]: validateField(name, value),
+      };
+
+      if (hasAnyError(updatedErrors)) {
+        setFormError("Please complete all required fields correctly.");
+      } else {
+        setFormError("");
+      }
+
+      return updatedErrors;
+    });
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setNewImage(file);
+
+    setErrors((prev) => ({
+      ...prev,
+      img: "",
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -102,14 +226,30 @@ const Settings = () => {
       return;
     }
 
+    if (!validateForm()) {
+      toast.error("Please complete all required fields");
+
+      const firstErrorField = ["username", "email", "country", "phone"].find(
+        (field) => validateField(field, user[field]),
+      );
+
+      if (firstErrorField) {
+        const el = document.getElementById(firstErrorField);
+        el?.focus();
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      return;
+    }
+
     setIsUploading(true);
     try {
       const formData = new FormData();
 
-      formData.append("username", user.username);
-      formData.append("email", user.email);
-      formData.append("country", user.country);
-      formData.append("phone", user.phone);
+      formData.append("username", user.username.trim());
+      formData.append("email", user.email.trim());
+      formData.append("country", user.country.trim());
+      formData.append("phone", user.phone.trim());
 
       if (newImage) {
         formData.append("img", newImage);
@@ -135,18 +275,37 @@ const Settings = () => {
       dispatch(setUser(updatedUser));
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
+      setFormError("");
       toast.success("Profile updated successfully!");
       setNewImage(null);
     } catch (error) {
+      const backendErrors = error.response?.data?.errors;
+
+      if (backendErrors && typeof backendErrors === "object") {
+        setErrors((prev) => ({
+          ...prev,
+          ...backendErrors,
+        }));
+        setFormError("Please fix the highlighted fields.");
+      }
+
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Failed to update profile";
+
       toast.error(errorMessage);
     } finally {
       setIsUploading(false);
     }
   };
+
+  const inputClass = (fieldName) =>
+    `w-full rounded-xl border bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 dark:bg-white/5 dark:text-gray-100 ${
+      errors[fieldName]
+        ? "border-red-500 focus:ring-red-500/40 dark:border-red-500"
+        : "border-black/10 focus:ring-[rgb(12,187,20)]/50 dark:border-white/10"
+    }`;
 
   return (
     <div className="min-h-screen bg-white px-4 py-5 text-gray-900 dark:bg-black dark:text-gray-100">
@@ -165,7 +324,7 @@ const Settings = () => {
             </div>
           </div>
 
-          {authUser.provider === "local" && (
+          {authUser?.provider === "local" && (
             <div className="mb-4 rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -199,54 +358,22 @@ const Settings = () => {
                   />
                 </button>
               </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                    user.isTwoFactorEnabled
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                  }`}
-                >
-                  {user.isTwoFactorEnabled ? "🛡️ Enabled" : "⚠️ Disabled"}
-                </span>
-
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {user.isTwoFactorEnabled
-                    ? "OTP required on login"
-                    : "No OTP required"}
-                </span>
-
-                {twoFactorLoading && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    <svg
-                      className="mr-1 inline h-3.5 w-3.5 animate-spin text-[rgb(12,187,20)]"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Updating...
-                  </span>
-                )}
-              </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+                <p className="font-semibold">
+                  Please complete your profile properly.
+                </p>
+                <p className="mt-1 text-xs sm:text-sm">
+                  Required fields cannot be empty. Check the highlighted fields
+                  below.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
                 <label
@@ -261,8 +388,14 @@ const Settings = () => {
                   name="username"
                   value={user.username}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[rgb(12,187,20)]/50 dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+                  onBlur={handleBlur}
+                  className={inputClass("username")}
                 />
+                {errors.username && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {errors.username}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
@@ -278,8 +411,14 @@ const Settings = () => {
                   name="email"
                   value={user.email}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[rgb(12,187,20)]/50 dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+                  onBlur={handleBlur}
+                  className={inputClass("email")}
                 />
+                {errors.email && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
@@ -295,8 +434,14 @@ const Settings = () => {
                   name="country"
                   value={user.country}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[rgb(12,187,20)]/50 dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+                  onBlur={handleBlur}
+                  className={inputClass("country")}
                 />
+                {errors.country && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {errors.country}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
@@ -307,13 +452,19 @@ const Settings = () => {
                   Phone
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   id="phone"
                   name="phone"
                   value={user.phone}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[rgb(12,187,20)]/50 dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+                  onBlur={handleBlur}
+                  className={inputClass("phone")}
                 />
+                {errors.phone && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {errors.phone}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -398,7 +549,7 @@ const Settings = () => {
                 )}
               </button>
 
-              {authUser.provider === "local" && (
+              {authUser?.provider === "local" && (
                 <Link
                   to="/update-password"
                   className="block w-full rounded-xl bg-gray-100 px-4 py-2.5 text-center text-sm font-medium text-gray-900 transition duration-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/60 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"

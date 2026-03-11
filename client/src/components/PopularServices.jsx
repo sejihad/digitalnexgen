@@ -1,9 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
+import animated_logo from "../assets/p-s/a-l.jpg";
 import app_development from "../assets/p-s/app-d.jpg";
 import book_design from "../assets/p-s/b-d.jpg";
+import support_it from "../assets/p-s/s-i.jpg";
+import social_media_video_editing from "../assets/p-s/s-m.jpg";
 import video_editing from "../assets/p-s/v-e.png";
+import visual_effects from "../assets/p-s/vi-e.jpg";
 import website_development from "../assets/p-s/w-d.jpg";
 
 const shuffleArray = (arr) => {
@@ -27,9 +31,29 @@ const PopularServices = () => {
         href: "/programming-tech/website-development",
       },
       {
+        title: "Support & It",
+        image: support_it,
+        href: "/programming-tech/support-it",
+      },
+      {
         title: "Video Editing",
         image: video_editing,
         href: "/video-animation/video-editing",
+      },
+      {
+        title: "Animated Logo",
+        image: animated_logo,
+        href: "/video-animation/animated-logos",
+      },
+      {
+        title: "Visual Effects",
+        image: visual_effects,
+        href: "/video-animation/visual-effect",
+      },
+      {
+        title: "Social Media Video Editing",
+        image: social_media_video_editing,
+        href: "/video-animation/social-media-videos",
       },
       // {
       //   title: "Book Cover Design",

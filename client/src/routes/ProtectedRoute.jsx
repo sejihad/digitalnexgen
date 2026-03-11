@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
-import { toast } from "sonner";
 
 const ProtectedRoute = ({
   isAdminRoute = false,
@@ -20,7 +19,6 @@ const ProtectedRoute = ({
       location.pathname !== "/settings" &&
       location.pathname !== "/admin/settings"
     ) {
-      toast.success("Complete your Profile");
     }
   }, [profileIncomplete, location.pathname]);
 
