@@ -52,7 +52,7 @@ const Gallery = ({ category }) => {
     );
 
   return (
-    <div className="p-3 max-w-[1440px] mx-auto">
+    <div className="p-3 max-w-[1440px] mt-10 mx-auto">
       {/* <h2 className="text-center text-3xl font-bold text-gray-700 dark:text-white mb-12">
         Made on Digital NexGen
       </h2> */}

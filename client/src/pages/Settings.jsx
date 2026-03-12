@@ -60,7 +60,7 @@ const Settings = () => {
 
       case "phone":
         if (!trimmedValue) return "Phone number is required";
-        if (!/^\+?[0-9\s\-()]{7,15}$/.test(trimmedValue)) {
+        if (!/^\+?[0-9\s\-()]+$/.test(trimmedValue)) {
           return "Please enter a valid phone number";
         }
         return "";

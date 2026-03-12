@@ -2,13 +2,27 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import animated_logo from "../assets/p-s/a-l.jpg";
+import ai_development from "../assets/p-s/ai-d.jpg";
+import album from "../assets/p-s/album.jpg";
 import app_development from "../assets/p-s/app-d.jpg";
 import book_design from "../assets/p-s/b-d.jpg";
+import cyber_security from "../assets/p-s/c-s.jpg";
+import image_editing from "../assets/p-s/i-e.jpg";
+import infographic_design from "../assets/p-s/infographic.jpg";
+import ios_development from "../assets/p-s/ios.jpg";
+import marketing_strategy from "../assets/p-s/marketing-strategy.jpg";
+import presentation from "../assets/p-s/presentation.jpg";
 import support_it from "../assets/p-s/s-i.jpg";
 import social_media_video_editing from "../assets/p-s/s-m.jpg";
+import seo from "../assets/p-s/seo.jpg";
+import shopify from "../assets/p-s/sh.jpg";
+import social from "../assets/p-s/social.jpg";
 import video_editing from "../assets/p-s/v-e.png";
 import visual_effects from "../assets/p-s/vi-e.jpg";
+import video_marketing from "../assets/p-s/video-marketing.jpg";
 import website_development from "../assets/p-s/w-d.jpg";
+import wix from "../assets/p-s/wix.jpg";
+import wordpress from "../assets/p-s/wordpress.jpg";
 
 const shuffleArray = (arr) => {
   const a = [...arr];
@@ -29,6 +43,16 @@ const PopularServices = () => {
         title: "Website Development",
         image: website_development,
         href: "/programming-tech/website-development",
+      },
+      {
+        title: "AI Development",
+        image: ai_development,
+        href: "/programming-tech/ai-development",
+      },
+      {
+        title: "IOS App Development",
+        image: ios_development,
+        href: "/programming-tech/ios-app-development",
       },
       {
         title: "Support & It",
@@ -66,15 +90,75 @@ const PopularServices = () => {
         href: "/graphics-design/book-design",
       },
       {
+        title: "Infographic Design",
+        image: infographic_design,
+        href: "/graphics-design/infographic-design",
+      },
+      {
+        title: "Image Editing",
+        image: image_editing,
+        href: "/graphics-design/image-editing",
+      },
+      {
+        title: "Presentation Design",
+        image: presentation,
+        href: "/graphics-design/presentation-design",
+      },
+      {
         title: "UI/UX Design",
         image:
           "https://images.unsplash.com/photo-1559028012-481c04fa702d?q=80&w=1200&auto=format&fit=crop",
         href: "/graphics-design/ux-design",
       },
       {
+        title: "Album Cover Design",
+        image: album,
+        href: "/graphics-design/album-cover-design",
+      },
+      {
         title: "Apps Development",
         image: app_development,
         href: "/programming-tech/mobile-app-development",
+      },
+      {
+        title: "Cyber Security ",
+        image: cyber_security,
+        href: "/programming-tech/cyber-security",
+      },
+      {
+        title: "Shopify",
+        image: shopify,
+        href: "/programming-tech/shopify",
+      },
+      {
+        title: "SEO Services",
+        image: seo,
+        href: "/digital-marketing/search-engine-optimization",
+      },
+      {
+        title: "Marketing Strategy",
+        image: marketing_strategy,
+        href: "/digital-marketing/marketing-strategy",
+      },
+      {
+        title: "Social Media Marketing",
+        image: social,
+        href: "/digital-marketing/social-media-marketing",
+      },
+      {
+        title: "Video Marketing",
+        image: video_marketing,
+        href: "/digital-marketing/video-marketing",
+      },
+      {
+        title: "Wix Website",
+        image: wix,
+        href: "/programming-tech/wix",
+      },
+      {
+        title: "WordPress Website",
+        image: wordpress,
+        href: "/programming-tech/wordpress",
       },
     ],
     [],
