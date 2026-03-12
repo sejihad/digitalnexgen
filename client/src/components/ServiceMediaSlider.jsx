@@ -1,4 +1,3 @@
-// components/ServiceMediaSlider.jsx
 import { useState } from "react";
 
 const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
@@ -28,40 +27,34 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
     setCurrentIndex(index);
   };
 
+  // Extract YouTube video ID
+  const getYouTubeId = (url) => {
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
   const renderMedia = (media) => {
-    // Mobile height ~ h-37 (Tailwind has no h-37 by default, so using arbitrary value)
-    // Desktop stays 400px
-    const mediaHeightClass = "h-full w-full";
-
     if (media.type === "video") {
-      // Extract YouTube video ID
-      const getYouTubeId = (url) => {
-        const regExp =
-          /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return match && match[2].length === 11 ? match[2] : null;
-      };
-
       const videoId = getYouTubeId(media.url);
 
       if (videoId) {
         return (
-          <div className={`relative w-full ${mediaHeightClass}`}>
+          <div className="relative w-full h-full">
             <iframe
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`}
+              src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
               title="Service Video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              className="absolute top-0 left-0 w-full h-full rounded-lg"
+              className="absolute inset-0 w-full h-full rounded-lg"
             />
           </div>
         );
       }
 
       return (
-        <div
-          className={`w-full ${mediaHeightClass} flex items-center justify-center bg-gray-800 rounded-lg`}
-        >
+        <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-lg">
           <p className="text-gray-400">Invalid video URL</p>
         </div>
       );
@@ -71,7 +64,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
       <img
         src={media.url}
         alt="Service media"
-        className={`w-full ${mediaHeightClass} rounded-lg object-cover`}
+        className="w-full h-full object-cover rounded-lg"
       />
     );
   };
@@ -79,23 +72,22 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
   return (
     <div>
       {/* Main Media Display */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 aspect-video">
         {renderMedia(allMedia[currentIndex])}
 
-        {/* Navigation Buttons (centered on the media box) */}
+        {/* Navigation Buttons */}
         {allMedia.length > 1 && (
           <>
             <button
               onClick={goToPrevious}
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
-              aria-label="Previous slide"
             >
               ❮
             </button>
+
             <button
               onClick={goToNext}
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10"
-              aria-label="Next slide"
             >
               ❯
             </button>
@@ -115,16 +107,13 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
                   : "border-transparent hover:border-gray-400"
               }`}
               onClick={() => goToSlide(index)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
             >
               {media.type === "video" ? (
                 <div className="relative w-20 h-20">
                   <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded">
                     <span className="text-white text-2xl">▶</span>
                   </div>
+
                   <div className="w-20 h-20 bg-gray-800 rounded flex items-center justify-center">
                     <span className="text-gray-400 text-xs">Video</span>
                   </div>
@@ -141,7 +130,7 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
         </div>
       )}
 
-      {/* Indicators/Dots */}
+      {/* Indicators */}
       {allMedia.length > 1 && (
         <div className="flex justify-center gap-2 mt-4">
           {allMedia.map((_, index) => (
@@ -151,7 +140,6 @@ const ServiceMediaSlider = ({ mediaList, videoUrl }) => {
                 currentIndex === index ? "bg-red-500" : "bg-gray-600"
               }`}
               onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>

@@ -25,14 +25,14 @@ const SubCategoryServiceCard = ({ service }) => {
       <div className="relative">
         <img
           src={service.coverImage?.url}
-          alt={service.shortTitle}
+          alt={service.title}
           className="w-full h-48  rounded-md group-hover:opacity-90 transition-opacity duration-300"
         />
       </div>
 
       <div className="py-4">
         <h3 className="text-lg font-bold font-roboto  dark:text-gray-200 line-clamp-1">
-          {service.shortTitle}
+          {service.title}
         </h3>
 
         <p className="text-base text-primaryText dark:text-gray-200 mt-2 line-clamp-2">

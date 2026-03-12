@@ -93,6 +93,7 @@ export const sendContactMessage = async (req, res) => {
             messageId: result.messageId,
           });
         } catch (error) {
+          console.log(error);
           results.push({
             email: recipient,
             status: "failed",
