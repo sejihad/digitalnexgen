@@ -8,6 +8,7 @@ import { hideLoading, showLoading } from "../redux/loadingSlice";
 const AddGallery = () => {
   const dispatch = useDispatch();
   const [servicesList, setServicesList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(""); // 🔹 search state
 
   const {
     register,
@@ -24,7 +25,6 @@ const AddGallery = () => {
     },
   });
 
-  // Fetch services for Linked Service selector (component-level)
   useEffect(() => {
     let mounted = true;
     axios
@@ -32,7 +32,7 @@ const AddGallery = () => {
       .then((res) => {
         if (mounted) setServicesList(res.data || []);
       })
-      .catch((err) => {});
+      .catch(() => {});
     return () => {
       mounted = false;
     };
@@ -46,25 +46,20 @@ const AddGallery = () => {
       formData.append("category", data.category);
       if (data.gitUrl) formData.append("gitUrl", data.gitUrl);
       if (data.serviceId) formData.append("serviceId", data.serviceId);
-
-      // 🔥 append file
-      if (data.image && data.image[0]) {
-        formData.append("image", data.image[0]);
-      }
+      if (data.image && data.image[0]) formData.append("image", data.image[0]);
 
       await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/galleries`,
         formData,
         {
           withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         },
       );
 
       toast.success("Gallery item created successfully!");
       reset();
+      setSearchTerm(""); // 🔹 reset search
     } catch (error) {
       toast.error(
         error?.message || "Failed to create gallery item. Please try again.",
@@ -74,18 +69,14 @@ const AddGallery = () => {
     }
   };
 
-  useEffect(() => {
-    let mounted = true;
-    axios
-      .get(`${import.meta.env.VITE_API_BASE_URL}/api/services`)
-      .then((res) => {
-        if (mounted) setServicesList(res.data || []);
-      })
-      .catch((err) => {});
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // 🔹 Filtered services based on searchTerm
+  const filteredServices = servicesList.filter(
+    (svc) =>
+      svc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (svc.category || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (svc.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   return (
     <div className="p-6 text-white bg-[#333333] max-w-[800px] mx-auto rounded-md mt-4">
       <h1 className="text-center text-3xl font-bold mb-4 font-roboto">
@@ -119,19 +110,28 @@ const AddGallery = () => {
           <p className="text-red-500">{errors.category.message}</p>
         )}
 
+        {/* GitHub URL */}
         <input
           {...register("gitUrl")}
           placeholder="GitHub URL (optional)"
           className="w-full p-2 rounded bg-gray-700"
         />
 
-        {/* Linked Service (optional) */}
+        {/* 🔹 Searchable Linked Service */}
+        <input
+          type="text"
+          placeholder="Search linked service..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 rounded bg-gray-600 mb-2"
+        />
+
         <select
           {...register("serviceId")}
           className="w-full p-2 rounded bg-gray-700"
         >
           <option value="">-- Linked Service (optional) --</option>
-          {servicesList.map((svc) => (
+          {filteredServices.map((svc) => (
             <option key={svc._id} value={svc._id}>
               {svc.title} ({svc.subCategory || svc.category})
             </option>

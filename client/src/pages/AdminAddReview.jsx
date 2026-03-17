@@ -11,6 +11,7 @@ const AdminAddReview = () => {
 
   const [services, setServices] = useState([]);
   const [serviceId, setServiceId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [name, setName] = useState("");
   const [star, setStar] = useState(5);
   const [desc, setDesc] = useState("");
@@ -147,17 +148,32 @@ const AdminAddReview = () => {
               <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
                 Select Service
               </label>
+              {/* 🔹 Search Services */}
+              <input
+                type="text"
+                placeholder="Search service..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 bg-gray-100 px-3 py-2 text-sm outline-none mb-2 dark:bg-[#1a1a1a] dark:text-white"
+              />
+
               <select
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 dark:border-gray-700 dark:bg-[#181818] dark:text-white"
               >
                 <option value="">Choose a service</option>
-                {services.map((service) => (
-                  <option key={service._id} value={service._id}>
-                    {service.title}
-                  </option>
-                ))}
+                {services
+                  .filter((service) =>
+                    service.title
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase()),
+                  )
+                  .map((service) => (
+                    <option key={service._id} value={service._id}>
+                      {service.title}
+                    </option>
+                  ))}
               </select>
             </div>
 

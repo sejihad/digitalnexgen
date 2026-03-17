@@ -12,6 +12,7 @@ const EditGallery = () => {
   const navigate = useNavigate();
   const [servicesList, setServicesList] = useState([]);
   const [imagePreview, setImagePreview] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(""); // 🔹 search state
 
   const {
     register,
@@ -73,7 +74,6 @@ const EditGallery = () => {
       if (data.gitUrl) formData.append("gitUrl", data.gitUrl);
       if (data.serviceId) formData.append("serviceId", data.serviceId);
 
-      // append file if new image selected
       if (data.image && data.image[0]) {
         formData.append("image", data.image[0]);
       }
@@ -98,6 +98,14 @@ const EditGallery = () => {
       dispatch(hideLoading());
     }
   };
+
+  // 🔹 Filtered services based on searchTerm
+  const filteredServices = servicesList.filter(
+    (svc) =>
+      svc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (svc.category || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (svc.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <div className="p-6 text-white bg-[#333333] max-w-[800px] mx-auto rounded-md mt-4">
@@ -139,13 +147,21 @@ const EditGallery = () => {
           className="w-full p-2 rounded bg-gray-700"
         />
 
-        {/* Linked Service */}
+        {/* 🔹 Searchable Linked Service */}
+        <input
+          type="text"
+          placeholder="Search linked service..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 rounded bg-gray-600 mb-2"
+        />
+
         <select
           {...register("serviceId")}
           className="w-full p-2 rounded bg-gray-700"
         >
           <option value="">-- Linked Service (optional) --</option>
-          {servicesList.map((svc) => (
+          {filteredServices.map((svc) => (
             <option key={svc._id} value={svc._id}>
               {svc.title} ({svc.subCategory || svc.category})
             </option>

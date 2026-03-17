@@ -12,6 +12,7 @@ const EditPromotionalOffer = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
   const [features, setFeatures] = useState([""]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [servicesList, setServicesList] = useState([]);
   const [loadingOffer, setLoadingOffer] = useState(true);
 
@@ -466,16 +467,31 @@ const EditPromotionalOffer = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Linked Service (optional)
                 </label>
+                {/* 🔹 Search Services */}
+                <input
+                  type="text"
+                  placeholder="Search service..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 px-3 py-2 text-sm mb-2 dark:bg-[#1a1a1a] dark:text-white"
+                />
+
                 <select
                   {...register("serviceId")}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">-- None --</option>
-                  {servicesList.map((svc) => (
-                    <option key={svc._id} value={svc._id}>
-                      {svc.title} ({svc.subCategory || svc.category})
-                    </option>
-                  ))}
+                  {servicesList
+                    .filter((svc) =>
+                      svc.title
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()),
+                    )
+                    .map((svc) => (
+                      <option key={svc._id} value={svc._id}>
+                        {svc.title} ({svc.subCategory || svc.category})
+                      </option>
+                    ))}
                 </select>
               </div>
               <div>
