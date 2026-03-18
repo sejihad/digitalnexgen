@@ -15,9 +15,17 @@ const ServiceList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // States
-  const [selectedCategory, setSelectedCategory] = useState("programming-tech");
-  const [selectedGroup, setSelectedGroup] = useState(null);
-  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") || "programming-tech",
+  );
+
+  const [selectedGroup, setSelectedGroup] = useState(
+    searchParams.get("group") || null,
+  );
+
+  const [selectedSubCategories, setSelectedSubCategories] = useState(
+    searchParams.getAll("subcategory") || [],
+  );
   const [services, setServices] = useState([]);
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
@@ -37,16 +45,14 @@ const ServiceList = () => {
 
   // ✅ 1. URL Sync -> State
   useEffect(() => {
-    const cat = searchParams.get("category");
-    const group = searchParams.get("group");
-    const subs = searchParams.getAll("subcategory");
+    const cat = searchParams.get("category") || "programming-tech";
+    const group = searchParams.get("group") || null;
+    const subs = searchParams.getAll("subcategory") || [];
 
-    if (cat && cat !== selectedCategory) setSelectedCategory(cat);
-    if (group !== selectedGroup) setSelectedGroup(group);
-    if (JSON.stringify(subs) !== JSON.stringify(selectedSubCategories)) {
-      setSelectedSubCategories(subs);
-    }
-  }, [searchParams]);
+    setSelectedCategory(cat);
+    setSelectedGroup(group);
+    setSelectedSubCategories(subs);
+  }, []);
 
   // ✅ 2. State Sync -> URL
   useEffect(() => {

@@ -469,7 +469,12 @@ const categoriesData = {
 
 const Services = () => {
   const location = useLocation();
-  const [selectedCategory, setSelectedCategory] = useState("programming-tech");
+  const getInitialCategory = () => {
+    const hash = window.location.hash.replace("#", "");
+    return categoriesData[hash] ? hash : "programming-tech";
+  };
+
+  const [selectedCategory, setSelectedCategory] = useState(getInitialCategory);
   const [isOpen, setIsOpen] = useState(false);
 
   const drawerRef = useRef(null);
@@ -488,7 +493,11 @@ const Services = () => {
       setSelectedCategory(hash);
     }
   }, [location.hash]);
-
+  useEffect(() => {
+    if (selectedCategory) {
+      window.history.replaceState(null, "", `#${selectedCategory}`);
+    }
+  }, [selectedCategory]);
   // Close drawer when category changes (so user sees content)
   useEffect(() => {
     if (isOpen) closeDrawer();

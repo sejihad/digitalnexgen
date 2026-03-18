@@ -6,6 +6,7 @@ import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const AdminServices = () => {
   const [services, setServices] = useState([]);
+  const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [categories] = useState([
     "programming-tech",
@@ -82,7 +83,9 @@ const AdminServices = () => {
   const handleReviewsPage = (service) => {
     navigate(`/admin/services/${service._id}/reviews`);
   };
-
+  const filteredServices = services.filter((service) =>
+    service.title?.toLowerCase().includes(search.toLowerCase()),
+  );
   // Mobile card view for each service
   const MobileServiceCard = ({ service, index }) => (
     <div className="border border-gray-200 rounded-xl p-4 mb-3 bg-white dark:bg-[#111111] dark:border-gray-800">
@@ -216,6 +219,13 @@ const AdminServices = () => {
               </option>
             ))}
           </select>
+          <input
+            type="text"
+            placeholder="Search services..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full mt-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+          />
         </div>
       </div>
 
@@ -238,7 +248,7 @@ const AdminServices = () => {
         <>
           {/* Mobile View - Cards */}
           <div className="block sm:hidden">
-            {services.map((service, index) => (
+            {filteredServices.map((service, index) => (
               <MobileServiceCard
                 key={service._id}
                 service={service}
@@ -262,7 +272,7 @@ const AdminServices = () => {
                 </thead>
 
                 <tbody>
-                  {services.map((service, index) => (
+                  {filteredServices.map((service, index) => (
                     <tr
                       key={service._id}
                       className="border-t border-gray-200 bg-white transition hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111111] dark:hover:bg-[#181818]"

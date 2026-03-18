@@ -1,11 +1,14 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import { useLocation } from "react-router-dom";
+
 import { useNavigate, useParams } from "react-router-dom";
 import SubCategoryServiceCard from "../components/SubCategoryServiceCard";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const SubCategory = () => {
+  const location = useLocation();
   const { subCategory } = useParams();
   const [services, setServices] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -125,7 +128,9 @@ const SubCategory = () => {
 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                   <button
-                    onClick={() => navigate(`/project/${project._id}`)}
+                    onClick={() =>
+                      navigate(`/project/${project._id}${location.hash}`)
+                    }
                     className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-semibold shadow-md transition"
                   >
                     View Details
