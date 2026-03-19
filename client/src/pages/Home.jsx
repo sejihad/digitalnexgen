@@ -3,6 +3,7 @@ import ServiceCards from "../components/ServiceCards";
 // import HomeVideo from "../components/HomeVideo";
 import Gallery from "../components/Gallery";
 import HomeVideo from "../components/HomeVideo";
+import JoinSection from "../components/JoinSection";
 import PopularServices from "../components/PopularServices";
 import StatisticsSection from "../components/StatisticsSection";
 
@@ -36,6 +37,7 @@ const Home = () => {
       <div className="lg:mb-16">
         <Gallery category="hero section" />
       </div>
+      <JoinSection />
     </div>
   );
 };
