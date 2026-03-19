@@ -59,78 +59,17 @@ const Gallery = ({ category }) => {
 
       {/* Masonry / column layout */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
-        {galleries.map((gallery) => (
+        {galleries.map((gallery, index) => (
           <div
             key={gallery._id}
-            className="group break-inside-avoid mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 relative cursor-pointer"
-            onClick={async () => {
-              const rawRef = gallery.serviceId || gallery.service || null;
-              if (!rawRef) {
-                const qp = new URLSearchParams({
-                  category: gallery.category || "",
-                  q: gallery.imageTitle || "",
-                }).toString();
-                navigate(`/services?${qp}`);
-                return;
-              }
-
-              if (typeof rawRef === "object" && rawRef !== null) {
-                const svc = rawRef._id ? rawRef : rawRef.serviceId || rawRef;
-                const subCategory =
-                  svc.subCategory || svc.category || "services";
-                navigate(`/${subCategory}/${svc._id}`);
-                return;
-              }
-
-              try {
-                const res = await axios.get(
-                  `${API_BASE_URL}/api/services/single-service/${rawRef}`,
-                );
-                const svc = res.data;
-                const subCategory =
-                  svc.subCategory || svc.category || "services";
-                navigate(`/${subCategory}/${svc._id}`);
-              } catch (err) {
-                const qp = new URLSearchParams({
-                  category: gallery.category || "",
-                  q: gallery.imageTitle || "",
-                }).toString();
-                navigate(`/services?${qp}`);
-              }
-            }}
+            className="group break-inside-avoid mb-6 rounded-2xl overflow-hidden"
           >
-            {/* Image */}
             <img
               src={gallery.image?.url}
-              alt={gallery.imageTitle || "Gallery Image"}
-              loading="lazy"
-              onLoad={() =>
-                setLoadedMap((m) => ({ ...m, [gallery._id]: true }))
-              }
-              className={`w-full object-cover rounded-t-2xl transition-transform duration-500 group-hover:scale-105 ${
-                loadedMap[gallery._id] ? "opacity-100" : "opacity-0"
+              className={`w-full object-cover ${
+                index % 3 === 0 ? "h-72" : index % 2 === 0 ? "h-52" : "h-40"
               }`}
             />
-
-            {/* Skeleton / placeholder */}
-            {!loadedMap[gallery._id] && (
-              <div className="absolute inset-0 bg-gray-300 dark:bg-gray-700 animate-pulse" />
-            )}
-
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-            {/* Title / category */}
-            <div className="absolute bottom-0 w-full p-4 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-2">
-                <h3 className="text-white text-sm font-semibold truncate">
-                  {gallery.imageTitle}
-                </h3>
-                <p className="text-white/80 text-xs mt-1 truncate">
-                  {gallery.category}
-                </p>
-              </div>
-            </div>
           </div>
         ))}
       </div>
