@@ -7,7 +7,6 @@ const Gallery = ({ category }) => {
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [loadedMap, setLoadedMap] = useState({});
   const navigate = useNavigate();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -44,6 +43,7 @@ const Gallery = ({ category }) => {
         Loading...
       </div>
     );
+
   if (error)
     return (
       <div className="flex justify-center items-center h-64 text-red-500">
@@ -53,25 +53,41 @@ const Gallery = ({ category }) => {
 
   return (
     <div className="p-3 max-w-[1440px] mt-10 mx-auto">
-      {/* <h2 className="text-center text-3xl font-bold text-gray-700 dark:text-white mb-12">
-        Made on Digital NexGen
-      </h2> */}
-
-      {/* Masonry / column layout */}
+      {/* Masonry layout */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
-        {galleries.map((gallery, index) => (
-          <div
-            key={gallery._id}
-            className="group break-inside-avoid mb-6 rounded-2xl overflow-hidden"
-          >
-            <img
-              src={gallery.image?.url}
-              className={`w-full object-cover ${
-                index % 3 === 0 ? "h-72" : index % 2 === 0 ? "h-52" : "h-40"
-              }`}
-            />
-          </div>
-        ))}
+        {galleries.map((gallery, index) => {
+          const categorySlug = gallery.category
+            ?.toLowerCase()
+            .replace(/\s+/g, "-");
+
+          return (
+            <div
+              key={gallery._id}
+              className="group break-inside-avoid mb-6 rounded-2xl overflow-hidden relative cursor-pointer"
+              onClick={() => {
+                if (gallery.serviceId) {
+                  navigate(`/${categorySlug}/${gallery.serviceId}`);
+                }
+              }}
+            >
+              {/* Image */}
+              <img
+                src={gallery.image?.url}
+                alt={gallery.imageTitle}
+                className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                  index % 3 === 0 ? "h-72" : index % 2 === 0 ? "h-52" : "h-40"
+                }`}
+              />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <span className="text-white text-sm md:text-base font-semibold text-center px-2">
+                  {gallery.imageTitle}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
