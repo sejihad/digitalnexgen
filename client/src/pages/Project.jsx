@@ -75,7 +75,19 @@ const ProjectPage = () => {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto ml-0 md:ml-4 p-6">
         <h2 className="text-xl lg:text-3xl font-bold font-roboto text-primaryText dark:text-white text-center mt-12 md:mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1 capitalize">
-          {pageTitle}
+          {selectedSubCategory ? (
+            <>
+              <span className="block md:inline">
+                {formatText(selectedCategory)}
+              </span>
+              <span className="hidden md:inline"> → </span>
+              <span className="block md:inline">
+                {formatText(selectedSubCategory)} Projects
+              </span>
+            </>
+          ) : (
+            <span>{formatText(selectedCategory)} Projects</span>
+          )}
         </h2>
 
         <div className="w-11/12 mx-auto max-w-[1440px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
