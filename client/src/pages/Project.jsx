@@ -1,14 +1,18 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ProjectSidebar from "../components/ProjectSidebar";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
 
 const ProjectPage = () => {
   const [projects, setProjects] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("programming-tech");
-  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedCategory = searchParams.get("category") || "programming-tech";
+
+  const selectedSubCategory = searchParams.get("subCategory");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,42 +33,54 @@ const ProjectPage = () => {
     fetchProjects();
   }, [dispatch]);
 
+  // ✅ Handle category change
+  const handleCategoryChange = (category) => {
+    setSearchParams({ category });
+  };
+
+  // ✅ Handle subcategory change
+  const handleSubCategoryChange = (subCategory) => {
+    setSearchParams({
+      category: selectedCategory,
+      subCategory,
+    });
+  };
+
   // Filter projects
   const filteredProjects = projects.filter((project) => {
     const categoryMatch =
       project.category.toLowerCase() === selectedCategory.toLowerCase();
+
     if (selectedSubCategory) {
       const subMatch =
         project.subCategory.toLowerCase() === selectedSubCategory.toLowerCase();
       return categoryMatch && subMatch;
     }
+
     return categoryMatch;
   });
 
   const formatText = (text) => text.replace(/-/g, " ");
 
-  const pageTitle = selectedSubCategory
-    ? `${formatText(selectedCategory)} → ${formatText(selectedSubCategory)} Projects`
-    : `${formatText(selectedCategory)} Projects`;
-
   const [isOpen, setIsOpen] = useState(false);
   const toggleSidebar = () => {
     setIsOpen((prev) => !prev);
   };
+
   return (
     <div className="relative flex flex-col md:flex-row max-w-[1440px] mx-auto h-screen">
       {/* Sidebar */}
       <div className="md:w-64 flex-shrink-0">
         <ProjectSidebar
-          setSelectedCategory={setSelectedCategory}
+          setSelectedCategory={handleCategoryChange}
           selectedCategory={selectedCategory}
           selectedSubCategory={selectedSubCategory}
-          setSelectedSubCategory={setSelectedSubCategory}
+          setSelectedSubCategory={handleSubCategoryChange}
           isOpen={isOpen}
         />
       </div>
 
-      {/* Mobile toggle button */}
+      {/* Mobile toggle */}
       <button
         className="absolute top-2 left-8 z-40 bg-pink-500 text-white text-xs p-2 rounded-md md:hidden"
         onClick={toggleSidebar}
@@ -74,6 +90,7 @@ const ProjectPage = () => {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto ml-0 md:ml-4 p-6">
+        {/* Responsive Title */}
         <h2 className="text-xl lg:text-3xl font-bold font-roboto text-primaryText dark:text-white text-center mt-12 md:mt-4 border-b-2 border-[#333333] w-[max-content] mx-auto pb-1 capitalize">
           {selectedSubCategory ? (
             <>
@@ -90,16 +107,17 @@ const ProjectPage = () => {
           )}
         </h2>
 
+        {/* Projects */}
         <div className="w-11/12 mx-auto max-w-[1440px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {filteredProjects.map((project) => (
             <div
               key={project._id}
-              className="group relative block transition-transform duration-300 transform hover:-translate-y-1 bg-white rounded-lg  px-0 py-0 dark:border dark:border-gray-100  shadow-[0_.14px_2.29266px_rgba(0,0,0,0.03),_0_.37px_4.42626px_rgba(0,0,0,0.047),_0_3px_7px_rgba(0,0,0,0.09)] dark:bg-white/10 dark:border-white/20 dark:shadow-lg overflow-hidden"
+              className="group relative block transition-transform duration-300 transform hover:-translate-y-1 bg-white rounded-lg dark:border dark:border-gray-100 shadow-[0_.14px_2.29266px_rgba(0,0,0,0.03),_0_.37px_4.42626px_rgba(0,0,0,0.047),_0_3px_7px_rgba(0,0,0,0.09)] dark:bg-white/10 dark:border-white/20 dark:shadow-lg overflow-hidden"
             >
               <img
                 src={project.images[0].url || "/placeholder.jpg"}
                 alt={project.title}
-                className="w-full h-48 object-cover rounded-md group-hover:opacity-90 transition-opacity duration-300"
+                className="w-full h-48 object-cover group-hover:opacity-90 transition-opacity duration-300"
               />
 
               <div className="p-4">
