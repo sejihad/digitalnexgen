@@ -274,6 +274,62 @@ export const adminCreateReview = async (req, res, next) => {
 };
 
 // PUBLIC SERVICE REVIEWS
+// export const getReviewsByService = async (req, res, next) => {
+//   try {
+//     const { serviceId } = req.params;
+//     const page = Math.max(Number(req.query.page) || 1, 1);
+//     const limit = Math.max(Number(req.query.limit) || 5, 1);
+//     const skip = (page - 1) * limit;
+
+//     if (!serviceId) {
+//       return next(createError(400, "Service id is required"));
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(serviceId)) {
+//       return next(createError(400, "Invalid service id"));
+//     }
+
+//     const service = await Service.findById(serviceId).select(
+//       "title category averageStars starNumber",
+//     );
+
+//     if (!service) {
+//       return next(createError(404, "Service not found"));
+//     }
+
+//     const query = {
+//       serviceId,
+//       isVisible: true,
+//     };
+
+//     const totalReviews = await Review.countDocuments(query);
+
+//     const reviews = await Review.find(query)
+//       .populate("userId", "name img")
+//       .sort({ reviewDate: -1, createdAt: -1, _id: -1 })
+//       .skip(skip)
+//       .limit(limit);
+
+//     const formattedReviews = reviews.map(formatReview);
+
+//     const hasMore = skip + formattedReviews.length < totalReviews;
+
+//     return res.status(200).json({
+//       reviews: formattedReviews,
+//       pagination: {
+//         page,
+//         limit,
+//         totalReviews,
+//         totalPages: Math.ceil(totalReviews / limit),
+//         hasMore,
+//       },
+//       hasMore,
+//     });
+//   } catch (error) {
+//     console.error("getReviewsByService error:", error);
+//     return next(createError(500, "Server error while fetching reviews"));
+//   }
+// };
 export const getReviewsByService = async (req, res, next) => {
   try {
     const { serviceId } = req.params;
@@ -281,35 +337,47 @@ export const getReviewsByService = async (req, res, next) => {
     const limit = Math.max(Number(req.query.limit) || 5, 1);
     const skip = (page - 1) * limit;
 
-    if (!serviceId) {
-      return next(createError(400, "Service id is required"));
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
+    if (!serviceId) return next(createError(400, "Service id is required"));
+    if (!mongoose.Types.ObjectId.isValid(serviceId))
       return next(createError(400, "Invalid service id"));
-    }
-
-    const service = await Service.findById(serviceId).select(
-      "title category averageStars starNumber",
-    );
-
-    if (!service) {
-      return next(createError(404, "Service not found"));
-    }
 
     const query = {
-      serviceId,
+      serviceId: new mongoose.Types.ObjectId(serviceId),
       isVisible: true,
     };
 
+    // ১. টোটাল রিভিউ কাউন্ট
     const totalReviews = await Review.countDocuments(query);
 
-    const reviews = await Review.find(query)
-      .populate("userId", "name img")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // ২. এগ্রিগেশন পাইপলাইন (সর্টিং লজিক সহ)
+    const reviews = await Review.aggregate([
+      { $match: query },
+      {
+        $addFields: {
+          // লজিক: যদি reviewDate থাকে তবে সেটি নাও, নাহলে createdAt নাও
+          finalSortDate: { $ifNull: ["$reviewDate", "$createdAt"] },
+        },
+      },
+      {
+        $sort: {
+          finalSortDate: -1, // বড় তারিখ আগে (Latest First)
+          _id: -1, // তারিখ সেম হলে লেটেস্ট আইডি আগে
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users", // আপনার ইউজার কালেকশনের নাম যদি 'users' হয়
+          localField: "userId",
+          foreignField: "_id",
+          as: "userId",
+        },
+      },
+      { $unwind: { path: "$userId", preserveNullAndEmptyArrays: true } },
+    ]);
 
+    // আপনার কাস্টম ফরম্যাটার কল করা
     const formattedReviews = reviews.map(formatReview);
 
     const hasMore = skip + formattedReviews.length < totalReviews;
@@ -330,7 +398,6 @@ export const getReviewsByService = async (req, res, next) => {
     return next(createError(500, "Server error while fetching reviews"));
   }
 };
-
 // ADMIN GET REVIEWS BY SERVICE
 export const adminGetReviewsByService = async (req, res, next) => {
   try {

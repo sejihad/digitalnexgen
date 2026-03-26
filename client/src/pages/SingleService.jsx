@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import placeholderImg from "../assets/user.png";
 
 import MarkDownWithToggle from "../components/MarkdownWithToggle.jsx";
 import ServiceMediaSlider from "../components/ServiceMediaSlider";
@@ -74,6 +73,25 @@ const SingleService = () => {
       setCouponError("❌ Something went wrong.");
     }
   };
+  // কম্পোনেন্টের বাইরে বা ভিতরে এই ফাংশনটি যোগ করুন
+  const getDynamicColorFromName = (name) => {
+    if (!name) return "bg-primaryRgb";
+
+    // নামের ভিত্তিতে হিউ (Hue) জেনারেট করা
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // 0 থেকে 360 এর মধ্যে একটি হিউ ভ্যালু
+    const hue = Math.abs(hash) % 360;
+
+    // Tailwind CSS এ ডায়নামিক রঙ直接用 করা যায় না, তাই ইনলাইন স্টাইল ব্যবহার করতে হবে
+    return {
+      backgroundColor: `hsl(${hue}, 70%, 50%)`,
+      className: "text-white",
+    };
+  };
   const renderReviewsList = () => {
     return reviews.length > 0 ? (
       <div className="space-y-3">
@@ -83,11 +101,17 @@ const SingleService = () => {
             className="rounded-xl border border-black/10 bg-white/70 p-3 dark:border-white/10 dark:bg-white/5"
           >
             <div className="flex items-start gap-3">
-              <img
-                src={review.userImage?.url || placeholderImg}
-                alt={review.name}
-                className="h-10 w-10 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/10"
-              />
+              {!review.userImage?.url && (
+                <div
+                  style={{
+                    backgroundColor: getDynamicColorFromName(review.name)
+                      .backgroundColor,
+                  }}
+                  className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold uppercase ring-1 ring-black/10 dark:ring-white/10"
+                >
+                  {review.name?.charAt(0) || "A"}
+                </div>
+              )}
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
@@ -772,7 +796,9 @@ const SingleService = () => {
                 Reviews:
               </h3>
 
-              {renderReviewForm()}
+              {isAuthenticated &&
+                eligibleOrders.length > 0 &&
+                renderReviewForm()}
 
               {renderReviewsList()}
             </div>
@@ -991,7 +1017,7 @@ const SingleService = () => {
             Reviews:
           </h3>
 
-          {renderReviewForm()}
+          {isAuthenticated && eligibleOrders.length > 0 && renderReviewForm()}
 
           {renderReviewsList()}
         </div>

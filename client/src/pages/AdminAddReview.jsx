@@ -111,8 +111,7 @@ const AdminAddReview = () => {
           },
         },
       );
-
-      navigate("/admin/services");
+      alert("Review created successfully ✅");
     } catch (error) {
       alert(error?.response?.data?.message || "Failed to create admin review.");
     } finally {
