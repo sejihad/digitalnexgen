@@ -12,7 +12,8 @@ const AdminUpdateReview = () => {
 
   const [serviceInfo, setServiceInfo] = useState(null);
   const [review, setReview] = useState(null);
-
+  const [reviewDate, setReviewDate] = useState("");
+  const [country, setCountry] = useState("");
   const [name, setName] = useState("");
   const [star, setStar] = useState(5);
   const [desc, setDesc] = useState("");
@@ -42,6 +43,13 @@ const AdminUpdateReview = () => {
         setName(fetchedReview?.name || "");
         setStar(Number(fetchedReview?.star) || 5);
         setDesc(fetchedReview?.desc || "");
+        setReviewDate(
+          fetchedReview?.reviewDate
+            ? new Date(fetchedReview.reviewDate).toISOString().split("T")[0]
+            : "",
+        );
+
+        setCountry(fetchedReview?.country || "");
         setIsVisible(Boolean(fetchedReview?.isVisible));
         setImagePreview(fetchedReview?.userImage?.url || "");
         setImageFile(null);
@@ -99,6 +107,8 @@ const AdminUpdateReview = () => {
 
     formData.append("star", String(star));
     formData.append("desc", desc.trim());
+    formData.append("reviewDate", reviewDate);
+    formData.append("country", country);
     formData.append("isVisible", String(isVisible));
 
     // only manual/admin reviews can update name and image
@@ -251,6 +261,25 @@ const AdminUpdateReview = () => {
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+              />
+            </div>
+            <div>
+              <input
+                type="date"
+                value={reviewDate}
+                onChange={(e) => setReviewDate(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
+  dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="Enter country"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
+  dark:border-gray-700 dark:bg-[#181818] dark:text-white"
               />
             </div>
           </div>

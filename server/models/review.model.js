@@ -58,7 +58,16 @@ const reviewSchema = new Schema(
       required: true,
       trim: true,
     },
+    reviewDate: {
+      type: Date,
+      default: Date.now,
+    },
 
+    country: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     isVisible: {
       type: Boolean,
       default: true,

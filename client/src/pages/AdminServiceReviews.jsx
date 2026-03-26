@@ -137,7 +137,9 @@ const AdminServiceReviews = () => {
                 {review.star}/5
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(review.createdAt).toLocaleDateString()}
+                {new Date(
+                  review.reviewDate || review.createdAt,
+                ).toLocaleDateString()}
               </span>
             </div>
           </div>
@@ -338,7 +340,9 @@ const AdminServiceReviews = () => {
                       </td>
 
                       <td className="px-4 py-3 text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(review.createdAt).toLocaleDateString()}
+                        {new Date(
+                          review.reviewDate || review.createdAt,
+                        ).toLocaleDateString()}
                       </td>
 
                       <td className="px-4 py-3">

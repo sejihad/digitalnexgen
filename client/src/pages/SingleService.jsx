@@ -96,6 +96,12 @@ const SingleService = () => {
                       {review.name || "Anonymous"}
                     </p>
 
+                    {review.country && (
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                        {review.country}
+                      </p>
+                    )}
+
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-400 text-xs">
                         {"★".repeat(review.star)}
@@ -111,7 +117,9 @@ const SingleService = () => {
                   </div>
 
                   <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-400">
-                    {new Date(review.createdAt).toLocaleDateString()}
+                    {new Date(
+                      review.reviewDate || review.createdAt,
+                    ).toLocaleDateString()}
                   </span>
                 </div>
 

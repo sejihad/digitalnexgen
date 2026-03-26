@@ -15,10 +15,15 @@ const AdminAddReview = () => {
   const [name, setName] = useState("");
   const [star, setStar] = useState(5);
   const [desc, setDesc] = useState("");
+  const [reviewDate, setReviewDate] = useState("");
+  const [country, setCountry] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
-
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setReviewDate(today);
+  }, []);
   useEffect(() => {
     const fetchServices = async () => {
       dispatch(showLoading());
@@ -86,7 +91,10 @@ const AdminAddReview = () => {
     formData.append("name", name.trim());
     formData.append("star", String(star));
     formData.append("desc", desc.trim());
-
+    if (reviewDate) {
+      formData.append("reviewDate", reviewDate);
+    }
+    formData.append("country", country);
     if (imageFile) {
       formData.append("image", imageFile);
     }
@@ -230,6 +238,29 @@ const AdminAddReview = () => {
               onChange={(e) => setDesc(e.target.value)}
               placeholder="Write review comment..."
               className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Review Date
+            </label>
+            <input
+              type="date"
+              value={reviewDate}
+              onChange={(e) => setReviewDate(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
+  dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Country</label>
+            <input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Enter country"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
+  dark:border-gray-700 dark:bg-[#181818] dark:text-white"
             />
           </div>
         </div>

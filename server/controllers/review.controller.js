@@ -5,6 +5,7 @@ import Order from "../models/order.model.js";
 import Review from "../models/review.model.js";
 import ReviewRequest from "../models/reviewRequest.model.js";
 import Service from "../models/service.model.js";
+import User from "../models/user.model.js";
 import { getIO } from "../socketInstance.js";
 import createError from "../utils/createError.js";
 const getPopulatedUserImage = (user) => {
@@ -42,6 +43,8 @@ const formatReview = (review) => {
     isVisible: review.isVisible,
     createdAt: review.createdAt,
     updatedAt: review.updatedAt,
+    country: review.country,
+    reviewDate: review.reviewDate,
     name: populatedUser?.name || review.name || "Anonymous",
     userImage: populatedUser
       ? getPopulatedUserImage(populatedUser)
@@ -77,7 +80,7 @@ const recalculateServiceRating = async (serviceId) => {
 // USER CREATE REVIEW
 export const createReview = async (req, res, next) => {
   try {
-    const { orderId, star, desc } = req.body;
+    const { orderId, star, desc, reviewDate } = req.body;
 
     if (!req.userId) {
       return next(createError(401, "You are not authenticated"));
@@ -86,7 +89,7 @@ export const createReview = async (req, res, next) => {
     if (!orderId || !star || !desc?.trim()) {
       return next(createError(400, "orderId, star and desc are required"));
     }
-
+    const user = await User.findById(req.userId);
     const numericStar = Number(star);
 
     if (Number.isNaN(numericStar) || numericStar < 1 || numericStar > 5) {
@@ -143,6 +146,8 @@ export const createReview = async (req, res, next) => {
       sellerId: service.userId,
       star: numericStar,
       desc: desc.trim(),
+      reviewDate: reviewDate || Date.now(),
+      country: user?.country || "",
       createdSource: "user",
     });
 
@@ -207,7 +212,7 @@ export const adminCreateReview = async (req, res, next) => {
       return next(createError(403, "Only admin can create reviews"));
     }
 
-    const { serviceId, star, desc, name } = req.body;
+    const { serviceId, star, desc, name, reviewDate, country } = req.body;
 
     if (!serviceId || !star || !desc?.trim() || !name?.trim()) {
       return next(
@@ -251,6 +256,8 @@ export const adminCreateReview = async (req, res, next) => {
       userImage: imageData,
       star: numericStar,
       desc: desc.trim(),
+      reviewDate: reviewDate ? new Date(reviewDate) : Date.now(),
+      country: country || "",
       createdSource: "admin",
     });
 
@@ -470,7 +477,15 @@ export const adminUpdateReview = async (req, res, next) => {
     if (req.body.desc !== undefined) {
       updateData.desc = req.body.desc.trim();
     }
+    if (req.body.reviewDate !== undefined) {
+      updateData.reviewDate = req.body.reviewDate
+        ? new Date(req.body.reviewDate)
+        : review.reviewDate;
+    }
 
+    if (req.body.country !== undefined) {
+      updateData.country = req.body.country.trim();
+    }
     if (req.body.star !== undefined) {
       const numericStar = Number(req.body.star);
 
