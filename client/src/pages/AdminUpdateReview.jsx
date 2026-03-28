@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import placeholderImg from "../assets/user.png";
+import countryCodes from "../data/countryCodes.json";
 import { hideLoading, showLoading } from "../redux/loadingSlice";
-
 const AdminUpdateReview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -18,12 +18,18 @@ const AdminUpdateReview = () => {
   const [star, setStar] = useState(5);
   const [desc, setDesc] = useState("");
   const [isVisible, setIsVisible] = useState(true);
-
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
 
   const isUserReview = useMemo(() => Boolean(review?.userId), [review?.userId]);
+  const countryList = Object.keys(countryCodes);
+
+  const filteredCountries = countryList.filter((c) =>
+    c.toLowerCase().includes(countrySearch.toLowerCase()),
+  );
 
   useEffect(() => {
     const fetchReviewDetails = async () => {
@@ -50,6 +56,7 @@ const AdminUpdateReview = () => {
         );
 
         setCountry(fetchedReview?.country || "");
+        setCountrySearch(fetchedReview?.country || "");
         setIsVisible(Boolean(fetchedReview?.isVisible));
         setImagePreview(fetchedReview?.userImage?.url || "");
         setImageFile(null);
@@ -273,14 +280,47 @@ const AdminUpdateReview = () => {
               />
             </div>
             <div>
-              <input
-                type="text"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder="Enter country"
-                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
-  dark:border-gray-700 dark:bg-[#181818] dark:text-white"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={countrySearch}
+                  onChange={(e) => {
+                    setCountrySearch(e.target.value);
+                    setShowCountryDropdown(true);
+                  }}
+                  onFocus={() => setShowCountryDropdown(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowCountryDropdown(false), 150);
+                  }}
+                  placeholder="Search country..."
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 
+    dark:border-gray-700 dark:bg-[#181818] dark:text-white"
+                />
+
+                {showCountryDropdown && (
+                  <div className="absolute z-[9999] mt-1 max-h-48 w-full overflow-y-auto rounded-xl border bg-white shadow-lg dark:bg-[#181818]">
+                    {filteredCountries.length > 0 ? (
+                      filteredCountries.map((c) => (
+                        <div
+                          key={c}
+                          onClick={() => {
+                            setCountry(c);
+                            setCountrySearch(c);
+                            setShowCountryDropdown(false);
+                          }}
+                          className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/10"
+                        >
+                          {c}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        No country found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import User from "../models/user.model.js";
 import createError from "../utils/createError.js";
 import sendEmail from "../utils/sendEmail.js";
@@ -377,6 +376,7 @@ export const forgotPassword = async (req, res, next) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) return next(createError(404, "User not found!"));
 
+    // ✅ generate token
     const resetToken = crypto.randomBytes(32).toString("hex");
     const tokenExpiry = Date.now() + 10 * 60 * 1000;
 
@@ -384,28 +384,29 @@ export const forgotPassword = async (req, res, next) => {
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
+
     user.resetPasswordExpiry = tokenExpiry;
 
     await user.save();
 
+    // ✅ reset URL
     const resetURL = `${process.env.CLIENT_BASE_URL}/auth/reset-password/${resetToken}`;
 
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.SMTP_MAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    const mailOptions = {
-      from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
-      to: user.email,
+    // ✅ send email using reusable function
+    await sendEmail({
+      email: user.email,
       subject: "Password Reset Request",
-      text: `You have requested a password reset. Click on the link below to reset your password: \n\n ${resetURL} \n\n If you did not request this, please ignore this email.`,
-    };
+      message: `
+You requested a password reset.
 
-    await transporter.sendMail(mailOptions);
+Click the link below to reset your password:
+${resetURL}
+
+This link will expire in 10 minutes.
+
+If you did not request this, please ignore this email.
+      `.trim(),
+    });
 
     res.status(200).send("Password reset link sent to your email.");
   } catch (error) {

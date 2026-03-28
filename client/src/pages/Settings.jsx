@@ -1,13 +1,19 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import countryCodes from "../data/countryCodes.json";
 import { setUser } from "../redux/authSlice.js";
 
 const Settings = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user: authUser } = useSelector((state) => state.auth);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
   const [user, setUserState] = useState({
     username: authUser?.username || "",
@@ -32,6 +38,24 @@ const Settings = () => {
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const userId = authUser?._id || authUser?.id;
+  const countryList = Object.keys(countryCodes);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const validateField = (name, value) => {
     const trimmedValue = typeof value === "string" ? value.trim() : value;
@@ -94,6 +118,7 @@ const Settings = () => {
     };
 
     setUserState(mergedUser);
+    setSearchTerm(mergedUser.country);
 
     const initialErrors = buildValidationErrors(mergedUser);
     setErrors(initialErrors);
@@ -164,6 +189,11 @@ const Settings = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    if (name === "country") {
+      setSearchTerm(value);
+      setShowDropdown(true);
+    }
+
     setUserState((prev) => ({
       ...prev,
       [name]: value,
@@ -185,6 +215,22 @@ const Settings = () => {
 
       return updatedErrors;
     });
+  };
+
+  const handleCountrySelect = (country) => {
+    setUserState((prev) => ({
+      ...prev,
+      country: country,
+    }));
+    setSearchTerm(country);
+    setShowDropdown(false);
+
+    // Clear country error if any
+    const fieldError = validateField("country", country);
+    setErrors((prev) => ({
+      ...prev,
+      country: fieldError,
+    }));
   };
 
   const handleBlur = (e) => {
@@ -277,6 +323,7 @@ const Settings = () => {
 
       setFormError("");
       toast.success("Profile updated successfully!");
+      navigate("/");
       setNewImage(null);
     } catch (error) {
       const backendErrors = error.response?.data?.errors;
@@ -300,6 +347,11 @@ const Settings = () => {
     }
   };
 
+  // Filter countries based on search term
+  const filteredCountries = countryList.filter((country) =>
+    country.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   const inputClass = (fieldName) =>
     `w-full rounded-xl border bg-white/80 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 dark:bg-white/5 dark:text-gray-100 ${
       errors[fieldName]
@@ -310,7 +362,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-white px-4 py-5 text-gray-900 dark:bg-black dark:text-gray-100">
       <div className="mx-auto max-w-3xl">
-        <div className="rounded-2xl border border-black/10 bg-white/70 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] sm:p-5">
+        <div className="rounded-2xl border border-black/10 bg-white/70 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)]  dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-black/10 pb-3 dark:border-white/10">
             <div>
               <h1 className="text-xl font-bold sm:text-2xl">Settings</h1>
@@ -319,13 +371,13 @@ const Settings = () => {
               </p>
             </div>
 
-            <div className="hidden rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs text-gray-600 backdrop-blur-md dark:border-white/10 dark:bg-white/10 dark:text-gray-300 sm:block">
+            <div className="hidden rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs text-gray-600  dark:border-white/10 dark:bg-white/10 dark:text-gray-300 sm:block">
               Account
             </div>
           </div>
 
           {authUser?.provider === "local" && (
-            <div className="mb-4 rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+            <div className="mb-4 rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -375,7 +427,7 @@ const Settings = () => {
             )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <div className="rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5">
                 <label
                   htmlFor="username"
                   className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"
@@ -398,7 +450,7 @@ const Settings = () => {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <div className="rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5">
                 <label
                   htmlFor="email"
                   className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"
@@ -421,22 +473,41 @@ const Settings = () => {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <div className="rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5 overflow-visible">
                 <label
                   htmlFor="country"
                   className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"
                 >
                   Country
                 </label>
-                <input
-                  type="text"
-                  id="country"
-                  name="country"
-                  value={user.country}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={inputClass("country")}
-                />
+                <div className="relative w-full" ref={dropdownRef}>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    id="country"
+                    name="country"
+                    value={searchTerm}
+                    onChange={handleChange}
+                    onFocus={() => setShowDropdown(true)}
+                    placeholder="Search or select country..."
+                    className={inputClass("country")}
+                    autoComplete="off"
+                  />
+
+                  {showDropdown && (
+                    <div className="absolute z-[9999] mt-1 max-h-48 w-full overflow-y-auto rounded-xl border bg-white dark:bg-black shadow-lg">
+                      {filteredCountries.map((country) => (
+                        <div
+                          key={country}
+                          onClick={() => handleCountrySelect(country)}
+                          className="cursor-pointer px-3 py-2 "
+                        >
+                          {country}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {errors.country && (
                   <p className="mt-1 text-xs font-medium text-red-500">
                     {errors.country}
@@ -444,7 +515,7 @@ const Settings = () => {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+              <div className="rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5">
                 <label
                   htmlFor="phone"
                   className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"
@@ -468,7 +539,7 @@ const Settings = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+            <div className="rounded-2xl border border-black/10 bg-white/60 p-3  dark:border-white/10 dark:bg-white/5">
               <label
                 htmlFor="img"
                 className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"

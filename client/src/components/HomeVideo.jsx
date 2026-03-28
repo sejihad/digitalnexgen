@@ -1,6 +1,6 @@
 const HomeVideo = () => {
   return (
-    <section className="relative mt-8 w-11/12 mx-auto max-w-[1440px] overflow-hidden rounded-xl border border-white/20">
+    <section className="relative mt-12 w-11/12 mx-auto max-w-[1440px] overflow-hidden rounded-xl border border-white/20">
       {/* Responsive container */}
       <div
         className="

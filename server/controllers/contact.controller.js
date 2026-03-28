@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import sendEmail from "../utils/sendEmail.js";
 
 export const sendContactMessage = async (req, res) => {
@@ -20,27 +19,15 @@ export const sendContactMessage = async (req, res) => {
       });
     }
 
-    // ✅ Normalize recipients
     const recipientList = Array.isArray(recipients)
       ? recipients
       : JSON.parse(recipients);
 
-    // ✅ Normalize attachments
     const attachmentList = attachments
       ? Array.isArray(attachments)
         ? attachments
         : JSON.parse(attachments)
       : [];
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_MAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
 
     const mailAttachments = attachmentList.map((file) => ({
       filename: file.name,
@@ -49,24 +36,20 @@ export const sendContactMessage = async (req, res) => {
 
     let results = [];
 
-    // 📨 Individual mode (single user)
     if (individualMode) {
       const recipient = recipientList[0];
 
       try {
-        const result = await transporter.sendMail({
-          from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
-
-          to: recipient,
+        await sendEmail({
+          email: recipient,
           subject,
-          text: message,
+          message,
           attachments: mailAttachments,
         });
 
         results.push({
           email: recipient,
           status: "sent",
-          messageId: result.messageId,
         });
       } catch (error) {
         results.push({
@@ -76,21 +59,18 @@ export const sendContactMessage = async (req, res) => {
         });
       }
     } else {
-      // 📨 Bulk mode (each user gets individual email)
       for (const recipient of recipientList) {
         try {
-          const result = await transporter.sendMail({
-            from: process.env.SMTP_MAIL,
-            to: recipient,
+          await sendEmail({
+            email: recipient,
             subject,
-            text: message,
+            message,
             attachments: mailAttachments,
           });
 
           results.push({
             email: recipient,
             status: "sent",
-            messageId: result.messageId,
           });
         } catch (error) {
           console.log(error);
@@ -101,7 +81,6 @@ export const sendContactMessage = async (req, res) => {
           });
         }
 
-        // ⏱ Small delay (rate-limit protection)
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
@@ -136,63 +115,39 @@ export const sendMessage = async (req, res) => {
       String(req.body?.subject || "").trim() || "Contact Form Message";
     const message = String(req.body?.message || "").trim();
 
-    // ✅ basic validation
+    // ✅ validation
     if (!name || !email || !message) {
       return res.status(400).json("Name, email, and message are required");
     }
 
-    // ✅ simple email format check
+    // ✅ email format check
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!isValidEmail) {
       return res.status(400).json("Please provide a valid email address");
     }
 
-    // ✅ where you want to receive contact messages
+    // ✅ receiver email
     const toEmail = process.env.CONTACT_RECEIVER_EMAIL || process.env.SMTP_MAIL;
+
     if (!toEmail) {
       return res.status(500).json("Server email receiver is not configured");
     }
 
-    const port = Number(process.env.SMTP_PORT || 587);
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: port === 465, // 465 true, 587 false
-      auth: {
-        user: process.env.SMTP_MAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    // ✅ optional: verify SMTP (helps debug)
-    // await transporter.verify();
-
-    const textBody =
-      `New contact message:\n\n` +
-      `Name: ${name}\n` +
-      `Email: ${email}\n` +
-      `Subject: ${subject}\n\n` +
-      `Message:\n${message}\n`;
-
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>New Contact Message</h2>
-        <p><b>Name:</b> ${escapeHtml(name)}</p>
-        <p><b>Email:</b> ${escapeHtml(email)}</p>
-        <p><b>Subject:</b> ${escapeHtml(subject)}</p>
-        <hr />
-        <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
-      </div>
-    `;
-
-    const info = await transporter.sendMail({
-      from: `"Digital NexGen" <${process.env.SMTP_MAIL}>`,
-      to: toEmail,
+    // ✅ send using reusable function
+    await sendEmail({
+      email: toEmail,
       subject: `[Contact] ${subject}`,
-      text: textBody,
-      html: htmlBody,
-      replyTo: email, // ✅ reply goes to user
+      message: `
+New Contact Message
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+      `.trim(),
+      replyTo: email, // 🔥 so you can reply directly
     });
 
     return res.status(200).json("Message sent successfully.");
@@ -258,12 +213,3 @@ Note: Please review and process within 60 days (policy).
     });
   }
 };
-// ✅ small helper to prevent HTML injection in email body
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}

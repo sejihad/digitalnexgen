@@ -222,6 +222,7 @@ export const updateOrderStatusByAdmin = async (req, res) => {
       order,
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: "Server error" });
   }
 };
